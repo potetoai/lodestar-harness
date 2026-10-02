@@ -1,0 +1,17 @@
+name: Enforcement self-test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: bash enforcement/test.sh
+      - run: bash scripts/check-links.sh

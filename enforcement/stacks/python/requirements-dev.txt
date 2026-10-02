@@ -1,0 +1,3 @@
+ruff
+pytest
+cosmic-ray
