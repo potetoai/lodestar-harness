@@ -7,3 +7,6 @@ Thumbs.db
 
 # Session handoff (local only; global CLAUDE.md step 5)
 .ai/handoff.md
+
+# Python bytecode (scripts/usage-report.py)
+__pycache__/
