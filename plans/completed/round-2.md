@@ -166,7 +166,7 @@ Reviewed 2026-10-02: nothing here needs work now (decision log).
   third-party data) are reported. Add it to `rules/testing.md` when a second
   project hits it.
 - Orca + Superpowers + gstack are three overlapping process systems on this
-  machine; review later. Closed: PR #35 puts the Router over Superpowers;
+  machine; review later. Closed: a merged PR puts the Router over Superpowers;
   gstack is not installed and the Router uses it only when present.
 - Missing stack environment goes unnoticed (vn30, 2026-10-01): the project
   moved from `D:` to `F:` and `make setup` never ran there (no
@@ -187,7 +187,7 @@ Reviewed 2026-10-02: nothing here needs work now (decision log).
 | 2026-10-01 | 3 | Q3 answered (sensitive only). Spike on Windows in throwaway projects: cosmic-ray limits itself to given files and runs on Windows (mutmut 3 does not); Stryker `--mutate` with the command runner works with any `npm test`. `make test-mutation FILES=...` in both stacks (cosmic-ray added to `requirements-dev.txt`; Stryker is a devDependency the project adds); multi-part root Makefile routes files to each part; `ci-checks.sh` section 6 runs it on changed sensitive files with a 15-minute limit and writes the score and survivors to the PR summary, never failing; `rules/testing.md`, `rules/enforcement.md`, reviewer role; VERSION 1.12.0. End to end on a throwaway python project: weak test, 8 survivors named with lines; strong tests, score shown. Review fixes: incompetent mutants counted apart, `timeout -k` plus restore of the mutated files, empty report, missing Stryker says "not set up". test.sh and check-links pass |
 | 2026-10-01 | 3 | Owner review of cost: mutation testing is off by default. It runs only with the PR label `test-mutation`, which the agent adds after the owner agrees to its suggestion; `ci.yml` reruns on `labeled`. test.sh and check-links pass |
 | 2026-10-01 | 4 | Q4 answered (Lodestar-harness). Renamed orca-workflow to lodestar-harness in docs and enforcement: `lodestar-lib.sh`, `LODESTAR_SKIP_HOOKS`, `LODESTAR_TEST_MUTATION`, `lodestar-` feedback tags, `lodestar-harness:begin` markers, hook messages. Orca ADE references and `router/ORCA-INTEGRATION.md` kept; completed plans kept as history. Migration: bootstrap `--upgrade` removes `orca-lib.sh`; setup-machine rewrites an `orca-workflow` block; global install drops a `check-readiness.sh` hook left at an old folder path; doctor still skips `orca-` tags. VERSION 2.0.0. test.sh and check-links pass |
-| 2026-10-02 | close | Phase 2 confirmed in Lodestar-harness: after `/clear` the session hook pointed to `.ai/handoff.md` and the owner's one-word "continue" picked up the next step. Phase 4 confirmed: a throwaway 1.x project upgraded to 2.0.0 passes doctor; the folder now lives at `D:/AI/Lodestar-harness`. PRs #31, #32 merged on green CI. Plan closed |
+| 2026-10-02 | close | Phase 2 confirmed in Lodestar-harness: after `/clear` the session hook pointed to `.ai/handoff.md` and the owner's one-word "continue" picked up the next step. Phase 4 confirmed: a throwaway 1.x project upgraded to 2.0.0 passes doctor; the folder now lives at `D:/AI/Lodestar-harness`. PRs merged on green CI. Plan closed |
 
 ## 9. Decision log
 
