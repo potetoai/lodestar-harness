@@ -144,11 +144,13 @@ bash <lodestar-harness>/enforcement/bootstrap.sh . --stack python=backend --stac
   current choice before installing; for example ESLint for JS/TS, Ruff for
   Python) and add its formatter. Turn on the rules that catch golden
   principles where the linter has them, for example ruff `S113` (HTTP call
-  without a timeout, G11).
-- **Canary.** Create a temporary file with an obvious violation, run
-  `make lint`, and **confirm it fails**. Delete the file. If lint passes, the
-  linter is not working; fix that before going on. Record the result in the
-  report.
+  without a timeout, G11). Lint or typecheck must report an undefined name
+  (ESLint/oxlint `no-undef` with the right globals, TypeScript, ruff `F821`):
+  a build passes with one, and the page or command crashes at run time.
+- **Canary.** Create a temporary file with an obvious violation and a use of
+  an undefined name, run `make lint`, and **confirm it fails on both**. Delete
+  the file. If lint passes, the linter is not working; fix that before going
+  on. Record the result in the report.
 - **Installs stay in the project.** Never install into the system Python or
   global npm (`pip install` on the system interpreter, `npm install -g`).
   Tools go into `.venv/` or `node_modules/` through `make setup`. If the
