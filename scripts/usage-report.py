@@ -21,8 +21,9 @@ POLICY = re.compile(
     r"(Lodestar-harness|Orca-workflow)[/\\](README|router|rules|workflows|agents|skills|project)"
     r"|\.ai[/\\]project\.md|CLAUDE\.md", re.I)
 SHELL_READ = re.compile(r"\b(cat|head|tail|sed)\b")
-# Fixed-format routing line (router/ROUTER.md, Routing Approval Gate).
-ROUTE = re.compile(r"Lodestar route: ([A-Z_]+) risk=([a-z]+)(?: escalated-from=([A-Z_]+))?")
+# Fixed-format routing line (router/ROUTER.md, Routing Approval Gate). It must
+# fill its own line, so a quoted example inside a sentence is not counted.
+ROUTE = re.compile(r"^\s*Lodestar route: ([A-Z_]+) risk=([a-z]+)(?: escalated-from=([A-Z_]+))? *$", re.M)
 
 
 def cost(u):
