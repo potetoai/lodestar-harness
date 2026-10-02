@@ -53,7 +53,9 @@ Stop early when nothing is worth a PR.
    and delete the old file. Point every reference to the old file at
    `.ai/handoff.md`. The upgrade PR adds the `.gitignore` line, so a branch
    cut from main before it merges does not ignore the handoff yet: stage
-   files by name and check that no PR diff lists `.ai/handoff.md`.
+   files by name and check that no PR diff lists `.ai/handoff.md`. Rerun the
+   onboarding canary (`workflows/onboarding.md`, B1) in each stack: if lint
+   passes a file that uses an undefined name, turn that rule on in this PR.
 2. **Sweep for missed mistakes.** Since the date in `.ai/last-maintenance`, look
    for agent mistakes that never reached `.ai/feedback-log.md`: commits that
    fix or revert code added shortly before (`git log --since`), and PRs the
