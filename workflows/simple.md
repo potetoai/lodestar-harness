@@ -31,7 +31,7 @@ The agent is responsible for:
 - Do not change unrelated files.
 - Do not introduce architecture changes.
 - Always perform basic verification.
-- Mid-execution escalation: if, once implementation starts, the task reveals hidden complexity — more files than expected, a cross-layer dependency, an architecture/data/security impact, or real regression risk — STOP. Do not finish under the SIMPLE workflow. Re-route: present the corrected routing decision (now BUILD_REVIEW or higher) and wait for approval before continuing.
+- Mid-execution escalation: if, once implementation starts, the task reveals hidden complexity — more files than expected, a cross-layer dependency, an architecture/data/security impact, or real regression risk — STOP. Do not finish under the SIMPLE workflow. Re-route: present the corrected routing decision (now BUILD_REVIEW or higher, its route line ending in `escalated-from=SIMPLE`) and wait for approval before continuing.
 
 ## Completion Criteria
 

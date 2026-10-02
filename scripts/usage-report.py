@@ -9,6 +9,7 @@ token-saving change can be checked against numbers (plans/active/token-efficienc
   python scripts/usage-report.py --sessions    # one row per session too
 """
 import argparse
+import bisect
 import glob
 import json
 import os
@@ -20,6 +21,8 @@ POLICY = re.compile(
     r"(Lodestar-harness|Orca-workflow)[/\\](README|router|rules|workflows|agents|skills|project)"
     r"|\.ai[/\\]project\.md|CLAUDE\.md", re.I)
 SHELL_READ = re.compile(r"\b(cat|head|tail|sed)\b")
+# Fixed-format routing line (router/ROUTER.md, Routing Approval Gate).
+ROUTE = re.compile(r"Lodestar route: ([A-Z_]+) risk=([a-z]+)(?: escalated-from=([A-Z_]+))?")
 
 
 def cost(u):
@@ -33,8 +36,11 @@ def context(u):
 
 
 def scan(path):
-    """One transcript -> usage per API call (deduped by message id) and counters."""
-    usage, policy_ids, tools = {}, {}, {}
+    """One transcript -> usage per API call (deduped by message id) and counters.
+    routes: (call index, workflow, risk, escalated-from); owner: call index of
+    each owner message (the next call answers it)."""
+    usage, ts, policy_ids, tools = {}, {}, {}, {}
+    routes, owner = [], []
     s = dict(date="", policy=0, hooks=0, asks=0, read_tok=0, tool_tok=0)
     with open(path, encoding="utf-8", errors="ignore") as fh:
         for line in fh:
@@ -47,6 +53,13 @@ def scan(path):
             content = m.get("content")
             if e.get("type") == "assistant" and m.get("usage") and m.get("id"):
                 usage[m["id"]] = m["usage"]
+                ts.setdefault(m["id"], e.get("timestamp") or "")
+            if e.get("type") == "user" and not e.get("isMeta"):
+                texts = [content] if isinstance(content, str) else [
+                    c.get("text", "") for c in content or [] if isinstance(c, dict) and c.get("type") == "text"]
+                if any(t.strip() and not t.lstrip().startswith("<") and "Stop hook feedback" not in t
+                       for t in texts):
+                    owner.append(len(usage))
             if isinstance(content, str):
                 s["hooks"] += "Stop hook feedback" in content
                 continue
@@ -60,6 +73,8 @@ def scan(path):
                     target = str(inp.get("file_path") or inp.get("command") or "")
                     if POLICY.search(target) and (name == "Read" or (name == "Bash" and SHELL_READ.search(target))):
                         policy_ids[c["id"]] = True
+                elif c.get("type") == "text" and e.get("type") == "assistant":
+                    routes += [(len(usage) - 1,) + r for r in ROUTE.findall(c.get("text", ""))]
                 elif c.get("type") == "text" and e.get("type") == "user":
                     s["hooks"] += "Stop hook feedback" in c.get("text", "")
                 elif c.get("type") == "tool_result":
@@ -70,8 +85,45 @@ def scan(path):
                         s["read_tok"] += n
                     if c.get("tool_use_id") in policy_ids:
                         s["policy"] += n
-    s["usage"] = list(usage.values())
+    s["usage"], s["ts"] = list(usage.values()), list(ts.values())
+    s["routes"], s["owner"] = routes, owner
     return s
+
+
+def route_report(sessions, total):
+    """Cost, owner follow-ups and escalations per routed workflow. A route line
+    starts a segment that runs to the next route line or the session end; calls
+    before the first line are "(no route line)". A subagent's cost goes to the
+    segment open when it started."""
+    stats, esc = {}, {}
+    for s in sessions:
+        starts = [r[0] for r in s["routes"]]
+        names = [r[1] for r in s["routes"]]
+
+        def seg(i):
+            k = bisect.bisect_right(starts, i)
+            return names[k - 1] if k else "(no route line)"
+        for i, u in enumerate(s["usage"]):
+            stats.setdefault(seg(i), [0, 0.0, 0])[1] += cost(u)
+        for start, c in s["subs"]:
+            stats.setdefault(seg(bisect.bisect_right(s["ts"], start) - 1), [0, 0.0, 0])[1] += c
+        for i in s["owner"]:
+            if starts and i > starts[0]:
+                stats[seg(i - 1)][2] += 1
+        for _, wf, _, old in s["routes"]:
+            stats.setdefault(wf, [0, 0.0, 0])[0] += 1
+            if old:
+                esc[f"{old}->{wf}"] = esc.get(f"{old}->{wf}", 0) + 1
+    unrouted = sum(1 for s in sessions if not s["routes"])
+    print(f"Route lines: {sum(v[0] for v in stats.values())}; sessions without one: {unrouted} of {len(sessions)}")
+    print(f"  {'workflow':20} {'tasks':>5} {'cost':>6} {'per task':>9} {'owner msgs/task':>15}")
+    for wf, (n, c, o) in sorted(stats.items(), key=lambda kv: -kv[1][1]):
+        per = f"{int(c / n):9}" if n else f"{'-':>9}"
+        msgs = f"{o / n:15.1f}" if n else f"{'-':>15}"
+        print(f"  {wf:20} {n:5} {c / total * 100:5.1f}% {per} {msgs}")
+    up = sum(v for k, v in esc.items() if k.startswith("SIMPLE->"))
+    print(f"Escalations: {', '.join(f'{k} {v}' for k, v in sorted(esc.items())) or 'none'}"
+          f" (SIMPLE calls that escalated: {up} of {stats.get('SIMPLE', [0])[0]})")
 
 
 def restart_saving(sessions, threshold, restart=90000):
@@ -114,8 +166,10 @@ def main():
             if len(s["usage"]) < a.min_turns or not (a.since <= s["date"] <= a.until):
                 continue
             subdir = os.path.join(a.root, d, os.path.basename(f)[:-6], "subagents")
-            s["sub_cost"] = sum(cost(u) for sf in glob.glob(os.path.join(subdir, "*.jsonl"))
-                                for u in scan(sf)["usage"])
+            subs = [scan(sf) for sf in glob.glob(os.path.join(subdir, "*.jsonl"))]
+            s["subs"] = [(sub["ts"][0] if sub["ts"] else "", sum(cost(u) for u in sub["usage"]))
+                         for sub in subs]
+            s["sub_cost"] = sum(c for _, c in s["subs"])
             s["name"] = f"{d[:28]} {os.path.basename(f)[:8]}"
             sessions.append(s)
     if not sessions:
@@ -168,6 +222,7 @@ def main():
     for th in sorted({150000, a.nudge}):
         saved, n = restart_saving(sessions, th)
         print(f"Restart at {th // 1000}k (handoff + /clear): cost -{saved:.0f}%, {n} restarts (upper estimate)")
+    route_report(sessions, total)
     print(f"Total weighted units: {int(total)}")
 
 

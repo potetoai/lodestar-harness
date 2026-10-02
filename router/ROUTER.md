@@ -529,7 +529,8 @@ Example:
 
 # Output Format
 
-Always return the routing decision in this format:
+Always return the routing decision in this format, after the route line
+(Routing Approval Gate):
 
 Readiness:
 
@@ -582,7 +583,8 @@ Reason:
 After producing the routing decision, before dispatching any worker:
 
 - **SIMPLE**, and **BUILD_REVIEW with low or medium risk** — announce the
-  decision in one line (workflow, risk, reason) and proceed. Do not wait.
+  decision in one line (the route line below, then the reason) and proceed.
+  Do not wait.
   Normal tasks should not incur approval friction. If the user objects, stop
   and follow their choice.
 
@@ -590,6 +592,18 @@ After producing the routing decision, before dispatching any worker:
   INDEPENDENT_COMPARE, COMPLEX** — present the decision (workflow + reason)
   and STOP. Dispatch only after the user approves. If the user chooses a
   different workflow, follow their choice.
+
+Every routing decision, at any risk, starts with one fixed-format line, in
+English plain text even when the reply is in another language, so that
+`scripts/usage-report.py` can count cost, escalations and owner follow-ups
+per workflow:
+
+    Lodestar route: <WORKFLOW> risk=<level>
+
+`<WORKFLOW>` is SIMPLE, BUILD_REVIEW, INDEPENDENT_COMPARE, COMPLEX or
+ONBOARDING; `<level>` is low, medium, high or critical. A re-route during the
+task writes a new line ending in ` escalated-from=<previous WORKFLOW>`.
+Questions with no change need no line.
 
 This gate is about the workflow choice. It is separate from, and earlier than:
 
