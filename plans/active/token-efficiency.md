@@ -73,7 +73,7 @@ saves owner steps, not tokens) · **Later** (revisit with phase-4 data) ·
 | 19 | Critic triggers and failure escalation (efficiency P3.3–3.4) | `rules/principles.md` §1 already covers repeated failure | **Drop** |
 | 20 | Briefs with hash checks (context-budget P3) | Maintenance cost above a ~1% saving | **Drop** |
 | 21 | Framework spec "Orca Workflow v2": task analyzer, context router with layers and token budgets, YAML workflows run by code, cost-estimating router, knowledge engine, per-task execution logs | Capability-based agents, risk-scaled workflows, verify-before-done, two-failure stop (`skills/investigate.md`), human gates and learning from mistakes already exist. The rest builds an orchestrator (repo rule), targets the ≤ 2.2% policy-reading slice, or guesses costs before measuring | **Drop** |
-| 22 | Fixed-format routing line (`Lodestar route: <WORKFLOW> risk=<level>`) that `scripts/usage-report.py` counts: cost per workflow, SIMPLE calls that escalated, corrections per workflow (from idea 21, observability) | No saving itself; gives idea 15 its data at the cost of one rule line and a small script change | **Later** (phase 4) |
+| 22 | Fixed-format routing line (`Lodestar route: <WORKFLOW> risk=<level>`) that `scripts/usage-report.py` counts: cost per workflow, SIMPLE calls that escalated, corrections per workflow (from idea 21, observability) | No saving itself; gives idea 15 its data at the cost of one rule line and a small script change | **Do** (was Later; done early so phase 4 has data) |
 
 ## 4. Phases
 
@@ -130,8 +130,8 @@ Done when: the base context at turn one is measured before and after.
 ### Phase 4 — Measure and decide on "Later"
 
 After about two weeks of normal work, rerun `scripts/usage-report.py` for the
-new period. Compare with the baseline. Decide idea 22 first: if routing
-lines are to be counted, add the format now so the next period has the data.
+new period. Compare with the baseline, and read the route table (idea 22,
+added 2026-10-02): routed sessions only, and say how many had no line.
 For each Later item, record in the
 decision log: start, keep waiting, or drop, with the number behind it. Then
 move this plan to `plans/completed/`.
@@ -161,6 +161,7 @@ move this plan to `plans/completed/`.
 | 2026-10-02 | 1 | Global hook `context-nudge.sh` (PostToolUse, via `global/install.sh`): past 200k it asks once per 100k step for handoff + `/clear`; ~0.4 s per tool call on Windows. Global, not template 2.1.0: the costliest sessions ran in this repo, which has no project hooks. `CLAUDE_CODE_AUTO_COMPACT_WINDOW` / `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` noted in `setup-guide.md` as an option |
 | 2026-10-02 | 2 | Owner's `/context` in a fresh session: 34.3k base (tools 19.9k, skills 7.3k for 56 skills, memory 1.9k, MCP 1.4k, system 2.4k). The 2026-10-02 skill trim already halved the old 63k median; what is left to cut is ~1–2% of cost. Phase 2 moves to Later |
 | 2026-10-02 | 3 | README: a worker reads only its brief, the files it names, and the files a finding needs. `rules/coding.md` §1: grep, then read a large file by range. `lint-file.sh` prints at most 30 lines plus "... N more lines" (template 2.1.0, test added). ROUTER rule 14, the approval gate and ORCA-INTEGRATION: SIMPLE and low/medium-risk BUILD_REVIEW announce one line and proceed; high risk, tests-first, COMPARE, COMPLEX keep the gate; rule 12 (destructive ops) unchanged. `workflows/simple.md` escalation still waits: a wrong SIMPLE call is the case to check |
+| 2026-10-02 | 4 (prep) | Idea 22: ROUTER approval gate asks for `Lodestar route: <WORKFLOW> risk=<level>` (plus `escalated-from=<old>` on a re-route; `workflows/simple.md` too). `usage-report.py` prints tasks, cost share, cost per task and owner messages per task by workflow (a subagent's cost goes to the route open when it started), escalations, and sessions with no line. Owner messages are a proxy for corrections: approvals and follow-up questions count too |
 
 ## 8. Decision log
 
@@ -173,3 +174,4 @@ move this plan to `plans/completed/`.
 | 2026-10-02 | Phase 2 (base context audit) to Later | Base is already 34k; the rest is ~1–2% of cost |
 | 2026-10-02 | Owner: small low/medium-risk changes get a same-session review step, not a subagent reviewer (`workflows/build-review.md`, Review cost) | Phase 3's Haiku reviewer cost ~45k weighted tokens (32.8k of it start cost) for a 2k-token diff, ~12% of the task, and its one finding was wrong |
 | 2026-10-02 | Framework spec (idea 21) dropped; its observability point kept as idea 22; spec file deleted | Most of it already exists; the rest is an orchestrator or rests on unmeasured cost guesses. Owner approved |
+| 2026-10-02 | Owner: do idea 22 now, not at phase 4 | Data only builds up after the line exists; waiting loses two weeks of it. Cost is one rule paragraph and a script change |
