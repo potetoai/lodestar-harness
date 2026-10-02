@@ -148,7 +148,8 @@ bash <lodestar-harness>/enforcement/bootstrap.sh . --stack python=backend --stac
   (ESLint/oxlint `no-undef` with the right globals, TypeScript, ruff `F821`):
   a build passes with one, and the page or command crashes at run time.
 - **Canary.** Create a temporary file with an obvious violation and a use of
-  an undefined name, run `make lint`, and **confirm it fails on both**. Delete
+  an undefined name, run `make lint` (and `make typecheck` where it exists),
+  and **confirm it fails on both**. Delete
   the file. If lint passes, the linter is not working; fix that before going
   on. Record the result in the report.
 - **Installs stay in the project.** Never install into the system Python or
