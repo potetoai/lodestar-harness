@@ -13,8 +13,8 @@ They overlap, and all assume the main cost is the policy text agents read at
 startup (estimated 19k–35k tokens per task). This plan measures real sessions
 first, rates each idea against the numbers, and keeps only what pays.
 
-`frame-work-improvement.md` is out of scope: it changes orchestration, which
-belongs to Orca.
+A fifth source, an untracked "Orca Workflow v2" framework spec, was rated on
+2026-10-02 (idea 21 and the decision log) and then deleted.
 
 ## 2. Evidence (measured 2026-10-02)
 
@@ -72,6 +72,8 @@ saves owner steps, not tokens) · **Later** (revisit with phase-4 data) ·
 | 18 | Explorer/researcher roles on a cheap model (efficiency P4) | Built-in Explore agent exists; wrong pointers cause rework | **Drop** |
 | 19 | Critic triggers and failure escalation (efficiency P3.3–3.4) | `rules/principles.md` §1 already covers repeated failure | **Drop** |
 | 20 | Briefs with hash checks (context-budget P3) | Maintenance cost above a ~1% saving | **Drop** |
+| 21 | Framework spec "Orca Workflow v2": task analyzer, context router with layers and token budgets, YAML workflows run by code, cost-estimating router, knowledge engine, per-task execution logs | Capability-based agents, risk-scaled workflows, verify-before-done, two-failure stop (`skills/investigate.md`), human gates and learning from mistakes already exist. The rest builds an orchestrator (repo rule), targets the ≤ 2.2% policy-reading slice, or guesses costs before measuring | **Drop** |
+| 22 | Fixed-format routing line (`Lodestar route: <WORKFLOW> risk=<level>`) that `scripts/usage-report.py` counts: cost per workflow, SIMPLE calls that escalated, corrections per workflow (from idea 21, observability) | No saving itself; gives idea 15 its data at the cost of one rule line and a small script change | **Later** (phase 4) |
 
 ## 4. Phases
 
@@ -128,7 +130,9 @@ Done when: the base context at turn one is measured before and after.
 ### Phase 4 — Measure and decide on "Later"
 
 After about two weeks of normal work, rerun `scripts/usage-report.py` for the
-new period. Compare with the baseline. For each Later item, record in the
+new period. Compare with the baseline. Decide idea 22 first: if routing
+lines are to be counted, add the format now so the next period has the data.
+For each Later item, record in the
 decision log: start, keep waiting, or drop, with the number behind it. Then
 move this plan to `plans/completed/`.
 
@@ -143,7 +147,7 @@ move this plan to `plans/completed/`.
 
 ## 6. Not in scope
 
-- Orchestration (Orca's job), and `frame-work-improvement.md`.
+- Orchestration (Orca's job).
 - Weaker safety: locked tests, sensitive gate, CI and approvals stay.
 - Main-session model choice: a large price lever, but a quality trade the
   owner makes per task, not a policy.
@@ -168,3 +172,4 @@ move this plan to `plans/completed/`.
 | 2026-10-02 | Nudge is a global hook, not a project template hook | Covers every session on the machine, including this repo; no project upgrade needed |
 | 2026-10-02 | Phase 2 (base context audit) to Later | Base is already 34k; the rest is ~1–2% of cost |
 | 2026-10-02 | Owner: small low/medium-risk changes get a same-session review step, not a subagent reviewer (`workflows/build-review.md`, Review cost) | Phase 3's Haiku reviewer cost ~45k weighted tokens (32.8k of it start cost) for a 2k-token diff, ~12% of the task, and its one finding was wrong |
+| 2026-10-02 | Framework spec (idea 21) dropped; its observability point kept as idea 22; spec file deleted | Most of it already exists; the rest is an orchestrator or rests on unmeasured cost guesses. Owner approved |
