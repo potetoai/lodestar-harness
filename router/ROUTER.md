@@ -600,8 +600,10 @@ per workflow:
 
     Lodestar route: <WORKFLOW> risk=<level>
 
-`<WORKFLOW>` is SIMPLE, BUILD_REVIEW, INDEPENDENT_COMPARE, COMPLEX or
-ONBOARDING; `<level>` is low, medium, high or critical. A re-route during the
+`<WORKFLOW>` is SIMPLE, BUILD_REVIEW, INDEPENDENT_COMPARE, COMPLEX,
+ONBOARDING or MAINTENANCE; `<level>` is low, medium, high or critical. No
+bold or other markup, nothing else on the line, and write it before the work
+starts, even when a prose reply also names the workflow. A re-route during the
 task writes a new line ending in ` escalated-from=<previous WORKFLOW>`.
 An operation that writes data (running an update job, a migration, a
 backfill) is a change and gets a line too, usually SIMPLE. Questions with no
