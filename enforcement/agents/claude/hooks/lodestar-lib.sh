@@ -62,20 +62,39 @@ last_valid_tests_first() {
   return 1
 }
 
+# The newest valid Tests-First commit, only while a plan it changed is still
+# active. A round from a completed task is no baseline for the current one.
+active_tests_first() {
+  local c p
+  c=$(last_valid_tests_first) || return 1
+  while IFS= read -r p; do
+    [[ $p == .ai/plans/active/*.md ]] && [ -f "$p" ] && { echo "$c"; return 0; }
+  done < <(git diff-tree --root --no-commit-id --name-only -r "$c")
+  return 1
+}
+
 # Is the test lock in force? Yes while the plan of the last valid Tests-First
 # round is still active, or while a new lock is being written (uncommitted)
 # for an active plan. A lock left over from a completed task has no effect.
 lock_active() {
-  local c p
   if [ -n "$(git status --porcelain -- .ai/test-lock 2>/dev/null)" ] &&
      ls .ai/plans/active/*.md >/dev/null 2>&1; then
     return 0
   fi
-  c=$(last_valid_tests_first) || return 1
-  while IFS= read -r p; do
-    [[ $p == .ai/plans/active/*.md ]] && [ -f "$p" ] && return 0
-  done < <(git diff-tree --root --no-commit-id --name-only -r "$c")
-  return 1
+  active_tests_first >/dev/null
+}
+
+# Files changed on this branch: uncommitted (untracked included) and committed
+# since the merge base with origin/HEAD, else main, else master. Fails when
+# no base is found.
+branch_changed_files() {
+  local b from=""
+  for b in origin/HEAD main master; do
+    from=$(git merge-base "$b" HEAD 2>/dev/null) && break
+  done
+  [ -n "$from" ] || return 1
+  { git -c core.quotepath=off diff --name-only "$from"
+    git -c core.quotepath=off ls-files --others --exclude-standard; } 2>/dev/null | sort -u
 }
 
 # Relock window: the owner approved changed criteria after the last valid

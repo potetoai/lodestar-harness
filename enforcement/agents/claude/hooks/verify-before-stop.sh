@@ -16,7 +16,7 @@ export NO_COLOR=1 FORCE_COLOR=0  # plain text for the agent
 # cannot reset the lock. During a relock window (owner approved changed
 # criteria) the tester may rewrite them.
 if ls .ai/plans/active/*.md >/dev/null 2>&1 && [ -f .claude/hooks/lodestar-lib.sh ] &&
-   . .claude/hooks/lodestar-lib.sh && lock_active && ! relock_window && c=$(last_valid_tests_first); then
+   . .claude/hooks/lodestar-lib.sh && lock_active && ! relock_window && c=$(active_tests_first); then
   mapfile -t locked < <(git show "$c:.ai/test-lock" 2>/dev/null | lock_paths)
   if [ ${#locked[@]} -gt 0 ]; then
     touched=$(git diff --name-only "$c" -- "${locked[@]}" 2>/dev/null)
