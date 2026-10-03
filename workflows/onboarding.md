@@ -199,6 +199,9 @@ auto-fix is its own commit.
 - `bash .claude/hooks/doctor.sh` prints "Ready".
 - Ask the owner to do tier C by hand: protect `main` on GitHub (require a PR
   and the `CI` check), and add any secrets CI needs.
+- Ask the owner to turn on "Automatically delete head branches" (Settings,
+  General). Claude Code's auto mode blocks the agent from deleting a remote
+  branch, so without it the owner deletes each merged branch by hand.
 - Report briefly: the path taken, what was installed, which invariants are
   machine-enforced and which are still text, which debt was recorded, the
   canary result, open questions from the interview, and (path B) the

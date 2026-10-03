@@ -603,7 +603,9 @@ per workflow:
 `<WORKFLOW>` is SIMPLE, BUILD_REVIEW, INDEPENDENT_COMPARE, COMPLEX or
 ONBOARDING; `<level>` is low, medium, high or critical. A re-route during the
 task writes a new line ending in ` escalated-from=<previous WORKFLOW>`.
-Questions with no change need no line.
+An operation that writes data (running an update job, a migration, a
+backfill) is a change and gets a line too, usually SIMPLE. Questions with no
+change need no line.
 
 This gate is about the workflow choice. It is separate from, and earlier than:
 
