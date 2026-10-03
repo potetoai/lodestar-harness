@@ -8,6 +8,11 @@
 #   remote's default branch, and skipping git hooks (--no-verify, commit -n).
 #   This covers repos where GitHub cannot lock main (private repo on GitHub
 #   Free, doctor C1).
+# - merge only on green CI. Every `gh pr merge` must sit behind the CI wait's
+#   own exit code: `if gh pr checks <n> --watch; then gh pr merge <n>; fi`
+#   (PowerShell: `gh pr checks <n> --watch; if ($LASTEXITCODE -eq 0) {...}`).
+#   `gh pr view && gh pr merge` or `gh pr checks | tail && gh pr merge`
+#   exit 0 on a red CI, so they merge anyway.
 [ "$LODESTAR_SKIP_HOOKS" = "1" ] && exit 0
 
 cmd=$(jq -r '.tool_input.command // empty' | tr -d '\r')
@@ -21,6 +26,25 @@ if grep -qE -- '-m[[:space:]]+pip[[:space:]]+install([[:space:]]|$)|(^|[^[:alnum
   why="pip install outside the project's .venv installs into the system Python."
 elif grep -qE '(^|[^[:alnum:]_.-])npm(\.cmd)?[[:space:]]+(install|i|add)([[:space:]].*)?[[:space:]](-g|--global)([[:space:]]|$)' <<<"$low"; then
   why="npm install -g installs globally, outside the project."
+fi
+
+# Merge: drop each gated merge; any merge left is ungated. Matches gh under
+# any spelling (gh.exe, /usr/bin/gh, VAR=x gh, gh -R o/r, inside bash -c,
+# eval, backticks, an else branch) and `gh api .../pulls/<n>/merge -X PUT`.
+if [ -z "$why" ]; then
+  flat=$(tr '\n' ';' <<<"$low" | sed -E 's/[0-9]?>&[0-9]//g')
+  wait='gh[[:space:]]+pr[[:space:]]+checks[^;|&]*[[:space:]]--watch[^;|&]*;[[:space:]]*'
+  merge='gh[[:space:]]+pr[[:space:]]+merge[^;|&}]*'
+  ps='if[[:space:]]*\([[:space:]]*(\$lastexitcode[[:space:]]+-eq[[:space:]]+0|\$\?)[[:space:]]*\)[[:space:]]*\{[[:space:]]*'
+  flat=$(sed -E "s/if[[:space:]]+${wait}then[[:space:];]+${merge}//g; s/${wait}${ps}${merge}//g" <<<"$flat")
+  if grep -qE '(^|[^[:alnum:]_-])gh(\.exe)?[[:space:]]+([^;|&]*[[:space:]])?pr[[:space:]]+merge([^[:alnum:]_-]|$)' <<<"$flat" ||
+     { grep -qE '(^|[^[:alnum:]_-])gh(\.exe)?[[:space:]].*pulls/[^[:space:]]+/merge' <<<"$flat" &&
+       grep -qE -- '(-x|--method)[[:space:]=]*put' <<<"$flat"; }; then
+    why="this merge does not wait for green CI: a view, checks piped into tail, or an else branch merges on a red CI."
+    fix='Use exactly: if gh pr checks <n> --watch; then gh pr merge <n> --merge; fi
+(PowerShell: gh pr checks <n> --watch; if ($LASTEXITCODE -eq 0) { gh pr merge <n> --merge })
+If "gh pr merge" is only text in a commit message or a file, write that text with the Write tool.'
+  fi
 fi
 
 # Git: look at each command of a chain (a && b; c | d) on its own.
