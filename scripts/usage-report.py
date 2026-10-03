@@ -22,8 +22,12 @@ POLICY = re.compile(
     r"|\.ai[/\\]project\.md|CLAUDE\.md", re.I)
 SHELL_READ = re.compile(r"\b(cat|head|tail|sed)\b")
 # Fixed-format routing line (router/ROUTER.md, Routing Approval Gate). It must
-# fill its own line, so a quoted example inside a sentence is not counted.
-ROUTE = re.compile(r"^\s*Lodestar route: ([A-Z_]+) risk=([a-z]+)(?: escalated-from=([A-Z_]+))? *$", re.M)
+# start its own line, so a quoted example inside a sentence is not counted.
+# ROUTE also accepts off-format lines (bold, no risk=, text after it) so they
+# still count; ROUTE_EXACT tells them apart.
+ROUTE = re.compile(r"^[ \t]*\**Lodestar route:\**[ \t]*\**([A-Z_]+)\b\**"
+                   r"(?:[ \t]+risk=\**([a-z]+)\**)?(?:[ \t]+escalated-from=\**([A-Z_]+)\**)?(.*)$", re.M)
+ROUTE_EXACT = re.compile(r"Lodestar route: [A-Z_]+ risk=[a-z]+(?: escalated-from=[A-Z_]+)?")
 
 
 def cost(u):
@@ -42,7 +46,7 @@ def scan(path):
     each owner message (the next call answers it)."""
     usage, ts, policy_ids, tools = {}, {}, {}, {}
     routes, owner = [], []
-    s = dict(date="", policy=0, hooks=0, asks=0, read_tok=0, tool_tok=0)
+    s = dict(date="", policy=0, hooks=0, asks=0, read_tok=0, tool_tok=0, off_format=0)
     with open(path, encoding="utf-8", errors="ignore") as fh:
         for line in fh:
             try:
@@ -75,7 +79,9 @@ def scan(path):
                     if POLICY.search(target) and (name == "Read" or (name == "Bash" and SHELL_READ.search(target))):
                         policy_ids[c["id"]] = True
                 elif c.get("type") == "text" and e.get("type") == "assistant":
-                    routes += [(len(usage) - 1,) + r for r in ROUTE.findall(c.get("text", ""))]
+                    for r in ROUTE.finditer(c.get("text", "")):
+                        routes.append((len(usage) - 1,) + r.groups()[:3])
+                        s["off_format"] += not ROUTE_EXACT.fullmatch(r.group(0).strip())
                 elif c.get("type") == "text" and e.get("type") == "user":
                     s["hooks"] += "Stop hook feedback" in c.get("text", "")
                 elif c.get("type") == "tool_result":
@@ -116,7 +122,9 @@ def route_report(sessions, total):
             if old:
                 esc[f"{old}->{wf}"] = esc.get(f"{old}->{wf}", 0) + 1
     unrouted = sum(1 for s in sessions if not s["routes"])
-    print(f"Route lines: {sum(v[0] for v in stats.values())}; sessions without one: {unrouted} of {len(sessions)}")
+    off = sum(s["off_format"] for s in sessions)
+    print(f"Route lines: {sum(v[0] for v in stats.values())} ({off} off-format);"
+          f" sessions without one: {unrouted} of {len(sessions)}")
     print(f"  {'workflow':20} {'tasks':>5} {'cost':>6} {'per task':>9} {'owner msgs/task':>15}")
     for wf, (n, c, o) in sorted(stats.items(), key=lambda kv: -kv[1][1]):
         per = f"{int(c / n):9}" if n else f"{'-':>9}"
