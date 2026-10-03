@@ -257,7 +257,8 @@ wait for a human instead:
 Merge only when the CI wait itself exits 0: `if gh pr checks <n> --watch; then
 gh pr merge <n>; fi`. Never pipe the checks into `&& gh pr merge`
 (`gh pr checks | tail && gh pr merge`): the pipe returns the exit code of
-`tail`, so a red CI still merges.
+`tail`, so a red CI still merges. `gh pr view && gh pr merge` has the same
+flaw. The `guard-install.sh` hook blocks every ungated `gh pr merge`.
 
 A project may forbid auto-merge entirely in its `.ai/project.md` (for example when
 the "done" check is run by a human, not CI). The project rule wins.

@@ -551,7 +551,25 @@ for c in "git push origin main" "git push -u origin HEAD:main" "git push origin 
   gp "$c"; t "guard blocks: $c" [ $? = 2 ]
 done
 for c in "git push -u origin fix/a" "git push origin fix/main-page" "git pull origin main" "git log main" \
-         "git commit -m 'rename -n flag'" "gh pr merge 3 --merge --delete-branch"; do
+         "git commit -m 'rename -n flag'" "if gh pr checks 3 --watch; then gh pr merge 3 --merge --delete-branch; fi"; do
+  gp "$c"; t "guard allows: $c" [ $? = 0 ]
+done
+# Merge only on green CI: the merge must sit behind the CI wait's exit code.
+for c in "gh pr merge 3 --merge" "cd x && gh pr merge 3" \
+         "gh pr view 52 --json statusCheckRollup && gh pr merge 52 --merge" \
+         "gh pr checks 52 --watch | tail -3 && gh pr merge 52" \
+         "if gh pr checks 52 --watch | tail -3; then gh pr merge 52; fi" \
+         "if gh pr checks 52; then gh pr merge 52; fi" \
+         "if gh pr checks 5 --watch; then gh pr merge 5; fi; gh pr merge 6" \
+         'gh pr checks 52 --watch; gh pr merge 52'          "if gh pr checks 5 --watch; then :; else gh pr merge 5; fi" "GH_TOKEN=x gh pr merge 5"          "gh -R o/r pr merge 5" "gh.exe pr merge 5" "/usr/bin/gh pr merge 5" 'bash -c "gh pr merge 5"'          'eval "gh pr merge 5"' 'x=`gh pr merge 5`' "gh api repos/o/r/pulls/5/merge -X PUT"          'gh pr create --body "never run gh pr merge alone"'; do
+  gp "$c"; t "guard blocks: $c" [ $? = 2 ]
+done
+for c in "if gh pr checks 52 --watch --interval 20; then gh pr merge 52 --merge && gh pr view 52; fi" \
+         "cd /f/x && if gh pr checks 52 --watch 2>&1; then gh pr merge 52 --merge; fi" \
+         $'if gh pr checks 52 --watch\nthen\n  gh pr merge 52 --merge\nfi' \
+         'gh pr checks 52 --watch; if ($LASTEXITCODE -eq 0) { gh pr merge 52 --merge }' \
+         'gh pr checks 52 --watch; if ($?) { gh pr merge 52 }' \
+         'git commit -m "merge only on green CI"' "gh pr view 52" "gh api repos/o/r/pulls/5"; do
   gp "$c"; t "guard allows: $c" [ $? = 0 ]
 done
 git -C "$p" checkout -q -b fix/a; gp "git push -u origin"; t "guard allows a bare push from a feature branch" [ $? = 0 ]
