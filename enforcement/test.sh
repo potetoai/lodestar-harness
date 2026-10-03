@@ -466,6 +466,20 @@ gate app/money.py; t "gate blocks when criteria changed after approval" [ $? = 2
 approve; rm .ai/test-lock; echo 'No-Test-Reason: comment typo only' >> .ai/plans/active/t.md
 gate app/money.py; t "gate allows an approved plan with No-Test-Reason" [ $? = 0 ]
 LODESTAR_SKIP_HOOKS=1 gate app/money.py; t "LODESTAR_SKIP_HOOKS disables the gate" [ $? = 0 ]
+# The lock must list a test changed on this branch, not only an earlier task's.
+p=$tmp/gate2; mkdir -p "$p/app" "$p/tests" "$p/.ai" "$p/.claude/hooks"; cd "$p"
+cp "$here/agents/claude/hooks/lodestar-lib.sh" .claude/hooks/
+printf 'sensitive_paths:
+  - app/money.py
+' > .ai/project.md
+g init -q -b main; echo 'x = 1' > app/money.py; echo 'def test_old(): pass' > tests/test_old.py
+echo tests/test_old.py > .ai/test-lock; g add -A; g commit -qm "old task"
+newbranch feat; mkplan t "money is exact"; approve
+gate app/money.py; t "gate blocks when the lock lists only an earlier task's tests" [ $? = 2 ]
+echo 'def test_new(): pass' > tests/test_new.py; echo tests/test_new.py >> .ai/test-lock
+gate app/money.py; t "gate allows a lock with a new (untracked) test on this branch" [ $? = 0 ]
+g add -A; g commit -qm "tests" -m "Tests-First: t"
+gate app/money.py; t "gate allows a lock with a test committed on this branch" [ $? = 0 ]
 cd "$here"
 
 # 17. Stop hook keeps locked tests unchanged while the task is active, even
@@ -490,6 +504,17 @@ stopl; t "stop hook: the new approved round becomes the lock baseline" [ $? = 0 
 mkdir -p .ai/plans/completed; g mv .ai/plans/active/t.md .ai/plans/completed/; g commit -qm "done"
 echo 'def test_a(): pass' > tests/test_a.py
 stopl; t "stop hook releases the lock when the task is completed" [ $? = 0 ]
+# A completed task's round is no baseline: a new lock being written must not
+# flag tests a later merged change touched.
+p=$tmp/oldlock; mkdir -p "$p/tests" "$p/.claude/hooks"; cd "$p"
+cp "$here/agents/claude/hooks/lodestar-lib.sh" .claude/hooks/
+g init -q -b main; echo 'def test_a(): assert True' > tests/test_a.py
+mkplan old "a works"; approve; echo tests/test_a.py > .ai/test-lock
+g add -A; g commit -qm "tests" -m "Tests-First: old"
+mkdir -p .ai/plans/completed; g mv .ai/plans/active/old.md .ai/plans/completed/; g commit -qm "done"
+echo 'def test_a(): assert 1' > tests/test_a.py; g commit -qam "later merged change"
+mkplan new "n works"; echo tests/test_n.py > .ai/test-lock
+stopl; t "stop hook ignores a completed task's round while a new lock is written" [ $? = 0 ]
 cd "$here"
 
 # 18. Line endings: a new repo gets LF for all text files; an existing repo

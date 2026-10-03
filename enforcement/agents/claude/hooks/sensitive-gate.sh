@@ -49,11 +49,25 @@ Blocked: $f is in sensitive_paths, so this task runs in tests-first mode.
 EOF
   exit 2
 fi
-if [ ! -s .ai/test-lock ] && ! grep -q '^No-Test-Reason:' "$plan"; then
+grep -q '^No-Test-Reason:' "$plan" && exit 0
+if [ ! -s .ai/test-lock ]; then
   cat >&2 <<EOF
 Blocked: $f is in sensitive_paths. The plan is approved ($plan), but no tests are locked yet.
 Write failing tests for the criteria and list them in .ai/test-lock first.
 If the owner agreed no test is needed, add "No-Test-Reason: <reason>" to the plan.
+EOF
+  exit 2
+fi
+# The lock must list a test changed on this branch; a lock left from an
+# earlier task does not cover this plan. Skipped when no base branch is found.
+if changed=$(branch_changed_files); then
+  while IFS= read -r t; do
+    grep -qixF -- "$t" <<<"$changed" && exit 0
+  done < <(lock_paths < .ai/test-lock)
+  cat >&2 <<EOF
+Blocked: $f is in sensitive_paths. .ai/test-lock lists no test changed on this branch
+(it may be left from an earlier task). Write failing tests for this plan's criteria
+($plan) and list them in .ai/test-lock first.
 EOF
   exit 2
 fi

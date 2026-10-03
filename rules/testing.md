@@ -174,7 +174,9 @@ automatically; when unsure, select it.
    `.ai/test-lock` (one path per line) and commit the tests, the lock, the plan
    and `.ai/approvals.log` together, with the trailer
    `Tests-First: <short task name>`. A Tests-First commit without an approved
-   plan in it is rejected by CI and ignored by the hooks.
+   plan in it is rejected by CI and ignored by the hooks. The lock must list
+   at least one test changed on the branch: a lock left from an earlier task
+   does not open the gate, and an earlier task's round is no baseline.
 4. **Implementation (builder role).** Make the tests pass. Anything beyond
    the approved criteria (a new criterion, a behavior change elsewhere) needs
    the owner's approval first: stop, ask, and update the plan. The builder never
