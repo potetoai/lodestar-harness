@@ -13,6 +13,10 @@
 #   (PowerShell: `gh pr checks <n> --watch; if ($LASTEXITCODE -eq 0) {...}`).
 #   `gh pr view && gh pr merge` or `gh pr checks | tail && gh pr merge`
 #   exit 0 on a red CI, so they merge anyway.
+# - a Tests-First commit must carry an owner-approved plan. Blocks
+#   `git commit` with a "Tests-First:" message when no changed plan has
+#   approved criteria, or when the plan or .ai/approvals.log would be left
+#   out of the commit (CI would fail the PR; this catches it first).
 [ "$LODESTAR_SKIP_HOOKS" = "1" ] && exit 0
 
 cmd=$(jq -r '.tool_input.command // empty' | tr -d '\r')
@@ -72,6 +76,35 @@ if [ -z "$why" ]; then
     fi
     [ -n "$why" ] && { fix="Create a branch, push it, open a PR, and merge when CI is green."; break; }
   done < <(sed -E 's/(&&|\|\||[;|])/\n/g' <<<"$low")
+fi
+
+# Tests-First commit: the plan and approvals.log must be in it, approved.
+if [ -z "$why" ] && grep -qE '(^|[[:space:]])git[[:space:]]+([^;|&]*[[:space:]])?commit([[:space:]]|$)' <<<"$cmd" &&
+   grep -qE '(^|["'"'"'[:space:]])Tests-First:' <<<"$cmd"; then
+  why=$(cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null && . .claude/hooks/lodestar-lib.sh 2>/dev/null && {
+    st=$(git -c core.quotepath=off status --porcelain -uall 2>/dev/null)
+    staging=1; grep -qE 'git[[:space:]]+add([[:space:]]|$)|commit[[:space:]]+([^;|&]*[[:space:]])?-[a-z]*a' <<<"$low" && staging=0
+    ok=0; left=""
+    while IFS= read -r p; do
+      [[ $p == .ai/plans/*.md ]] && [ -f "$p" ] && plan_approved_now "$p" && ok=1
+    done < <(sed -n 's/^.. //p' <<<"$st")
+    if git check-ignore -q .ai/approvals.log 2>/dev/null; then
+      echo ".ai/approvals.log is gitignored, so the approval cannot be part of the commit."
+    elif [ $ok = 0 ]; then
+      echo "no changed plan under .ai/plans/ has criteria the owner approved (.ai/approvals.log)."
+    elif [ $staging = 1 ]; then
+      while IFS= read -r l; do
+        f=${l:3}
+        [[ $f == .ai/approvals.log || $f == .ai/plans/*.md ]] || continue
+        [ "${l:1:1}" != " " ] && left+=" $f"
+      done <<<"$st"
+      [ -n "$left" ] && echo "not staged for this commit:$left."
+    fi
+  })
+  if [ -n "$why" ]; then
+    why="a Tests-First commit would fail CI: $why"
+    fix='Get the owner approval first (they reply "duyệt" or "approve"), then `git add` the plan and .ai/approvals.log, then commit.'
+  fi
 fi
 [ -z "$why" ] && exit 0
 

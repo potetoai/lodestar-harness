@@ -607,6 +607,25 @@ out=$(PATH="$tmp/fakegh:$PATH" bash "$here/agents/claude/hooks/doctor.sh" "$tmp/
 t "doctor C1 names the GitHub Free limit" grep -q "C1  main cannot be locked: private repo on GitHub Free" <<<"$out"
 LODESTAR_SKIP_HOOKS=1 bash "$here/agents/claude/hooks/guard-install.sh" 2>/dev/null <<<'{"tool_input":{"command":"pip install ruff"}}'
 t "LODESTAR_SKIP_HOOKS disables the install guard" [ $? = 0 ]
+# Tests-First commit: blocked unless a changed plan is owner-approved and staged.
+p=$tmp/tf; mkdir -p "$p/.claude/hooks" "$p/.ai/plans/active"; cp "$here/agents/claude/hooks/lodestar-lib.sh" "$p/.claude/hooks/"
+git -C "$p" init -q -b main; git -C "$p" config user.email t@t; git -C "$p" config user.name t; git -C "$p" commit -q --allow-empty -m init
+printf '# P
+
+## Acceptance criteria
+
+- It works.
+' > "$p/.ai/plans/active/a.md"
+gt() { CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/guard-install.sh" 2>/dev/null <<<"$(jq -n --arg c "$1" '{tool_input:{command:$c}}')"; }
+tfc='git commit -m "Tests-First: lock tests"'
+gt "$tfc"; t "guard blocks a Tests-First commit with an unapproved plan" [ $? = 2 ]
+gt 'git commit -m "feat: x"'; t "guard allows a normal commit" [ $? = 0 ]
+printf '0 %s
+' "$(. "$p/.claude/hooks/lodestar-lib.sh"; cd "$p"; criteria_hash < .ai/plans/active/a.md)" > "$p/.ai/approvals.log"
+gt "$tfc"; t "guard blocks a Tests-First commit when the plan and approvals.log are not staged" [ $? = 2 ]
+gt "git add -A && $tfc"; t "guard allows a Tests-First commit that stages everything" [ $? = 0 ]
+git -C "$p" add -A; gt "$tfc"; t "guard allows a Tests-First commit with the approved plan staged" [ $? = 0 ]
+git -C "$p" rm --cached -q .ai/approvals.log; echo .ai/approvals.log > "$p/.gitignore"; gt "git add -A && $tfc"; t "guard blocks a Tests-First commit when approvals.log is gitignored" [ $? = 2 ]
 
 # 12. Link checker (scripts/check-links.sh) catches a broken reference.
 p=$tmp/links; mkdir -p "$p/rules"; git -C "$p" init -q
