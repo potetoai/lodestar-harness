@@ -77,6 +77,9 @@ bash /path/to/lodestar-harness/enforcement/bootstrap.sh <project-dir> --stack <s
 ```
 
 `--upgrade` overwrites [managed] files only. [project] files are never touched.
+Every run adds the lines it needs to `.gitignore`, `.gitattributes` and, for
+node-ts at the repo root, `.prettierignore` (`.claude/`, `.codex/`). Files are
+installed with LF line endings, also from a CRLF checkout of this repo.
 
 ## 4. Add a language or an agent
 

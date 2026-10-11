@@ -734,4 +734,33 @@ bash "$here/bootstrap.sh" "$p" --stack python >/dev/null
 t "bootstrap brings our hooks' other fields (commandWindows) up to date" jq -e '.hooks.Stop[0].hooks[0].commandWindows | startswith("& ")' "$p/.codex/hooks.json"
 t "bootstrap keeps the project's own Codex hooks" jq -e '[.hooks.Stop[].hooks[].command] | index("mine") != null' "$p/.codex/hooks.json"
 
+# 24. Templates checked out as CRLF (Windows, core.autocrlf=true) install as
+# LF, and --upgrade does not rewrite a file whose content is the same.
+src=$tmp/crlfsrc; mkdir -p "$src"; cp -r "$here" "$src/enforcement"; cp -r "$here/../project" "$src/project"
+sed -i 's/$/\r/' "$src/enforcement/github/ci.yml" "$src/enforcement/agents/claude/settings.json" "$src/enforcement/project/AGENTS.md"
+p=$tmp/crlf; mkdir -p "$p"; git -C "$p" init -q
+bash "$src/enforcement/bootstrap.sh" "$p" --stack node-ts >/dev/null
+# Not grep: Git Bash's grep drops the CR before matching.
+lf() { local f; for f in "$@"; do tr -d '\r' < "$f" | cmp -s - "$f" || return 1; done; }
+same() { tr -d '\r' < "$1" | cmp -s - "$2"; }   # the template may itself be checked out as CRLF
+lf "$src/enforcement/github/ci.yml"; t "the test templates are CRLF" [ $? = 1 ]
+t "CRLF templates install as LF" lf "$p/.github/workflows/ci.yml" "$p/.claude/settings.json" "$p/AGENTS.md"
+t "an installed template has the template's content" same "$here/github/ci.yml" "$p/.github/workflows/ci.yml"
+out=$(bash "$src/enforcement/bootstrap.sh" "$p" --stack node-ts --upgrade)
+t "upgrade from CRLF templates rewrites no unchanged file" bash -c '! grep -qE "created|updated|merged" <<<"$1"' _ "$out"
+echo "# edited" >> "$p/.github/workflows/ci.yml"
+bash "$src/enforcement/bootstrap.sh" "$p" --stack node-ts --upgrade >/dev/null
+t "upgrade from CRLF templates still restores a changed file, as LF" same "$here/github/ci.yml" "$p/.github/workflows/ci.yml"
+
+# 25. node-ts at the repo root: Prettier skips the hook configs jq writes.
+t "node-ts project gets .claude/ and .codex/ in .prettierignore" bash -c 'grep -qxF .claude/ "$1" && grep -qxF .codex/ "$1"' _ "$p/.prettierignore"
+t "a second run adds no duplicate .prettierignore lines" [ "$(grep -cxE '\.(claude|codex)/' "$p/.prettierignore")" = 2 ]
+p=$tmp/pignore; mkdir -p "$p"; git -C "$p" init -q; printf 'dist/\n.claude/\ndocs' > "$p/.prettierignore"
+bash "$here/bootstrap.sh" "$p" --stack node-ts >/dev/null
+t "an existing .prettierignore keeps its lines and gains the missing one" [ "$(cat "$p/.prettierignore")" = "$(printf 'dist/\n.claude/\ndocs\n.codex/')" ]
+t "a python project gets no .prettierignore" [ ! -e "$tmp/py/.prettierignore" ]
+p=$tmp/pparts; mkdir -p "$p"; git -C "$p" init -q
+bash "$here/bootstrap.sh" "$p" --stack python=backend --stack node-ts=frontend >/dev/null
+t "node-ts in a subdir gets no root .prettierignore" bash -c '[ ! -e "$1/.prettierignore" ] && [ ! -e "$1/frontend/.prettierignore" ]' _ "$p"
+
 [ $failed = 0 ] && echo "All tests passed." || { echo "Some tests failed."; exit 1; }

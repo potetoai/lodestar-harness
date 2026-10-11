@@ -42,13 +42,21 @@ cd "$dir"
 
 say() { printf '  %-8s %s\n' "$1" "$2"; }
 
+# Templates are written with LF. On Windows git may check this repo out as
+# CRLF (core.autocrlf=true); copied as is, every --upgrade would rewrite an
+# unchanged file and formatters such as Prettier would fail on it.
+copy() {
+  cp "$1" "$2"   # for the file mode
+  tr -d '\r' < "$1" > "$2"
+}
+
 # put SRC DST managed|project
 put() {
   local src=$1 dst=$2 kind=$3
   if [ ! -e "$dst" ]; then
-    mkdir -p "$(dirname "$dst")"; cp "$src" "$dst"; say created "$dst"
-  elif [ "$kind" = managed ] && [ $upgrade = 1 ] && ! cmp -s "$src" "$dst"; then
-    cp "$src" "$dst"; say updated "$dst"
+    mkdir -p "$(dirname "$dst")"; copy "$src" "$dst"; say created "$dst"
+  elif [ "$kind" = managed ] && [ $upgrade = 1 ] && ! cmp -s <(tr -d '\r' < "$src") <(tr -d '\r' < "$dst"); then
+    copy "$src" "$dst"; say updated "$dst"
   fi
 }
 
@@ -132,6 +140,17 @@ if ! grep -qxF '.ai/handoff.md' .gitignore 2>/dev/null; then
   [ -s .gitignore ] && [ -n "$(tail -c1 .gitignore)" ] && echo >> .gitignore   # no newline at end
   echo '.ai/handoff.md' >> .gitignore; say updated .gitignore
 fi
+
+# Prettier (node-ts at the repo root runs it on every file) must skip the hook
+# configs: jq writes them, and its layout is not Prettier's.
+for s in "${stacks[@]}"; do
+  [ "$s" = node-ts ] || continue
+  for l in .claude/ .codex/; do
+    grep -qxF "$l" .prettierignore 2>/dev/null && continue
+    [ -s .prettierignore ] && [ -n "$(tail -c1 .prettierignore)" ] && echo >> .prettierignore   # no newline at end
+    echo "$l" >> .prettierignore; say updated .prettierignore
+  done
+done
 
 # Line endings. With core.autocrlf=true (common on Windows) git checks files
 # out as CRLF, and formatters such as Prettier then fail on every file.
