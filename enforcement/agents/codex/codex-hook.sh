@@ -24,16 +24,35 @@ if [ "$(jq -j '.tool_name // empty' <<<"$input")" != apply_patch ]; then
   printf '%s' "$input" | bash ".claude/hooks/$hook.sh"
   exit
 fi
-# Relative patch paths are relative to the session folder (cwd), which may be
-# a subfolder; the hooks expect absolute paths.
-cwd=$(jq -j '.cwd // empty' <<<"$input"); cwd=${cwd//\\//}
-jq -j '.tool_input.command // empty' <<<"$input" | tr -d '\r' |
-  sed -n -E 's/^\*\*\* (Add|Update|Delete) File: //p; s/^\*\*\* Move to: //p' |
-  while IFS= read -r f; do
-    f=${f//\\//}
-    [[ $f == /* || $f =~ ^[A-Za-z]: ]] || f=${cwd:-$root}/$f
-    # Resolve "../" so a path cannot slip past a check (no -m on macOS).
-    f=$(realpath -m -- "$f" 2>/dev/null || printf '%s' "$f")
-    jq -n --arg f "$f" '{tool_name: "apply_patch", tool_input: {file_path: $f}}' |
-      bash ".claude/hooks/$hook.sh" || exit $?
+# "a/./b/../c" -> "a/c", so a path cannot slip past a check. Pure bash:
+# macOS realpath has no -m.
+norm() {
+  local IFS=/ seg out=() parts lead=
+  [[ $1 == /* ]] && lead=/
+  read -ra parts <<<"$1"
+  for seg in "${parts[@]}"; do
+    case $seg in
+      ''|.) ;;
+      ..) [ ${#out[@]} -gt 0 ] && unset 'out[${#out[@]}-1]' ;;
+      *) out+=("$seg") ;;
+    esac
   done
+  printf '%s%s' "$lead" "${out[*]}"
+}
+# Relative patch paths are relative to the session folder (cwd), which may be
+# a subfolder; the hooks expect absolute paths. Header lines may carry spaces
+# around them.
+cwd=$(jq -j '.cwd // empty' <<<"$input"); cwd=${cwd//\\//}
+mapfile -t files < <(jq -j '.tool_input.command // empty' <<<"$input" | tr -d '\r' |
+  sed -n -E 's/^[[:space:]]*\*\*\*[[:space:]]*(Add|Update|Delete) File:[[:space:]]*//p; s/^[[:space:]]*\*\*\*[[:space:]]*Move to:[[:space:]]*//p')
+if [ ${#files[@]} = 0 ]; then
+  echo "Blocked: Lodestar found no file in this apply_patch, so it cannot check it. Use '*** Add File: <path>' (or Update/Delete) lines." >&2
+  exit 2
+fi
+for f in "${files[@]}"; do
+  f=${f%"${f##*[![:space:]]}"}; f=${f//\\//}
+  [[ $f == /* || $f =~ ^[A-Za-z]: ]] || f=${cwd:-$root}/$f
+  f=$(norm "$f")
+  jq -n --arg f "$f" '{tool_name: "apply_patch", tool_input: {file_path: $f}}' |
+    bash ".claude/hooks/$hook.sh" || exit $?
+done

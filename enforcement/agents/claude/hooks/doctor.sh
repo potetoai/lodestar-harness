@@ -120,7 +120,7 @@ check A2  ".ai/project.md filled in, no [placeholders]"  fail no_placeholders .a
 check A3  "Makefile has setup, lint, test, verify"       fail has_targets setup lint test verify
 check A4  ".claude/settings.json registers the hooks"    fail has_hooks
 check A4b ".codex/hooks.json registers the hooks (Codex)" fail has_codex_hooks
-check A4c "Codex trusts this project's hooks (run /hooks in Codex)" warn codex_hooks_trusted
+check A4c "Codex trusts this project's hooks (run /hooks in Codex; again after .codex/hooks.json changes)" warn codex_hooks_trusted
 check A5  ".github/workflows/ci.yml exists"              fail test -f .github/workflows/ci.yml
 check A6a ".gitignore exists"                            fail test -f .gitignore
 check A6b "no committed .env; .env.example if .env used" fail env_ok

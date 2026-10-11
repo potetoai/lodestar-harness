@@ -147,8 +147,9 @@ fi
 
 # .claude/settings.json (Claude) and .codex/hooks.json (Codex, same format):
 # add our hooks, keep everything else.
-# ponytail: matches hooks by exact command string; if a new template version
-# changes a command, --upgrade adds it next to the old one. Remove the old
+# ponytail: matches hooks by exact command string (a match takes our other
+# fields, such as commandWindows); if a new template version changes a
+# command, --upgrade adds it next to the old one. Remove the old
 # entry by hand, or match by script name if that starts to happen.
 merge_hooks() {   # merge_hooks OURS TARGET
   local ours=$1 target=$2 merged
@@ -159,7 +160,10 @@ merge_hooks() {   # merge_hooks OURS TARGET
   merged=$(jq -s '
     def cmds: [.[]?.hooks[]?.command];
     .[0] as $cur | .[1] as $ours
-    | $cur | .hooks = reduce ($ours.hooks | to_entries[]) as $e (($cur.hooks // {});
+    # Our hooks already present take our current fields (e.g. commandWindows).
+    | ([$ours.hooks[][].hooks[]] | INDEX(.command)) as $by
+    | $cur | .hooks |= (. // {} | map_values(map(if .hooks then .hooks |= map($by[.command // ""] // .) else . end)))
+    | .hooks = reduce ($ours.hooks | to_entries[]) as $e (.hooks;
         (.[$e.key] // []) as $arr | ($arr | cmds) as $have
         # Compare hook by hook: a group may gain a new hook in a later version.
         | .[$e.key] = $arr + [$e.value[]

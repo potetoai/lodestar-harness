@@ -128,6 +128,7 @@ Throwaway repo, probe hooks in `.codex/hooks.json`, one `codex exec` run:
 | 2026-10-11 | 1 | Merged as PR #13 |
 | 2026-10-11 | 2 | Codex hooks measured (section 4, phase 2 evidence). Adapter, `.codex/hooks.json`, doctor A4b/A4c, `setup-machine.sh` writes `CODEX_HOME` too; template 2.3.0, on `feat/codex-hooks`. `enforcement/test.sh` passes (15 new in sections 19 and 23; 260 in all) |
 | 2026-10-11 | 2 | Live (throwaway project from `bootstrap.sh`, real Codex run): patch to `.ai/approvals.log` blocked; lint reason returned for a BAD file; `pip install` blocked; Stop sent Codex back until `make verify` passed. Open: inside its Windows sandbox Codex itself cannot find `make` (hooks run outside it) |
+| 2026-10-11 | 2 | Review (PR #14), fixed: spaces around a patch file line slipped past the guards; a patch with no file line now blocks; `../` resolved in bash (macOS has no `realpath -m`); `--upgrade` refreshes `commandWindows`. `enforcement/test.sh` 268 pass (23 new). Open, same as Claude: a shell write (`echo >> file`) is not seen by the file guards; CI still checks |
 
 ## 8. Decision log
 

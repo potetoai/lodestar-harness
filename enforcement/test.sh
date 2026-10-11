@@ -685,6 +685,24 @@ cx PreToolUse protect-tests "$(patch "*** Begin Patch
 *** Add File: a.txt
 +hi
 *** End Patch")"; t "codex: an ordinary patch passes" [ $? = 0 ]
+for hdr in "*** Update File: ../.ai/approvals.log  " "  *** Update File: ../.ai/approvals.log" "*** Delete File: ../.ai/approvals.log" \
+           "*** Update File: a.txt
+*** Move to: ../.ai/approvals.log"; do
+  cx PreToolUse protect-tests "$(patch "*** Begin Patch
+$hdr")"; rc=$?; t "codex: blocked: $(tr '\n' ' ' <<<"$hdr")" [ $rc = 2 ]
+done
+cx PreToolUse protect-tests "$(patch "*** Begin Patch
++x
+*** End Patch")"; t "codex: a patch with no file line is blocked (cannot be checked)" [ $? = 2 ]
+sed -i 's|^  - \[path/or/glob\]|  - app/money.py|' "$p/.ai/project.md"
+cx PreToolUse sensitive-gate "$(patch "*** Begin Patch
+*** Add File: ../app/money.py
++x
+*** End Patch")"; t "codex: sensitive code without an approved plan is blocked" [ $? = 2 ]
+cx PreToolUse sensitive-gate "$(patch "*** Begin Patch
+*** Add File: ../tests/test_money.py
++x
+*** End Patch")"; t "codex: tests for sensitive code may be written first" [ $? = 0 ]
 cx PostToolUse lint-file "$(patch "*** Begin Patch
 *** Update File: $w\\good.txt
 *** Update File: $w\\bad.txt
@@ -711,7 +729,9 @@ if command -v powershell.exe >/dev/null; then
   t "codex: the Windows command blocks through PowerShell (exit 2)" [ $? = 2 ]
 fi
 jq '.hooks.Stop += [{"hooks":[{"type":"command","command":"mine"}]}]' "$p/.codex/hooks.json" > "$tmp/cxh" && mv "$tmp/cxh" "$p/.codex/hooks.json"
+jq '(.hooks.Stop[0].hooks[0].commandWindows) = "old"' "$p/.codex/hooks.json" > "$tmp/cxh" && mv "$tmp/cxh" "$p/.codex/hooks.json"
 bash "$here/bootstrap.sh" "$p" --stack python >/dev/null
+t "bootstrap brings our hooks' other fields (commandWindows) up to date" jq -e '.hooks.Stop[0].hooks[0].commandWindows | startswith("& ")' "$p/.codex/hooks.json"
 t "bootstrap keeps the project's own Codex hooks" jq -e '[.hooks.Stop[].hooks[].command] | index("mine") != null' "$p/.codex/hooks.json"
 
 [ $failed = 0 ] && echo "All tests passed." || { echo "Some tests failed."; exit 1; }
