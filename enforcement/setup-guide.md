@@ -70,6 +70,29 @@ not documented here). Not set by default: the context nudge already asks for a
 handoff and `/clear`, which keeps more than a compaction summary. If you try
 one, check the "Auto-compact window" line of `/context` in a new session.
 
+## Optional: trim the base context
+
+Every turn of every session carries the base context: the Claude Code prompt
+and tools, the skill list, MCP server names, `CLAUDE.md` and memory. Plugins
+and connectors you do not use still add to it.
+
+- Measure the real size from the session transcript, not from `/context`:
+  the first assistant turn's `input_tokens` + `cache_read_input_tokens` +
+  `cache_creation_input_tokens` in `~/.claude/projects/<project>/*.jsonl`.
+  `/context` reads lower (35k shown against 50k billed, 2026-10-12).
+- In `/context`, the Skills and MCP tables show the size of each plugin. Turn
+  off a plugin nobody used lately by setting it to `false` under
+  `enabledPlugins` in `~/.claude/settings.json`; set it back to `true` to
+  undo. A plugin needed by one project can be enabled in that project's
+  `.claude/settings.json` instead of for the whole machine.
+- About 40k of the base is Claude Code itself and cannot be turned off.
+
+Record (2026-10-12, Claude Code 2.1.296): base 50k at turn one. Turned off
+`expo` (24 skills, about 4.1k, never used) and `superpowers` (14 skills plus a
+session-start text, about 1.9k; its always-on rule conflicts with the Router).
+Kept on by the owner: the claude.ai skills and connectors (about 3.9k).
+Base after: 42.6k at turn one (51.2k before, about 8.6k less).
+
 ## When to run step 3 again
 
 - After updating lodestar-harness (`git pull`): the Lodestar part of
