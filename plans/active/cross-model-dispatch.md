@@ -166,6 +166,9 @@ the number behind it in the decision log. Then move this plan to
 | Date | Phase | Work |
 |---|---|---|
 | 2026-10-12 | — | Plan written from the owner's request and the Codex hook tests of the same day |
+| 2026-10-12 | 0 (part) | Throwaway project bootstrapped (python, template 2.3.1, `sensitive_paths: src/billing/**`), a diff with planted bugs on a branch, registered in Orca. Item 1: `worker-start --agent codex` refused, `agent_unconfigured`: Codex is in Orca's disabled agent list on this machine (owner's setting, not changed). Nothing started, no worktree made. Item 2, from the Orca skill: the default placement is the current or an exact existing workspace (`--worktree current`); a new worktree is made only on request (`new-child`, `new-top-level`) |
+| 2026-10-12 | 0 (part) | Item 6, plain `codex exec --sandbox workspace-write` from a Claude session, hooks not trusted: ran with no owner step, 73 s, 175k input tokens (154k cached), 1.8k output. Item 4: the 25-line brief arrived whole (end marker quoted back). Item 3, untrusted case: the probe edit of a `sensitive_paths` file was applied, no hook ran and nothing said so (tool result `{}`). Review quality: found the planted even-length median bug, missed the division by zero in `percent_change` and the missing tests. Codex also could not run `make` (known). `codex exec` has a `--dangerously-bypass-hook-trust` flag (runs hooks without stored trust for one run); the auto mode classifier refused the test run with it |
+| 2026-10-12 | 0 (open) | Waiting on the owner: enable Codex in Orca and trust the throwaway project's hooks (`/hooks`), then items 1, 3 (trusted case) and 5 (same diff with a Claude subagent reviewer). One `config.toml` entry for the throwaway folder was added by the run |
 
 ## 7. Decision log
 
