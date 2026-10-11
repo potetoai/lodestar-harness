@@ -1,6 +1,8 @@
-# CLAUDE.md
+# AGENTS.md
 
-Short map for agents. Details live in the files it points to.
+Short map for agents (Claude, Codex, ...). Details live in the files it
+points to. Keep project rules here; a `CLAUDE.md` may only hold the line
+`@AGENTS.md` (Claude ignores this file when `CLAUDE.md` has its own text).
 
 ## What this project is
 

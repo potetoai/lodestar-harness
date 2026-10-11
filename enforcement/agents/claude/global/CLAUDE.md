@@ -17,7 +17,8 @@ source: edits there apply to every project).
    the owner explicitly says to skip.
 3. Read `./.ai/project.md` for the project's context. It may be a thin bridge
    to the project's own docs; if so, follow those. The project's own
-   `CLAUDE.md` and docs override the global Lodestar rules where they conflict.
+   `AGENTS.md` (or `CLAUDE.md`) and docs override the global Lodestar rules
+   where they conflict.
 4. Load only the files the task needs, when it needs them (Router, the
    selected workflow in `workflows/`, the agent role in `agents/`, the rules
    in `rules/README.md`). Do not preload everything.

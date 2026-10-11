@@ -1,4 +1,4 @@
-# CLAUDE.md — lodestar-harness
+# AGENTS.md — lodestar-harness
 
 This repo is a policy harness for AI coding agents: the Router,
 workflows, agent roles, rules, and the enforcement templates every project

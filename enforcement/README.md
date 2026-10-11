@@ -11,7 +11,7 @@ Machine checks that every Lodestar project must pass. The rules are in
 | `agents/claude/` | [managed] | Claude Code hooks, `settings.json`, `doctor.sh`; `global/` holds the machine-wide reminder |
 | `github/ci.yml` | [managed] | GitHub Actions workflow; calls only `make` |
 | `stacks/<lang>/` | [project] | Starting `Makefile`, `.gitignore`, deps for one language |
-| `project/` | [project] | Starting `CLAUDE.md` and `.ai/` files |
+| `project/` | [project] | Starting `AGENTS.md` and `.ai/` files |
 
 The project `.ai/project.md` comes from `../project/.ai/project.md`.
 
@@ -53,7 +53,7 @@ bash /path/to/lodestar-harness/enforcement/bootstrap.sh <project-dir> --stack <n
 
 Then:
 
-1. Fill in `CLAUDE.md` and `.ai/project.md` (replace every `[placeholder]` line).
+1. Fill in `AGENTS.md` and `.ai/project.md` (replace every `[placeholder]` line).
 2. Adjust the `Makefile` recipes to the project's real tools.
 3. Run `make setup`, then `make verify`.
 4. Run `bash .claude/hooks/doctor.sh` until it prints "Ready".

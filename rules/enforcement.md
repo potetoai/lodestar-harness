@@ -33,7 +33,7 @@ such as CI.
 
 ## 2. Three layers
 
-1. `CLAUDE.md` explains the rules.
+1. `AGENTS.md` explains the rules (Claude and Codex both read it).
 2. Hooks make the agent fix problems at once: lint after each edit, and
    `make verify` before the agent may finish.
 3. CI is the final gate: `make verify-full`, secret scan, readiness check.
@@ -52,7 +52,8 @@ checked by the onboarding report and review.
 | # | Item | Level |
 |---|---|---|
 | T1–T3 | `make`, `jq` installed; project is a git repository | Required |
-| A1 | `CLAUDE.md`: short map, no `[placeholder]` lines | Required |
+| A1 | `AGENTS.md`: short map, no `[placeholder]` lines | Required |
+| A1b | No `CLAUDE.md` with its own text (Claude then skips `AGENTS.md`); only the line `@AGENTS.md` is allowed | Required |
 | A2 | `.ai/project.md` filled in, no `[placeholder]` lines | Required |
 | A3 | `Makefile` has `setup`, `lint`, `test`, `verify` | Required |
 | A4 | `.claude/settings.json` registers the lint, verify and test-lock hooks; all hook scripts present | Required |
@@ -65,7 +66,7 @@ checked by the onboarding report and review.
 | B5 | `sensitive_paths:` declared in `.ai/project.md` (may be empty, with a reason) | Required |
 | B6 | `.ai/invariants.md` lists at least one invariant | Required |
 | A10 | `format-check`, `lint-file`, `verify-full` targets | Recommended |
-| A11 | `CLAUDE.md` under 200 lines; detail moves to `.claude/rules/` (scoped with `paths:`) or docs | Recommended |
+| A11 | `AGENTS.md` under 200 lines; detail moves to `.claude/rules/` (scoped with `paths:`) or docs | Recommended |
 | A12 | Stack tools installed (`.venv` / `node_modules`); else run `make setup` | Recommended |
 | C1 | `main` requires a PR and passing checks (set by hand on GitHub) | Recommended |
 | D1 | Maintenance done in the last 14 days (`.ai/last-maintenance`) | Recommended |

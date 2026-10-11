@@ -63,7 +63,8 @@ branch and commit conventions if it has them (for example
 
 1. **Read first.** Derive everything you can from the code and docs:
    languages, frameworks, folder layout, lint/test tools, git hooks, CI,
-   existing `CLAUDE.md` and `.ai/project.md`, branch and commit conventions.
+   existing `AGENTS.md` or `CLAUDE.md` and `.ai/project.md`, branch and
+   commit conventions.
 2. **Snapshot "before".** Run the project's own checks (tests, check
    scripts, build, lint) and record the exact result, for example
    "185/185 checks pass". If there are no checks, record that the app builds
@@ -133,9 +134,11 @@ bash <lodestar-harness>/enforcement/bootstrap.sh . --stack <node-ts|python>
 bash <lodestar-harness>/enforcement/bootstrap.sh . --stack python=backend --stack node-ts=frontend
 ```
 
-`bootstrap.sh` never overwrites existing project files (`CLAUDE.md`,
-`.ai/project.md`, `Makefile`, `.gitignore`). If the project already has them,
-**merge** the missing parts by hand; do not replace the owner's content.
+`bootstrap.sh` never overwrites existing project files (`AGENTS.md`,
+`.ai/project.md`, `Makefile`, `.gitignore`). It moves a project's own
+`CLAUDE.md` to `AGENTS.md` (Claude and Codex both read it). If the project
+already has them, **merge** the missing parts by hand; do not replace the
+owner's content.
 
 ### S2: Tier B: project-specific setup
 
@@ -184,7 +187,7 @@ bash <lodestar-harness>/enforcement/bootstrap.sh . --stack python=backend --stac
   lint rule or a test, or gets a `tech-debt.md` entry with a due date.
 - **Commands.** Make the `Makefile` recipes real. "Development Commands" in
   `.ai/project.md` **points to the make targets** instead of copying commands.
-- **CLAUDE.md.** At most ~100 lines: what the project is, that it follows
+- **AGENTS.md.** At most ~100 lines: what the project is, that it follows
   lodestar-harness, what to read (`.ai/project.md`, `.ai/invariants.md`), the
   absolute rules, and `make verify`.
 

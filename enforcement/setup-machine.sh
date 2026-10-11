@@ -79,33 +79,40 @@ command -v gh >/dev/null 2>&1 && ok "gh: $(gh --version | head -n1)" || warn "Gi
 command -v python >/dev/null 2>&1 && ok "python: $(python --version 2>&1)" || warn "python is missing: needed for Python projects."
 command -v node >/dev/null 2>&1 && ok "node: $(node --version)" || warn "node is missing: needed for web (node-ts) projects."
 
-# 3. Global ~/.claude/CLAUDE.md: the Lodestar bootstrap block, with this machine's path.
-target="$home/.claude/CLAUDE.md"
+# 3. Global instructions: the Lodestar bootstrap block, with this machine's
+#    path, in ~/.claude/CLAUDE.md (Claude) and ~/.codex/AGENTS.md (Codex, when
+#    installed). One template for both.
 want=$(sed "s|{{LODESTAR_HOME}}|$lodestar|g" "$here/agents/claude/global/CLAUDE.md" | tr -d '\r')
 # Markers before 2.0.0 said orca-workflow; they are found and rewritten.
 begin='<!-- \(lodestar-harness\|orca-workflow\):begin'; end='<!-- \(lodestar-harness\|orca-workflow\):end -->'
-if [ ! -f "$target" ]; then
-  if [ $check = 1 ]; then bad "$target is missing (run without --check to create it)."
-  else mkdir -p "$(dirname "$target")"; printf '%s\n' "$want" > "$target"; ok "created $target"; fi
-elif grep -q "$begin" "$target"; then
-  have=$(tr -d '\r' < "$target" | sed -n "/$begin/,/${end//\//\\/}/p")
-  if [ "$have" = "$want" ]; then ok "$target has the current Lodestar block"
-  elif ask "Update the Lodestar block in $target to the current version? (backup: CLAUDE.md.bak)"; then
-    cp "$target" "$target.bak"
-    { tr -d '\r' < "$target.bak" | sed "/$begin/,\$d"; printf '%s\n' "$want"; tr -d '\r' < "$target.bak" | sed "1,/${end//\//\\/}/d"; } > "$target"
-    ok "updated the Lodestar block in $target"
-  else warn "$target has an older Lodestar block."; fi
-elif grep -q '^# Orca Workflow Bootstrap' "$target"; then   # oldest form, no markers
-  if ask "$target has an old Lodestar section without markers. Replace it with the current version? (backup: CLAUDE.md.bak)"; then
-    cp "$target" "$target.bak"
-    { tr -d '\r' < "$target.bak" | sed '/^# Orca Workflow Bootstrap/,$d'; printf '%s\n' "$want"; } > "$target"
-    ok "replaced the old Lodestar section in $target"
-  else warn "$target has an old Lodestar section (onboarding rule missing)."; fi
-elif ask "Add the Lodestar block to your existing $target? (your content stays; backup: CLAUDE.md.bak)"; then
-  cp "$target" "$target.bak"; printf '\n%s\n' "$want" >> "$target"; ok "added the Lodestar block to $target"
-else
-  bad "$target has no Lodestar block, so sessions will not follow lodestar-harness."
-fi
+global_block() {   # global_block TARGET
+  local target=$1 have
+  if [ ! -f "$target" ]; then
+    if [ $check = 1 ]; then bad "$target is missing (run without --check to create it)."
+    else mkdir -p "$(dirname "$target")"; printf '%s\n' "$want" > "$target"; ok "created $target"; fi
+  elif grep -q "$begin" "$target"; then
+    have=$(tr -d '\r' < "$target" | sed -n "/$begin/,/${end//\//\\/}/p")
+    if [ "$have" = "$want" ]; then ok "$target has the current Lodestar block"
+    elif ask "Update the Lodestar block in $target to the current version? (backup: ${target##*/}.bak)"; then
+      cp "$target" "$target.bak"
+      { tr -d '\r' < "$target.bak" | sed "/$begin/,\$d"; printf '%s\n' "$want"; tr -d '\r' < "$target.bak" | sed "1,/${end//\//\\/}/d"; } > "$target"
+      ok "updated the Lodestar block in $target"
+    else warn "$target has an older Lodestar block."; fi
+  elif grep -q '^# Orca Workflow Bootstrap' "$target"; then   # oldest form, no markers
+    if ask "$target has an old Lodestar section without markers. Replace it with the current version? (backup: ${target##*/}.bak)"; then
+      cp "$target" "$target.bak"
+      { tr -d '\r' < "$target.bak" | sed '/^# Orca Workflow Bootstrap/,$d'; printf '%s\n' "$want"; } > "$target"
+      ok "replaced the old Lodestar section in $target"
+    else warn "$target has an old Lodestar section (onboarding rule missing)."; fi
+  elif ask "Add the Lodestar block to your existing $target? (your content stays; backup: ${target##*/}.bak)"; then
+    cp "$target" "$target.bak"; printf '\n%s\n' "$want" >> "$target"; ok "added the Lodestar block to $target"
+  else
+    bad "$target has no Lodestar block, so sessions will not follow lodestar-harness."
+  fi
+}
+global_block "$home/.claude/CLAUDE.md"
+if [ -n "${SETUP_HOME:-}" ]; then codex_home=$home/.codex; else codex_home=${CODEX_HOME:-$home/.codex}; fi
+if command -v codex >/dev/null 2>&1 || [ -d "$codex_home" ]; then global_block "$codex_home/AGENTS.md"; fi
 
 # 4. Global reminder hooks (SessionStart + per-prompt gate).
 settings=${CLAUDE_SETTINGS:-$home/.claude/settings.json}

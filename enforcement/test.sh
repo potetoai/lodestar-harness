@@ -31,16 +31,16 @@ t "second bootstrap run changes no files" [ "$before" = "$(snapshot "$p")" ]
 # 3. Doctor fails while placeholders remain, passes once filled.
 bash "$p/.claude/hooks/doctor.sh" "$p" >/dev/null
 t "doctor fails with placeholders" [ $? = 1 ]
-fill "$p/CLAUDE.md" "$p/.ai/project.md"
+fill "$p/AGENTS.md" "$p/.ai/project.md"
 echo "| INV-01 | Sample invariant | High | test | enforced |" >> "$p/.ai/invariants.md"
 out=$(bash "$p/.claude/hooks/doctor.sh" "$p"); rc=$?
 t "doctor passes tier A after filling" [ $rc = 0 ] || echo "$out"
 t "doctor runs every check (A10 present)" grep -q 'A10 ' <<<"$out"
-t "short CLAUDE.md passes A11" grep -qE '✅ A11 ' <<<"$out"
-cp "$p/CLAUDE.md" "$tmp/claude.bak"; seq 201 >> "$p/CLAUDE.md"
+t "short AGENTS.md passes A11" grep -qE '✅ A11 ' <<<"$out"
+cp "$p/AGENTS.md" "$tmp/agents.bak"; seq 201 >> "$p/AGENTS.md"
 out=$(bash "$p/.claude/hooks/doctor.sh" "$p"); rc=$?
-t "doctor warns on a long CLAUDE.md (A11), still ready" bash -c '[ $1 = 0 ] && grep -qE "⚠️ +A11 " <<<"$2"' _ "$rc" "$out"
-cp "$tmp/claude.bak" "$p/CLAUDE.md"
+t "doctor warns on a long AGENTS.md (A11), still ready" bash -c '[ $1 = 0 ] && grep -qE "⚠️ +A11 " <<<"$2"' _ "$rc" "$out"
+cp "$tmp/agents.bak" "$p/AGENTS.md"
 mkdir -p "$p/backend"; echo X=1 > "$p/backend/.env"
 bash "$p/.claude/hooks/doctor.sh" "$p" >/dev/null
 t "doctor fails on a nested .env without .env.example" [ $? = 1 ]
@@ -385,7 +385,7 @@ z=$tmp/zipcopy; mkdir -p "$z"; cp -r "$here" "$z/enforcement"; cp -r "$here/../p
 q=$tmp/fromzip; mkdir -p "$q"; git -C "$q" init -q
 bash "$z/enforcement/bootstrap.sh" "$q" --stack python >/dev/null 2>&1
 t "bootstrap from a copy without git still records the version" jq -e '.version != "" and .repo == ""' "$q/.ai/enforcement.json"
-fill "$p/CLAUDE.md" "$p/.ai/project.md"
+fill "$p/AGENTS.md" "$p/.ai/project.md"
 echo "| INV-01 | x | High | test | enforced |" >> "$p/.ai/invariants.md"
 out=$(bash "$p/.claude/hooks/doctor.sh" "$p")
 t "fresh project: no maintenance warnings" bash -c '! grep -qE "⚠️ +D[12] " <<<"$1"' _ "$out"
@@ -635,5 +635,21 @@ bash "$here/../scripts/check-links.sh" "$p" >/dev/null; t "link checker fails on
 printf 'See `rules/a.md`.
 ' > "$p/rules/a.md"
 bash "$here/../scripts/check-links.sh" "$p" >/dev/null; t "link checker passes on good links" [ $? = 0 ]
+
+# 22. AGENTS.md is the instructions file (Claude and Codex). Claude skips it
+#     when CLAUDE.md has its own text, so CLAUDE.md may only be "@AGENTS.md".
+p=$tmp/own; mkdir -p "$p"; git -C "$p" init -q; printf '# Mine\nKeep me.\n' > "$p/CLAUDE.md"
+bash "$here/bootstrap.sh" "$p" --stack python >/dev/null
+t "bootstrap moves a project's own CLAUDE.md to AGENTS.md" bash -c 'grep -q "Keep me." "$1/AGENTS.md" && [ ! -e "$1/CLAUDE.md" ]' _ "$p"
+p=$tmp/a1b; cp -r "$tmp/py" "$p"
+doc() { bash "$p/.claude/hooks/doctor.sh" "$p"; }
+printf '@AGENTS.md\n' > "$p/CLAUDE.md"; out=$(doc)
+t "doctor accepts CLAUDE.md that only imports AGENTS.md" grep -qE '✅ A1b ' <<<"$out"
+printf '# Other rules\n' > "$p/CLAUDE.md"; out=$(doc); rc=$?
+t "doctor fails on a CLAUDE.md with its own text (A1b)" bash -c '[ $1 = 1 ] && grep -qE "❌ A1b " <<<"$2"' _ "$rc" "$out"
+h=$tmp/home6; mkdir -p "$h/.codex"; sm "$h"
+t "setup writes the Lodestar block to ~/.codex/AGENTS.md" bash -c 'grep -q "lodestar-harness:begin" "$1" && cmp -s <(sed -n "/:begin/,/:end/p" "$1") <(sed -n "/:begin/,/:end/p" "$2")' _ "$h/.codex/AGENTS.md" "$h/.claude/CLAUDE.md"
+before=$(cksum "$h/.codex/AGENTS.md"); sm "$h"
+t "second setup run leaves ~/.codex/AGENTS.md alone" [ "$before" = "$(cksum "$h/.codex/AGENTS.md")" ]
 
 [ $failed = 0 ] && echo "All tests passed." || { echo "Some tests failed."; exit 1; }

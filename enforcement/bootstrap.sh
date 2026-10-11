@@ -61,7 +61,12 @@ put "$here/github/ci.yml" .github/workflows/ci.yml managed
 if [ $upgrade = 1 ] && [ -f .claude/hooks/orca-lib.sh ]; then rm .claude/hooks/orca-lib.sh; say removed .claude/hooks/orca-lib.sh; fi
 
 # [project]
-put "$here/project/CLAUDE.md" CLAUDE.md project
+# Since 2.2.0 the instructions file is AGENTS.md (Claude and Codex both read
+# it). A project's own CLAUDE.md is moved there, not replaced.
+if [ -f CLAUDE.md ] && [ ! -e AGENTS.md ] && [ "$(tr -d '\r' < CLAUDE.md)" != "@AGENTS.md" ]; then
+  mv CLAUDE.md AGENTS.md; say moved "CLAUDE.md -> AGENTS.md"
+fi
+put "$here/project/AGENTS.md" AGENTS.md project
 put "$lodestar/project/.ai/project.md" .ai/project.md project
 for f in invariants.md feedback-log.md tech-debt.md plans/TEMPLATE.md plans/active/.gitkeep plans/completed/.gitkeep; do
   put "$here/project/.ai/$f" ".ai/$f" project
@@ -189,4 +194,4 @@ if git rev-parse --git-dir >/dev/null 2>&1; then
   fi
 fi
 
-echo "Done. Next: fill in CLAUDE.md and .ai/project.md, then run: bash .claude/hooks/doctor.sh"
+echo "Done. Next: fill in AGENTS.md and .ai/project.md, then run: bash .claude/hooks/doctor.sh"
