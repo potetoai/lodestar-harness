@@ -218,7 +218,8 @@ auto-fix is its own commit.
 
 - **`.gitignore` hides the hooks.** A rule like `.claude/*` keeps
   `settings.json` and `hooks/` out of git. `bootstrap.sh` warns; add
-  `!.claude/settings.json` and `!.claude/hooks/`.
+  `!.claude/settings.json` and `!.claude/hooks/` (and `!.codex/hooks.json`
+  if `.codex/` is ignored).
 - **Generated code** (database migrations, build output): exclude it from the
   linter; never auto-fix it.
 - **Dependencies that cannot be installed** from the public index (found by

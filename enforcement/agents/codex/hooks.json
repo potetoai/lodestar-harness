@@ -1,0 +1,71 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'cd ./$(git rev-parse --show-cdup) && exec bash .claude/hooks/codex-hook.sh protect-tests'",
+            "commandWindows": "& (Join-Path (git --exec-path) ../../../bin/bash.exe) -c 'cd ./$(git rev-parse --show-cdup) && exec bash .claude/hooks/codex-hook.sh protect-tests'; exit $LASTEXITCODE",
+            "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "bash -c 'cd ./$(git rev-parse --show-cdup) && exec bash .claude/hooks/codex-hook.sh sensitive-gate'",
+            "commandWindows": "& (Join-Path (git --exec-path) ../../../bin/bash.exe) -c 'cd ./$(git rev-parse --show-cdup) && exec bash .claude/hooks/codex-hook.sh sensitive-gate'; exit $LASTEXITCODE",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'cd ./$(git rev-parse --show-cdup) && exec bash .claude/hooks/codex-hook.sh guard-install'",
+            "commandWindows": "& (Join-Path (git --exec-path) ../../../bin/bash.exe) -c 'cd ./$(git rev-parse --show-cdup) && exec bash .claude/hooks/codex-hook.sh guard-install'; exit $LASTEXITCODE",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'cd ./$(git rev-parse --show-cdup) && exec bash .claude/hooks/codex-hook.sh lint-file'",
+            "commandWindows": "& (Join-Path (git --exec-path) ../../../bin/bash.exe) -c 'cd ./$(git rev-parse --show-cdup) && exec bash .claude/hooks/codex-hook.sh lint-file'; exit $LASTEXITCODE",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'cd ./$(git rev-parse --show-cdup) && exec bash .claude/hooks/codex-hook.sh verify-before-stop'",
+            "commandWindows": "& (Join-Path (git --exec-path) ../../../bin/bash.exe) -c 'cd ./$(git rev-parse --show-cdup) && exec bash .claude/hooks/codex-hook.sh verify-before-stop'; exit $LASTEXITCODE",
+            "timeout": 300
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'cd ./$(git rev-parse --show-cdup) && exec bash .claude/hooks/codex-hook.sh approval-record'",
+            "commandWindows": "& (Join-Path (git --exec-path) ../../../bin/bash.exe) -c 'cd ./$(git rev-parse --show-cdup) && exec bash .claude/hooks/codex-hook.sh approval-record'; exit $LASTEXITCODE",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
