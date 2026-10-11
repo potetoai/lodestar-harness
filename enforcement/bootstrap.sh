@@ -10,7 +10,7 @@
 #
 # [managed] files are created when missing; --upgrade overwrites them.
 # [project] files are created when missing and never overwritten.
-# An existing .claude/settings.json is merged: only missing hooks are added.
+# An existing .claude/settings.json or .codex/hooks.json is merged (hooks added).
 # Safe to run many times: a second run changes nothing.
 set -euo pipefail
 
@@ -56,6 +56,8 @@ put() {
 for h in lodestar-lib lint-file verify-before-stop protect-tests sensitive-gate guard-install approval-record feedback-check ci-checks doctor; do
   put "$here/agents/claude/hooks/$h.sh" ".claude/hooks/$h.sh" managed
 done
+# Codex runs the same hooks through an adapter (.codex/hooks.json below).
+put "$here/agents/codex/codex-hook.sh" .claude/hooks/codex-hook.sh managed
 put "$here/github/ci.yml" .github/workflows/ci.yml managed
 # Renamed in 2.0.0 (orca-lib.sh became lodestar-lib.sh).
 if [ $upgrade = 1 ] && [ -f .claude/hooks/orca-lib.sh ]; then rm .claude/hooks/orca-lib.sh; say removed .claude/hooks/orca-lib.sh; fi
@@ -143,28 +145,37 @@ elif ! grep -qxF '*.sh text eol=lf' .gitattributes 2>/dev/null; then
   echo '*.sh text eol=lf' >> .gitattributes; say updated .gitattributes
 fi
 
-# .claude/settings.json: add our hooks, keep everything else.
-# ponytail: matches hooks by exact command string; if a new template version
-# changes a command, --upgrade adds it next to the old one. Remove the old
+# .claude/settings.json (Claude) and .codex/hooks.json (Codex, same format):
+# add our hooks, keep everything else.
+# ponytail: matches hooks by exact command string (a match takes our other
+# fields, such as commandWindows); if a new template version changes a
+# command, --upgrade adds it next to the old one. Remove the old
 # entry by hand, or match by script name if that starts to happen.
-ours="$here/agents/claude/settings.json"
-if [ ! -f .claude/settings.json ]; then
-  put "$ours" .claude/settings.json managed
-else
+merge_hooks() {   # merge_hooks OURS TARGET
+  local ours=$1 target=$2 merged
+  if [ ! -f "$target" ]; then
+    put "$ours" "$target" managed
+    return
+  fi
   merged=$(jq -s '
     def cmds: [.[]?.hooks[]?.command];
     .[0] as $cur | .[1] as $ours
-    | $cur | .hooks = reduce ($ours.hooks | to_entries[]) as $e (($cur.hooks // {});
+    # Our hooks already present take our current fields (e.g. commandWindows).
+    | ([$ours.hooks[][].hooks[]] | INDEX(.command)) as $by
+    | $cur | .hooks |= (. // {} | map_values(map(if .hooks then .hooks |= map($by[.command // ""] // .) else . end)))
+    | .hooks = reduce ($ours.hooks | to_entries[]) as $e (.hooks;
         (.[$e.key] // []) as $arr | ($arr | cmds) as $have
         # Compare hook by hook: a group may gain a new hook in a later version.
         | .[$e.key] = $arr + [$e.value[]
             | .hooks |= map(select(.command as $c | ($have | index($c)) == null))
             | select(.hooks | length > 0)])
-  ' .claude/settings.json "$ours" | tr -d '\r')
-  if [ "$merged" != "$(jq . .claude/settings.json | tr -d '\r')" ]; then
-    printf '%s\n' "$merged" > .claude/settings.json; say merged .claude/settings.json
+  ' "$target" "$ours" | tr -d '\r')
+  if [ "$merged" != "$(jq . "$target" | tr -d '\r')" ]; then
+    printf '%s\n' "$merged" > "$target"; say merged "$target"
   fi
-fi
+}
+merge_hooks "$here/agents/claude/settings.json" .claude/settings.json
+merge_hooks "$here/agents/codex/hooks.json" .codex/hooks.json
 
 # .ai/enforcement.json: which template version this project runs, and where
 # lodestar-harness lives: "source" on this machine, "repo" for agents that run
@@ -187,7 +198,7 @@ fi
 # Enforcement files that git ignores never reach the repo, so hooks and CI
 # silently vanish for everyone else.
 if git rev-parse --git-dir >/dev/null 2>&1; then
-  ignored=$(git check-ignore .claude/settings.json .claude/hooks/*.sh .github/workflows/ci.yml .ai/*.md .ai/enforcement.json 2>/dev/null | grep -vxF .ai/handoff.md || true)
+  ignored=$(git check-ignore .claude/settings.json .codex/hooks.json .claude/hooks/*.sh .github/workflows/ci.yml .ai/*.md .ai/enforcement.json 2>/dev/null | grep -vxF .ai/handoff.md || true)
   if [ -n "$ignored" ]; then
     echo "WARNING: .gitignore hides these enforcement files. Unignore them (e.g. !.claude/settings.json, !.claude/hooks/):"
     printf '  %s\n' $ignored

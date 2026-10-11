@@ -35,7 +35,8 @@ such as CI.
 
 1. `AGENTS.md` explains the rules (Claude and Codex both read it).
 2. Hooks make the agent fix problems at once: lint after each edit, and
-   `make verify` before the agent may finish.
+   `make verify` before the agent may finish. Claude and Codex run the same
+   hook scripts (Codex through `.codex/hooks.json` and an adapter).
 3. CI is the final gate: `make verify-full`, secret scan, readiness check.
 
 Hooks and CI verify. They never dispatch work; orchestration stays in the agent runtime
@@ -57,6 +58,8 @@ checked by the onboarding report and review.
 | A2 | `.ai/project.md` filled in, no `[placeholder]` lines | Required |
 | A3 | `Makefile` has `setup`, `lint`, `test`, `verify` | Required |
 | A4 | `.claude/settings.json` registers the lint, verify and test-lock hooks; all hook scripts present | Required |
+| A4b | `.codex/hooks.json` registers the same hooks for Codex, through `.claude/hooks/codex-hook.sh` | Required |
+| A4c | Codex trusts the project's hooks (`/hooks` in Codex; it skips untrusted hooks) | Recommended |
 | A5 | `.github/workflows/ci.yml` | Required |
 | A6 | `.gitignore`; no committed `.env`; `.env.example` when `.env` is used | Required |
 | A7 | CI runs a secret scan (gitleaks) | Required |

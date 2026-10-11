@@ -9,6 +9,7 @@ Machine checks that every Lodestar project must pass. The rules are in
 | `test.sh` | tool | Self-test for bootstrap, doctor and hooks |
 | `VERSION` | tool | Template version, recorded in each project's `.ai/enforcement.json` |
 | `agents/claude/` | [managed] | Claude Code hooks, `settings.json`, `doctor.sh`; `global/` holds the machine-wide reminder |
+| `agents/codex/` | [managed] | Codex `hooks.json` and `codex-hook.sh`, the adapter that runs the same hooks for Codex |
 | `github/ci.yml` | [managed] | GitHub Actions workflow; calls only `make` |
 | `stacks/<lang>/` | [project] | Starting `Makefile`, `.gitignore`, deps for one language |
 | `project/` | [project] | Starting `AGENTS.md` and `.ai/` files |
@@ -60,7 +61,12 @@ Then:
 5. On GitHub, protect `main`: require a pull request and the `CI` check.
 
 Running `bootstrap.sh` again is safe: it only adds what is missing. An
-existing `.claude/settings.json` keeps its settings; only the hooks are added.
+existing `.claude/settings.json` or `.codex/hooks.json` keeps its settings;
+only the hooks are added.
+
+Codex runs project hooks only after the owner trusts them: open Codex in the
+project, type `/hooks`, trust the Lodestar hooks. Codex asks again when
+`.codex/hooks.json` changes. Doctor A4c warns while they are not trusted.
 
 ## 3. Upgrade a project after the templates change
 

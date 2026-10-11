@@ -528,7 +528,7 @@ t "existing repo gets only '*.sh text eol=lf'" bash -c 'grep -qxF "*.sh text eol
 
 # 19. setup-machine.sh: creates what is missing, keeps what exists, never
 #     overwrites the owner's own content (uses a fake home).
-sm() { SETUP_HOME=$1 CLAUDE_SETTINGS=$1/.claude/settings.json bash "$here/setup-machine.sh" --no-selftest "${@:2}" >/dev/null 2>&1; }
+sm() { env -u CODEX_HOME SETUP_HOME=$1 CLAUDE_SETTINGS=$1/.claude/settings.json bash "$here/setup-machine.sh" --no-selftest "${@:2}" >/dev/null 2>&1; }
 h=$tmp/home1; mkdir -p "$h"
 sm "$h" --check; t "setup --check on a fresh machine reports problems, changes nothing" bash -c '[ $1 = 1 ] && [ ! -e "$2/.claude/CLAUDE.md" ]' _ $? "$h"
 sm "$h"; t "setup creates the global CLAUDE.md with this repo's path" grep -qF "$(cd "$here/.." && { pwd -W 2>/dev/null || pwd; })/workflows/onboarding.md" "$h/.claude/CLAUDE.md"
@@ -651,5 +651,87 @@ h=$tmp/home6; mkdir -p "$h/.codex"; sm "$h"
 t "setup writes the Lodestar block to ~/.codex/AGENTS.md" bash -c 'grep -q "lodestar-harness:begin" "$1" && cmp -s <(sed -n "/:begin/,/:end/p" "$1") <(sed -n "/:begin/,/:end/p" "$2")' _ "$h/.codex/AGENTS.md" "$h/.claude/CLAUDE.md"
 before=$(cksum "$h/.codex/AGENTS.md"); sm "$h"
 t "second setup run leaves ~/.codex/AGENTS.md alone" [ "$before" = "$(cksum "$h/.codex/AGENTS.md")" ]
+h=$tmp/home7; mkdir -p "$h/.codex" "$h/orca/home"
+CODEX_HOME=$h/orca/home SETUP_HOME=$h CLAUDE_SETTINGS=$h/.claude/settings.json bash "$here/setup-machine.sh" --no-selftest >/dev/null 2>&1
+t "setup writes AGENTS.md to both ~/.codex and CODEX_HOME" bash -c 'grep -q "lodestar-harness:begin" "$1/.codex/AGENTS.md" && grep -q "lodestar-harness:begin" "$1/orca/home/AGENTS.md"' _ "$h"
+
+# 23. Codex runs the same hooks through codex-hook.sh (.codex/hooks.json).
+#     Codex sends Claude's JSON, except file edits: one apply_patch with the
+#     paths inside the patch text, absolute or relative to the session cwd.
+p=$tmp/cx; mkdir -p "$p/sub"; git -C "$p" init -q
+bash "$here/bootstrap.sh" "$p" --stack python >/dev/null
+printf 'lint-file:\n\t@! grep -q BAD "$(FILE)" || { echo "BAD found in $(FILE)"; exit 1; }\nverify:\n\t@[ ! -f fail ] || { echo "tests fail"; exit 1; }\n' > "$p/Makefile"
+echo ok > "$p/good.txt"; echo BAD > "$p/bad.txt"
+t "bootstrap installs .codex/hooks.json and the adapter" bash -c '[ -f "$1/.codex/hooks.json" ] && [ -f "$1/.claude/hooks/codex-hook.sh" ]' _ "$p"
+out=$(bash "$p/.claude/hooks/doctor.sh" "$p"); t "doctor A4b passes on a bootstrapped project" grep -qE '✅ A4b ' <<<"$out"
+# Run the hook exactly as .codex/hooks.json words it, from a subfolder, with a
+# CLAUDE_PROJECT_DIR inherited from elsewhere (as when Claude starts Codex).
+cxcmd() { jq -r --arg e "$1" --arg h "$2'" '.hooks[$e][].hooks[].command | select(endswith(" " + $h))' "$p/.codex/hooks.json"; }
+cx() { local cmd; cmd=$(cxcmd "$1" "$2"); [ -n "$cmd" ] || return 99
+  (cd "$p/sub" && CLAUDE_PROJECT_DIR=$tmp sh -c "$cmd" 2>/dev/null <<<"$3"); }
+patch() { jq -n --arg c "$1" --arg d "$(native "$p/sub")" '{tool_name:"apply_patch", cwd:$d, tool_input:{command:$c}}'; }
+w=$(native "$p"); w=${w//\//\\}   # Codex writes Windows paths with backslashes
+cx PreToolUse protect-tests "$(patch "*** Begin Patch
+*** Add File: $w\\sub\\a.txt
++hi
+*** Update File: $w\\.ai\\approvals.log
+@@
++x
+*** End Patch")"; t "codex: a patch touching the approvals log is blocked, even as 2nd file" [ $? = 2 ]
+cx PreToolUse protect-tests "$(patch "*** Begin Patch
+*** Update File: ../.ai/approvals.log
+*** End Patch")"; t "codex: a relative ../ path is resolved and blocked" [ $? = 2 ]
+cx PreToolUse protect-tests "$(patch "*** Begin Patch
+*** Add File: a.txt
++hi
+*** End Patch")"; t "codex: an ordinary patch passes" [ $? = 0 ]
+for hdr in "*** Update File: ../.ai/approvals.log  " "  *** Update File: ../.ai/approvals.log" "*** Delete File: ../.ai/approvals.log" \
+           "*** Update File: a.txt
+*** Move to: ../.ai/approvals.log"; do
+  cx PreToolUse protect-tests "$(patch "*** Begin Patch
+$hdr")"; rc=$?; t "codex: blocked: $(tr '\n' ' ' <<<"$hdr")" [ $rc = 2 ]
+done
+cx PreToolUse protect-tests "$(patch "*** Begin Patch
++x
+*** End Patch")"; t "codex: a patch with no file line is blocked (cannot be checked)" [ $? = 2 ]
+sed -i 's|^  - \[path/or/glob\]|  - app/money.py|' "$p/.ai/project.md"
+cx PreToolUse sensitive-gate "$(patch "*** Begin Patch
+*** Add File: ../app/money.py
++x
+*** End Patch")"; t "codex: sensitive code without an approved plan is blocked" [ $? = 2 ]
+cx PreToolUse sensitive-gate "$(patch "*** Begin Patch
+*** Add File: ../tests/test_money.py
++x
+*** End Patch")"; t "codex: tests for sensitive code may be written first" [ $? = 0 ]
+cx PostToolUse lint-file "$(patch "*** Begin Patch
+*** Update File: $w\\good.txt
+*** Update File: $w\\bad.txt
+*** End Patch")"; t "codex: lint hook blocks a bad file in the patch" [ $? = 2 ]
+cx PreToolUse guard-install '{"tool_name":"Bash","tool_input":{"command":"pip install ruff"}}'
+t "codex: install guard blocks a global pip install" [ $? = 2 ]
+touch "$p/fail"
+cx Stop verify-before-stop '{"stop_hook_active":false}'; t "codex: stop hook blocks while verify fails" [ $? = 2 ]
+cx Stop verify-before-stop '{"stop_hook_active":true}'; t "codex: stop hook lets go on the second attempt" [ $? = 0 ]
+rm "$p/fail"
+cx Stop verify-before-stop '{"stop_hook_active":false}'; t "codex: stop hook passes when verify passes" [ $? = 0 ]
+# Without jq the hooks would let everything through: the adapter blocks and
+# says why, but still lets a Stop end on the second attempt.
+fb=$tmp/nojq; mkdir -p "$fb"
+for c in git cat grep; do printf '#!/bin/sh\nexec "%s" "$@"\n' "$(command -v $c)" > "$fb/$c"; chmod +x "$fb/$c"; done
+nojq() { (cd "$p" && PATH=$fb "$BASH" .claude/hooks/codex-hook.sh "$1" 2>/dev/null <<<"$2"); }
+nojq guard-install '{"tool_name":"Bash","tool_input":{"command":"git status"}}'; t "codex: without jq the adapter blocks" [ $? = 2 ]
+nojq verify-before-stop '{"stop_hook_active": true}'; t "codex: without jq a repeated Stop may end" [ $? = 0 ]
+# On Windows Codex runs commandWindows in PowerShell, where plain `bash` may be
+# WSL's; the command finds Git Bash through git and keeps the exit code.
+if command -v powershell.exe >/dev/null; then
+  cmd=$(jq -r '.hooks.PreToolUse[1].hooks[0].commandWindows' "$p/.codex/hooks.json")
+  (cd "$p/sub" && powershell.exe -NoProfile -Command "$cmd" 2>/dev/null <<<'{"tool_name":"Bash","tool_input":{"command":"pip install ruff"}}')
+  t "codex: the Windows command blocks through PowerShell (exit 2)" [ $? = 2 ]
+fi
+jq '.hooks.Stop += [{"hooks":[{"type":"command","command":"mine"}]}]' "$p/.codex/hooks.json" > "$tmp/cxh" && mv "$tmp/cxh" "$p/.codex/hooks.json"
+jq '(.hooks.Stop[0].hooks[0].commandWindows) = "old"' "$p/.codex/hooks.json" > "$tmp/cxh" && mv "$tmp/cxh" "$p/.codex/hooks.json"
+bash "$here/bootstrap.sh" "$p" --stack python >/dev/null
+t "bootstrap brings our hooks' other fields (commandWindows) up to date" jq -e '.hooks.Stop[0].hooks[0].commandWindows | startswith("& ")' "$p/.codex/hooks.json"
+t "bootstrap keeps the project's own Codex hooks" jq -e '[.hooks.Stop[].hooks[].command] | index("mine") != null' "$p/.codex/hooks.json"
 
 [ $failed = 0 ] && echo "All tests passed." || { echo "Some tests failed."; exit 1; }

@@ -111,8 +111,13 @@ global_block() {   # global_block TARGET
   fi
 }
 global_block "$home/.claude/CLAUDE.md"
-if [ -n "${SETUP_HOME:-}" ]; then codex_home=$home/.codex; else codex_home=${CODEX_HOME:-$home/.codex}; fi
-if command -v codex >/dev/null 2>&1 || [ -d "$codex_home" ]; then global_block "$codex_home/AGENTS.md"; fi
+# Codex reads AGENTS.md from its home: ~/.codex, or CODEX_HOME when set (an
+# orchestrator such as Orca gives Codex a home of its own). Write both.
+codex_homes=("$home/.codex")
+[ -n "${CODEX_HOME:-}" ] && [ "${CODEX_HOME//\\//}" != "$home/.codex" ] && codex_homes+=("$CODEX_HOME")
+for d in "${codex_homes[@]}"; do
+  if command -v codex >/dev/null 2>&1 || [ -d "$d" ]; then global_block "$d/AGENTS.md"; fi
+done
 
 # 4. Global reminder hooks (SessionStart + per-prompt gate).
 settings=${CLAUDE_SETTINGS:-$home/.claude/settings.json}
