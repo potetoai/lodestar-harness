@@ -1,7 +1,7 @@
 # Plan: Retrieval, Advisory Triggers & Model Tiering
 
 > **Idea plan, not executed as written.** Rated and merged into
-> `plans/active/token-efficiency.md` (2026-10-02); see its section 3.
+> `plans/completed/token-efficiency.md` (2026-10-02); see its section 3.
 
 Status: proposed
 Owner: Lodestar-harness

@@ -1,7 +1,7 @@
 # Plan: cut the fixed context cost of every task
 
 > **Idea plan, not executed as written.** Rated and merged into
-> `plans/active/token-efficiency.md` (2026-10-02); see its section 3.
+> `plans/completed/token-efficiency.md` (2026-10-02); see its section 3.
 
 > **For Claude Code:** This is an execution plan. Read all of it first. Do one
 > phase at a time and stop after each for the repo owner's approval. Update the
