@@ -91,7 +91,7 @@ Record (2026-10-12, Claude Code 2.1.296): base 50k at turn one. Turned off
 `expo` (24 skills, about 4.1k, never used) and `superpowers` (14 skills plus a
 session-start text, about 1.9k; its always-on rule conflicts with the Router).
 Kept on by the owner: the claude.ai skills and connectors (about 3.9k).
-Base after: not measured yet.
+Base after: 42.6k at turn one (51.2k before, about 8.6k less).
 
 ## When to run step 3 again
 
