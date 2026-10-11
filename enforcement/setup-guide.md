@@ -35,9 +35,10 @@ bash /c/lodestar-harness/enforcement/setup-machine.sh
 The script checks each item and prints a ✅ / ⚠️ / ❌ table:
 
 - `make` or `jq` missing: it asks, then installs them with winget.
-- It creates `~/.claude/CLAUDE.md` pointing to lodestar-harness on this machine.
-  If that file already has your own content, the script only **adds** the
-  Lodestar part and keeps a backup, `CLAUDE.md.bak`.
+- It creates `~/.claude/CLAUDE.md` pointing to lodestar-harness on this machine,
+  and the same block in `~/.codex/AGENTS.md` when Codex is installed.
+  If a file already has your own content, the script only **adds** the
+  Lodestar part and keeps a backup (`CLAUDE.md.bak`, `AGENTS.md.bak`).
 - It installs the machine-wide hooks: the readiness reminder, and the
   context nudge that asks for `/clear` once a session passes 200k tokens.
 - It runs the self-test (1–2 minutes).
