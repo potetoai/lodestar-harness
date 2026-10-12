@@ -129,6 +129,73 @@ needed.
 
 Done when: the task is merged and the record is in the progress log.
 
+#### Phase 2 as planned (2026-10-12, replaces the paragraph above)
+
+The owner changed direction after phase 1 was written: Codex works like a
+mid-level engineer, Claude like a senior. So the second model is tried as
+the **builder** of clear, low-risk work, and Claude plans, briefs, reviews
+and verifies. The phase 1 rule (PR #20) is on hold until this phase is
+measured; its line "the second model does not build" will change if the
+trial passes.
+
+Division to test (owner agreed 2026-10-12; not policy until phase 3):
+
+| Role | Model | Reason |
+|---|---|---|
+| Router, intake, plan, architecture | Claude | A wrong decision here is wrong everywhere after it |
+| Acceptance criteria, critic | Claude | What the owner signs; finding what is missing is where Codex was weakest |
+| Tests for high-risk work (tester) | Claude | The tests judge the code |
+| Builder, clear plan, low or medium risk | Codex | The largest token cost; Codex has its own subscription limit |
+| Builder, `sensitive_paths`, data, security | Claude | Cost of a mistake |
+| Tests that kill a named surviving mutant | Codex, reviewed by Claude | Clear brief, checked by machine |
+| Reviewer, final verification | Claude | Last gate |
+
+Codex out of quota or not available: Claude does the role as before.
+Mutation runs belong to CI; the agent reads only the list of survivors.
+
+Trial task (owner picked 2026-10-12), in vn30, run from a session opened in
+that project (its Claude hooks load only there): tech-debt row of
+2026-10-09, CB1 review NIT (a). In `backend/scripts/kiem_db_chuan.py`,
+`check_cb1`, the VCI-only loop keeps only dates with
+`CB1_FROM <= d <= end`; removing that filter fails no test. Not a
+`sensitive_paths` file; no DB write; Codex trusts the project's hooks.
+
+Steps:
+
+1. Claude: doctor passes with A4c OK (not a warning), `main` clean, new
+   branch. Route line (expected BUILD_REVIEW, low risk, same-session
+   review).
+2. Claude writes the brief in the task-spec form. Target: one new test
+   file in `backend/tests/`. Change: tests showing a VCI-only row before
+   `CB1_FROM` and one after `end` are not reported, and rows on both
+   bounds are. Constraints: touch no other file, no locked test, style of
+   `test_cb1_check.py`. Acceptance: the tests pass on today's code and
+   fail when the filter is removed.
+3. Codex: one direct run (`codex exec --sandbox workspace-write`, brief on
+   stdin), 10-minute cap.
+4. Claude verifies: `git status` shows only the new file; the tests pass;
+   with the filter removed by hand at least one new test fails; the file
+   is restored and its diff is empty.
+5. Claude reviews the tests (reviewer checklist): they state the rule,
+   not a copy of today's output.
+6. At most one fix round by Codex, from Claude's findings. Still not
+   right: Claude finishes the task and the trial counts as failed.
+7. `make verify`, commit, PR, green CI, the owner merges. Mark NIT (a)
+   done in vn30's `.ai/tech-debt.md`.
+8. Record in this plan's progress log: Codex wall time and tokens; Claude
+   tokens for the whole task (`scripts/usage-report.py`), next to a
+   Claude-only task of similar size (vn30 PR #79) if the report can
+   separate it; fix rounds; review findings; every owner step.
+
+Pass, set before the run: the mutant is killed, at most one fix round, no
+file touched but the target, and no owner step beyond stating the task and
+merging. One task is a direction, not a measure; a second trial where
+Codex writes feature code (candidate: App01, the test screen clears the
+last error too early, left from its PR #15) follows only if this passes.
+
+Owner steps: approve this plan; open a session in the vn30 folder and
+type "continue"; type the merge line at the end.
+
 ### Phase 3 — Measure and decide
 
 For each of the three cases: keep as default, make opt-in, or drop, with
@@ -178,6 +245,15 @@ Owner's answers (2026-10-12):
 - **Q3:** later. Until answered the second model does not build.
 - **Q4:** not needed: phase 0 showed the hooks run in a trusted checkout.
 
+Owner's later answers (2026-10-12, after PR #20 was opened):
+
+- **Q3:** yes, as a trial: the second model may build clear, low or
+  medium-risk work under a Claude plan and a Claude review (phase 2 as
+  planned). Never `sensitive_paths`.
+- The critic stays with Claude. Tests that kill a named surviving mutant
+  may go to Codex with a Claude review.
+- When Codex has no quota left, Claude does the work as usual.
+
 ## 5. Not in scope
 
 - Orchestration: starting, tracking and settling workers is the runtime's
@@ -199,6 +275,7 @@ Owner's answers (2026-10-12):
 | 2026-10-12 | 0 | Owner enabled Codex in Orca and trusted the hooks (doctor A4c passed). Item 1: `worker-start --spec ... --worktree id:<existing> --agent codex` started a background worker in about a minute; the review and the report file were done about 1 minute after the turn began. **The result did not come back**: the worker's `orca orchestration send` (its `worker_done`) failed after 106 s inside the Codex sandbox ("Could not read Orca runtime metadata ... Orca is not running"), so `check --wait` timed out at 9 minutes with no message. The coordinator found the result only by reading the transcript (`worker-read`) and the report file, then had to `worker-stop` the worker. Item 2: the worker ran in the existing checkout (`worktree: reused`); no new worktree. Item 3, trusted case: the probe edit of the `sensitive_paths` file was refused by the PreToolUse hook with the full sensitive-gate message, and the Stop hook fired (`make verify` failed, `ruff` not installed; Codex stopped after the one hold). Item 4: brief arrived whole. Review quality the same as the direct run: the even-length median bug found, the division by zero missed. Tokens of the Orca run are not in the transcript Orca returns |
 | 2026-10-12 | 0 | Item 5, same diff, Claude subagent reviewer (brief without the hook probe): 12 s, 37.6k tokens, 2 tool calls. It found both planted bugs (even-length median, division by zero in `percent_change`), plus the empty-list crash, a sign question on a negative baseline, and the missing tests. Codex, both runs: 1 of 2 planted bugs, nothing else; 73 s and 175k input tokens (154k cached) in the direct run. One small diff, one run each: a direction, not a measure. Cleanup: the Orca project entry is removed and the folder emptied; 7 `config.toml` entries for the throwaway folder remain in the Orca Codex home (owner's call, same as the earlier 7) |
 | 2026-10-12 | 1 | Owner answered Q2, Q5, Q6 and put Q3 off (section 4). Rule written in its narrow form: `router/ROUTER.md` ("Second opinion from another model family"), `router/ORCA-INTEGRATION.md` section 6, pointer lines in `workflows/build-review.md` and `rules/testing.md`. No line in `workflows/independent-compare.md`: the second model does not build. Links pass. A critic read the rule text: 8 findings, 7 taken (read-only mode and a `git status` check, A4c must show OK since it is only a warning in doctor, the report file as the one allowed write, findings judged by the session that holds the task, a 10-minute cap, no model family bound to reviewer or critic, at most one pass per task). Not taken: drop the one-line offer; kept, because the routing decision already waits at this risk, the owner decides at PR review |
+| 2026-10-12 | 2 (plan) | Owner judged Codex mid-level next to Claude and asked how to split work. Phase 2 rewritten: Codex builds one clear low-risk task under a Claude brief and review. Task picked from the open work of vn30 and App01: vn30 CB1 NIT (a), one test for an unguarded date filter. Nothing run. PR #20 on hold (draft) |
 
 ## 7. Decision log
 
@@ -211,3 +288,5 @@ Owner's answers (2026-10-12):
 | 2026-10-12 | Phase 1 rule is narrower than the draft: one extra, read-only, opt-in pass on high-risk work; the reviewer and critic are never swapped | Owner's answer to Q6. On the one measured diff the second model found less and was slower, so a swap would lower review quality |
 | 2026-10-12 | The pass runs as a direct run that returns when done; a report file only under an orchestrator; never a wait for `worker_done` | Owner's answer to Q5 (fewest tokens that still works). The Orca wait cost 9 minutes and returned nothing |
 | 2026-10-12 | The second model does not build, also not in INDEPENDENT_COMPARE | Q3 put off by the owner |
+| 2026-10-12 | Hold PR #20; try the second model as builder before any rule is merged | Owner: Codex is the weaker model, so it should not sit at the review gate; building from a clear brief is where a mid-level model costs least risk and saves the most Claude budget. Not measured yet, so a trial first |
+| 2026-10-12 | The critic is not moved to the second model | It guards what a non-coder owner signs, and finding missing cases is where Codex did worst in phase 0. Its cost is a matter for idea 12 |
