@@ -196,6 +196,48 @@ last error too early, left from its PR #15) follows only if this passes.
 Owner steps: approve this plan; open a session in the vn30 folder and
 type "continue"; type the merge line at the end.
 
+#### Second trial as planned (2026-10-12)
+
+The first trial met its pass criteria (progress log), so the owner chose
+the second trial before any rule text: Codex writes feature code, not only
+a test. It runs in App01, from a session opened in that project.
+
+Task: the suggestion left open by App01 PR #15. In
+`apps/mobile/src/dev/test-screen-model.ts` the test screen clears the last
+error on every core notification while signed in, also on a token refresh.
+It must clear only on the change to signed in. Dev test screen only; not a
+`sensitive_paths` file; no new dependency. `test-screen-model.test.ts` is a
+locked test: the new tests go in a new file.
+
+Start condition: App01 step 6 (Sentry, branch `feat/week1-step6-sentry`,
+in work on 2026-10-12) changes the same file. The trial starts only after
+that work is merged, on a new branch from the updated `main`, and never in
+a new worktree (hook trust is stored per path).
+
+Steps: the eight steps of the first trial, with these changes.
+
+- Step 2, the brief: two targets, `test-screen-model.ts` and one new test
+  file in `apps/mobile/src/dev/`. Acceptance: with an error shown and the
+  state already signed in, a further core notification keeps the error; a
+  change from signed out or loading to signed in clears it; the existing
+  tests still pass. Constraints: no other file, no locked test, no new
+  dependency.
+- Step 4, the mutant: put the old line back by hand
+  (`if (core.getState().status === 'signedIn') lastError = null;`), see a
+  new test fail, restore the file, confirm its diff is empty.
+- Step 5: Claude reviews the code change too, not only the tests.
+- Step 8: also record the lines Codex wrote, code and tests apart.
+
+Pass: as in the first trial, with "no file touched but the two targets".
+
+What it can and cannot show: whether Codex writes a correct change to
+existing code from a brief. The change is a few lines, so Claude's token
+saving will again be inside the noise; that number needs a task where the
+builder writes a few hundred lines, picked when one comes up.
+
+Owner steps: when App01 step 6 is merged, tell the App01 session to read
+this section and run it; type the merge line at the end.
+
 ### Phase 3 — Measure and decide
 
 For each of the three cases: keep as default, make opt-in, or drop, with
@@ -277,6 +319,7 @@ Owner's later answers (2026-10-12, after PR #20 was opened):
 | 2026-10-12 | 1 | Owner answered Q2, Q5, Q6 and put Q3 off (section 4). Rule written in its narrow form: `router/ROUTER.md` ("Second opinion from another model family"), `router/ORCA-INTEGRATION.md` section 6, pointer lines in `workflows/build-review.md` and `rules/testing.md`. No line in `workflows/independent-compare.md`: the second model does not build. Links pass. A critic read the rule text: 8 findings, 7 taken (read-only mode and a `git status` check, A4c must show OK since it is only a warning in doctor, the report file as the one allowed write, findings judged by the session that holds the task, a 10-minute cap, no model family bound to reviewer or critic, at most one pass per task). Not taken: drop the one-line offer; kept, because the routing decision already waits at this risk, the owner decides at PR review |
 | 2026-10-12 | 2 (plan) | Owner judged Codex mid-level next to Claude and asked how to split work. Phase 2 rewritten: Codex builds one clear low-risk task under a Claude brief and review. Task picked from the open work of vn30 and App01: vn30 CB1 NIT (a), one test for an unguarded date filter. Nothing run. PR #20 on hold (draft) |
 | 2026-10-12 | 2 | Trial run in a vn30 session (381dab8e), steps 1-7 done but the merge: vn30 PR #80 open, CI green, waiting for the owner's merge line. Codex (codex-cli 0.162.1, gpt-5.6-terra, effort medium, `env -u CODEX_HOME codex exec --sandbox workspace-write`, 35-line brief on stdin): one run, 130 s, exit 0, 22,910 tokens, all four hooks ran. It touched only the target, `backend/tests/test_cb1_vci_only_scope.py` (48 lines, 4 tests). The tests pass on today's code; 5 hand mutants of the filter all killed (filter removed 2 tests fail, each bound removed 1, lower bound strict 3, upper bound strict 1), file restored, diff empty. Fix rounds 0. Claude's review: 0 blocker, 0 major, 0 minor, 2 suggestions not fixed (fakes simpler than the helpers of `test_cb1_check.py`, so the first loop of `check_cb1` is never entered; the docstring does not name the NIT). `make verify` 905 passed, CI `verify` passed. Owner steps: "continue" (1), the merge line (2, to come); no question asked. Pass criteria: all four met, the last one pending the merge. Claude's cost for the task, from the transcript (`scripts/usage-report.py` weights): 19 calls in 10 min, 15.1k output tokens, 77k cache write, 1.59M cache read, peak context 110k, 331k weighted units. Next to it the Claude-only vn30 PR #79 (session df1cfcf0; 33 lines added in 3 files, PR #80 adds 49 in 2): 25 calls, 14.7k output, 82k cache write, 2.06M cache read, 381k weighted units, 4 owner messages. Not a clean pair: the PR #79 session also picked and proposed its task, and the trial session read this plan and wrote a brief. On a task this small the saving is within that noise (13% fewer units); the base context of each call is the cost, not the 48 lines written. Also seen: neither session printed the fixed `Lodestar route:` line (the trial notes name the route, the transcript has no such line) |
+| 2026-10-12 | 2 (plan) | Owner chose the second trial before any rule text. Planned ("Second trial as planned"): Codex changes feature code in App01, the test screen's last-error clearing left open by its PR #15. Not started: an App01 session is in the middle of step 6 on `feat/week1-step6-sentry` and changes the same file, so the trial waits for that merge. App01's checkout and handoff were not touched from here. Doctor A4c in App01 with `CODEX_HOME` unset: OK |
 
 ## 7. Decision log
 
@@ -291,3 +334,4 @@ Owner's later answers (2026-10-12, after PR #20 was opened):
 | 2026-10-12 | The second model does not build, also not in INDEPENDENT_COMPARE | Q3 put off by the owner |
 | 2026-10-12 | Hold PR #20; try the second model as builder before any rule is merged | Owner: Codex is the weaker model, so it should not sit at the review gate; building from a clear brief is where a mid-level model costs least risk and saves the most Claude budget. Not measured yet, so a trial first |
 | 2026-10-12 | The critic is not moved to the second model | It guards what a non-coder owner signs, and finding missing cases is where Codex did worst in phase 0. Its cost is a matter for idea 12 |
+| 2026-10-12 | A second trial (Codex writes feature code) before PR #20 is rewritten | Owner's choice. The first trial passed but was one test file, and Claude's cost did not drop measurably (331k against 381k weighted units, not a clean pair); a rule from that alone would rest on no measured gain |
