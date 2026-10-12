@@ -467,7 +467,7 @@ On top of that, per role:
   full, the paths the plan touches, and the data source it changes. The
   brief holds material only, not the author's reasons for the criteria.
 - Reviewer (`agents/reviewer.md`): the task goal, the diff in full (above
-  about 400 lines, the command that prints it), and the verify result the
+  about 100 lines, the command that prints it), and the verify result the
   builder got. For a tests-first task also the approved criteria and the
   locked test list.
 
