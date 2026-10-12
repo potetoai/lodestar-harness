@@ -21,6 +21,31 @@ What the dispatcher puts in the critic's brief:
 - COMPLEX plans (`workflows/complex.md`): before the Plan Approval Gate.
 - Again whenever the criteria change, before the new approval.
 
+## Re-run after a criteria change
+
+A re-run may be narrowed to the change. Its brief also carries the `git diff`
+of the criteria and the lines already under `## Criteria review`.
+
+A narrowed run still checks three things:
+
+- the changed criteria, against "What to look for";
+- every other criterion the change could contradict;
+- that each earlier finding is still answered after the change.
+
+A full run, as if no review existed, is required when:
+
+- the plan has no earlier review;
+- the change touches stored data that the earlier criteria did not;
+- more than half of the criteria changed;
+- the owner asks for it.
+
+A narrowed run that meets one of these cases says so in its report, and a
+full run follows.
+
+The run adds one line under `## Criteria review` that says which kind of run
+it was (full or narrowed) and what it did not read, so the owner sees it
+before approving.
+
 ## What to look for
 
 - Missing behaviors: error paths, empty or missing data, duplicates,

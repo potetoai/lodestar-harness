@@ -257,8 +257,9 @@ first model uses. Measured against that goal:
 
 PR #20 was closed without a merge. Its rule text (the second opinion and
 "Second model as builder, on request", after a critic's read) stays on the
-branch `docs/cross-model-second-opinion`, last commit c3a1960, for a later
-reader. `router/ROUTER.md` is as it was: no criteria for a second model.
+PR #20 page, last commit c3a1960, for a later reader; its branch
+`docs/cross-model-second-opinion` was deleted on the owner's word
+(2026-10-12). `router/ROUTER.md` is as it was: no criteria for a second model.
 
 What a new test needs before this is opened again: a task where the builder
 writes a few hundred lines from a clear brief (the two trials wrote 48 and

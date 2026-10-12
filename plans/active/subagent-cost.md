@@ -173,6 +173,8 @@ the rule that shortened the run.
 | 2026-10-12 | 0 | Owner: Q2 yes, Q4 choice A. `scripts/usage-report.py` prints a table per subagent role: runs, share, median cost, calls, first and peak context, the four-way cost split, tool calls per call. Baseline, `--since 2026-10-03 --until 2026-10-11`: the section 2 tables (critic 24 runs, 16 calls, 243k per run; reviewer 27 runs, 11 calls, 160k). Section 2 now holds the script's numbers; the first draft, from a throwaway script, had 58 runs and 18.5M. Also run on 2026-09-23..2026-10-02 (14 runs) and on an empty period |
 | 2026-10-12 | 1 | Rule written: "Subagent cost" in `router/ORCA-INTEGRATION.md`, section 8 (what every brief holds, the batch line, the critic and reviewer lists), linked from `workflows/build-review.md`, `agents/critic.md` and `agents/reviewer.md`. Text added only; no existing line changed. Open: the table after the next 10 critic and reviewer runs |
 | 2026-10-12 | 1 | Diff limit in the reviewer's brief lowered from about 400 to about 100 lines. Phase 3 (replay checks, call budget, reviewer model test) removed from the plan on the owner's word; there is no phase 3 |
+| 2026-10-12 | 1 | PR #23 merged (9bc8a18). Open: the table after the next 10 critic and reviewer runs |
+| 2026-10-12 | 2 | Rule written: "Re-run after a criteria change" in `agents/critic.md` (what a narrowed run still checks, when a full run is required, the line under `## Criteria review`). Text added only |
 
 ## 8. Decision log
 
@@ -186,3 +188,4 @@ the rule that shortened the run.
 | 2026-10-12 | The critic's brief holds material only, not the author's reasons (one line beyond the phase 1 list) | A fuller brief must not carry the author's view into a run that is fresh on purpose (`agents/critic.md`, Role) |
 | 2026-10-12 | The diff goes in the reviewer's brief only up to about 100 lines, not 400 | The dispatcher writes the brief as output (weight 5) and keeps it in its own context. Estimate, not measured: a 400-line diff costs the main session 25k to 50k, about the 48k the reviewer run is meant to save; a 100-line diff costs 6k to 12k |
 | 2026-10-12 | Phase 3 dropped and its text removed: no call budget, no reviewer model test, no replays (owner) | The whole plan is worth at most 3% of all cost, likely 1% to 2%. The replays cost about 2M at once, and the call budget is the one idea that can make a check weaker. Unused plan text is clutter; git keeps it (PR #22) |
+| 2026-10-12 | A narrowed critic run that meets a full-run case reports it, and a full run follows (one line beyond the phase 2 list) | The dispatcher picks the kind of run before the critic has read the change; the critic is the one that can see the choice was wrong |
