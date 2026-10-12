@@ -444,6 +444,33 @@ Observable Acceptance:
 - Type check passes.
 ```
 
+### Subagent cost
+
+A subagent pays for its whole context again on every call, so its cost
+follows the number of calls it makes, not the length of its brief (measured
+2026-10-12: `plans/active/subagent-cost.md`, section 2). The brief carries
+the material, so the run does not spend calls finding it. This changes where
+the run finds things, not how much it reads or checks: the run still opens
+whatever a finding needs.
+
+Every brief holds:
+
+- the project root, as an absolute path;
+- the paths to read, with line ranges where only a part matters;
+- the commands already run, with their result;
+- the batch line: "Send reads and commands that do not depend on each other
+  in one turn."
+
+On top of that, per role:
+
+- Critic (`agents/critic.md`): the plan file path, the criteria text in
+  full, the paths the plan touches, and the data source it changes. The
+  brief holds material only, not the author's reasons for the criteria.
+- Reviewer (`agents/reviewer.md`): the task goal, the diff in full (above
+  about 100 lines, the command that prints it), and the verify result the
+  builder got. For a tests-first task also the approved criteria and the
+  locked test list.
+
 ---
 
 # 9. Dispatch Rules

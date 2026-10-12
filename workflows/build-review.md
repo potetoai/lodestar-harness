@@ -44,6 +44,10 @@ Match the cost to the change:
 A subagent reviewer skips the Lodestar startup steps (global `CLAUDE.md`,
 "For subagents"); the dispatch prompt holds the task goal and the diff.
 
+The start cost is the smaller part: most of a subagent's cost comes after
+its first call. What the brief of any subagent must carry, and the batch
+line: `router/ORCA-INTEGRATION.md`, section 8, Subagent cost.
+
 ## Agents
 
 ### Builder
