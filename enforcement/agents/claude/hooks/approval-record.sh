@@ -6,7 +6,8 @@
 # assuming approval; the sensitive-code gate and CI accept only criteria whose
 # hash is recorded here. Editing a plan's criteria afterwards needs a new
 # approval. A plan without a filled "## Criteria review" (the critic's
-# findings) is never recorded. Stdout goes into the agent's context.
+# findings), or whose review covers other criteria than the current ones, is
+# never recorded. Stdout goes into the agent's context.
 [ "$LODESTAR_SKIP_HOOKS" = "1" ] && exit 0
 cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
 [ -f .claude/hooks/lodestar-lib.sh ] || exit 0
@@ -61,6 +62,13 @@ for p in "${pending[@]}"; do
     continue
   fi
   h=$(criteria_hash < "$p")
+  if ! review_covers "$h" < "$p"; then
+    echo "Lodestar: the owner approved, but the '## Criteria review' in $p does not cover the criteria as"
+    echo "they are now (no '- Reviewed criteria:' line with their hash), so nothing was recorded for it."
+    echo "Run the critic on the change first (lodestar-harness agents/critic.md, 'Re-run after a criteria"
+    echo "change' and 'Output'), show the owner the result, then ask for the approval word again."
+    continue
+  fi
   echo "$now $p $h" >> .ai/approvals.log
   echo "Lodestar: recorded the owner's approval of the acceptance criteria in $p ($h)."
   echo "If you change those criteria later, the owner must approve them again."

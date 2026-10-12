@@ -152,7 +152,9 @@ automatically; when unsure, select it.
    attacks the criteria: missing behaviors, numbers with no data behind them,
    scope limited to named examples, tolerance, open choices. Fix the criteria
    or write why not; the findings go under `## Criteria review` in the plan.
-   The approval hook records nothing while that section is empty.
+   The approval hook records nothing while that section is empty, or while
+   its `- Reviewed criteria:` line does not name the criteria as they are now
+   (`agents/critic.md`, Output).
 2. **Owner approval.** Show the criteria to the owner (in their language,
    English lines next to it: `rules/documentation.md`, section 5) and ask
    them to reply with the approval word: **"duyệt"** when `owner_language` is

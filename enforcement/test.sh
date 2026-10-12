@@ -213,9 +213,12 @@ echo 'x = 1' > app/money.py; echo 'y = 1' > app/ui.py; echo 'def test_a(): pass'
 mkdir -p .claude/hooks; cp "$here/agents/claude/hooks/lodestar-lib.sh" .claude/hooks/
 g add -A; g commit -qm base
 check() { bash "$here/agents/claude/hooks/ci-checks.sh" main >/dev/null 2>&1; }
+# stamp FILE: the review names the criteria it covers, as they are now.
+stamp() { local h; h=$(. "$here/agents/claude/hooks/lodestar-lib.sh"; criteria_hash < "$1")
+  sed -i -e '/^- Reviewed criteria:/d' -e "s/^- No findings\.\$/&\n- Reviewed criteria: $h/" "$1"; }
 # mkplan NAME CRITERION...: a plan with acceptance criteria.
 mkplan() { local n=$1; shift; mkdir -p .ai/plans/active
-  { echo "# Plan: $n"; echo; echo "## Acceptance criteria"; printf -- '- [ ] %s\n' "$@"; echo; echo "## Criteria review"; echo "- No findings."; echo; echo "## Steps"; } > ".ai/plans/active/$n.md"; }
+  { echo "# Plan: $n"; echo; echo "## Acceptance criteria"; printf -- '- [ ] %s\n' "$@"; echo; echo "## Criteria review"; echo "- No findings."; echo; echo "## Steps"; } > ".ai/plans/active/$n.md"; stamp ".ai/plans/active/$n.md"; }
 # approve: the owner types "duyệt" (runs the real approval hook).
 approve() { CLAUDE_PROJECT_DIR=$PWD bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"Duyệt nguyên bản."}' >/dev/null; }
 newbranch() { g checkout -q main; g checkout -q -B "$1"; }
@@ -315,7 +318,7 @@ g checkout -q -f b6base; cd "$here"
 
 # 10b. approval hook: records only the owner's approval words.
 p=$tmp/appr; mkdir -p "$p/.claude/hooks" "$p/.ai/plans/active"; cp "$here/agents/claude/hooks/lodestar-lib.sh" "$p/.claude/hooks/"
-printf '# Plan\n\n## Acceptance criteria\n- [ ] a\n\n## Criteria review\n- No findings.\n\n## Steps\n' > "$p/.ai/plans/active/x.md"
+printf '# Plan\n\n## Acceptance criteria\n- [ ] a\n\n## Criteria review\n- No findings.\n\n## Steps\n' > "$p/.ai/plans/active/x.md"; stamp "$p/.ai/plans/active/x.md"
 rec() { CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/approval-record.sh" <<<"{\"prompt\":\"$1\"}"; }
 mv "$p/.ai/plans/active/x.md" "$p/x.md"
 out=$(rec "duyệt"); t "approval without a plan tells the agent to write the plan first" grep -q "no plan exists" <<<"$out"
@@ -338,17 +341,21 @@ printf '# Plan
 
 ## Criteria review
 - No findings.
-' > "$p/.ai/plans/active/2026-01-02-y-z.md"
+' > "$p/.ai/plans/active/2026-01-02-y-z.md"; stamp "$p/.ai/plans/active/2026-01-02-y-z.md"
 out=$(rec "duyệt"); t "with 2 plans waiting, a bare 'duyệt' records nothing and lists the names" bash -c 'grep -qx "  y-z" <<<"$1" && [ ! -s "$2" ]' _ "$out" "$p/.ai/approvals.log"
 rec "Duyệt y-z nhé" >/dev/null; t "'duyệt <name>' records only the named plan" bash -c 'grep -q "y-z.md" "$1" && [ $(wc -l < "$1") = 1 ]' _ "$p/.ai/approvals.log"
 rec "duyệt" >/dev/null; t "with 1 plan left, a bare 'duyệt' records it" [ "$(wc -l < "$p/.ai/approvals.log")" = 2 ]
 sed -i 's/- \[ \] a/- [x] a/' "$p/.ai/plans/active/x.md"
 t "ticking a criterion off keeps it approved" bash -c 'cd "$1" && . .claude/hooks/lodestar-lib.sh && plan_approved_now .ai/plans/active/x.md' _ "$p"
-printf '# Plan\n\n## Acceptance criteria\n\nProse.\n\n- [ ] c starts here\n      and goes on x 1.37\n\n## Criteria review\n- No findings.\n\n## Steps\n' > "$p/.ai/plans/active/2026-01-03-w.md"
+printf '# Plan\n\n## Acceptance criteria\n\nProse.\n\n- [ ] c starts here\n      and goes on x 1.37\n\n## Criteria review\n- No findings.\n\n## Steps\n' > "$p/.ai/plans/active/2026-01-03-w.md"; stamp "$p/.ai/plans/active/2026-01-03-w.md"
 rec "duyệt w" >/dev/null
 sed -i 's/x 1.37/x 1\/1.37/' "$p/.ai/plans/active/2026-01-03-w.md"
 t "editing a criterion's second line needs a new approval" bash -c 'cd "$1" && . .claude/hooks/lodestar-lib.sh && ! plan_approved_now .ai/plans/active/2026-01-03-w.md' _ "$p"
+n=$(wc -l < "$p/.ai/approvals.log"); out=$(rec "duyệt w")
+t "criteria changed after the review are not recorded; the agent is told to re-run the critic" bash -c '[ "$(wc -l < "$2")" = "$3" ] && grep -q "does not cover" <<<"$1" && grep -q "agents/critic.md" <<<"$1"' _ "$out" "$p/.ai/approvals.log" "$n"
+stamp "$p/.ai/plans/active/2026-01-03-w.md"
 sed -i 's/^Prose\./Other prose./' "$p/.ai/plans/active/2026-01-03-w.md"; rec "duyệt w" >/dev/null
+t "a review that covers the changed criteria is recorded" [ "$(wc -l < "$p/.ai/approvals.log")" = $((n + 1)) ]
 sed -i 's/^Other prose\./Prose./' "$p/.ai/plans/active/2026-01-03-w.md"
 t "editing prose between the criteria keeps them approved" bash -c 'cd "$1" && . .claude/hooks/lodestar-lib.sh && plan_approved_now .ai/plans/active/2026-01-03-w.md' _ "$p"
 printf '# Plan
@@ -360,8 +367,14 @@ printf '# Plan
 - ...
 ' > "$p/.ai/plans/active/2026-01-04-v.md"
 out=$(rec "duyệt v"); t "a plan without a criteria review is not recorded; the agent is told to run the critic" bash -c '! grep -q "v.md" "$2" && grep -q "agents/critic.md" <<<"$1"' _ "$out" "$p/.ai/approvals.log"
+vh=$(. "$here/agents/claude/hooks/lodestar-lib.sh"; criteria_hash < "$p/.ai/plans/active/2026-01-04-v.md")
+printf -- '- Reviewed criteria: %s\n' "$vh" >> "$p/.ai/plans/active/2026-01-04-v.md"
+rec "duyệt v" >/dev/null; t "a review with only the 'Reviewed criteria' line is not recorded" bash -c '! grep -q "v.md" "$1"' _ "$p/.ai/approvals.log"
+sed -i '$d' "$p/.ai/plans/active/2026-01-04-v.md"
 printf -- '- AC1 had no threshold: added "within 0.1%%".
 ' >> "$p/.ai/plans/active/2026-01-04-v.md"
+out=$(rec "duyệt v"); t "a filled review that does not name the criteria is not recorded" bash -c '! grep -q "v.md" "$2" && grep -q "does not cover" <<<"$1"' _ "$out" "$p/.ai/approvals.log"
+printf -- '- Reviewed criteria: %s\n' "$vh" >> "$p/.ai/plans/active/2026-01-04-v.md"
 rec "duyệt v" >/dev/null; t "the same plan with a filled criteria review is recorded" grep -q "v.md" "$p/.ai/approvals.log"
 sed -i '/^## Criteria review/,$d' "$p/.ai/plans/active/x.md"
 t "a plan approved before the critic existed stays approved" bash -c 'cd "$1" && . .claude/hooks/lodestar-lib.sh && plan_approved_now .ai/plans/active/x.md' _ "$p"

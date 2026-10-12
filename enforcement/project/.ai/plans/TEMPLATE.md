@@ -25,7 +25,9 @@ that file). Changing the criteria later needs a new approval.
 Written before the owner is asked to approve (high-risk tasks): the critic
 (lodestar-harness `agents/critic.md`) runs in a fresh subagent. One line per
 finding and what was done ("fixed", or "kept, because ..."); `- No findings.`
-when there are none. The approval hook records nothing while this is empty.
+when there are none. The last line is `- Reviewed criteria: <hash>`, the
+criteria this review covers (`agents/critic.md`, Output). The approval hook
+records nothing while this is empty or that line is missing or stale.
 
 - ...
 
