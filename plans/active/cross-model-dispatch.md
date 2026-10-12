@@ -151,6 +151,17 @@ the number behind it in the decision log. Then move this plan to
   read-only second-model reviewer (it reads the diff, edits nothing) still
   worth having?
 
+- **Q5 (from phase 0):** the Codex worker cannot report back through
+  Orca from its sandbox. Options: (a) the brief asks for a report file
+  and the Router reads the file and the transcript instead of waiting for
+  `worker_done`; (b) plain `codex exec` without Orca, which returns when
+  done (worked in 73 s, hooks run when trusted); (c) wait for an Orca or
+  Codex fix. Recommendation: (b), with (a) when Orca is the runtime.
+- **Q6 (from phase 0):** on the test diff the Claude reviewer found more,
+  faster. Go on to phase 1 with a narrower rule (second model only as an
+  extra opinion on high-risk work, opt-in), run a larger comparison first,
+  or stop the plan?
+
 ## 5. Not in scope
 
 - Orchestration: starting, tracking and settling workers is the runtime's
@@ -169,6 +180,8 @@ the number behind it in the decision log. Then move this plan to
 | 2026-10-12 | 0 (part) | Throwaway project bootstrapped (python, template 2.3.1, `sensitive_paths: src/billing/**`), a diff with planted bugs on a branch, registered in Orca. Item 1: `worker-start --agent codex` refused, `agent_unconfigured`: Codex is in Orca's disabled agent list on this machine (owner's setting, not changed). Nothing started, no worktree made. Item 2, from the Orca skill: the default placement is the current or an exact existing workspace (`--worktree current`); a new worktree is made only on request (`new-child`, `new-top-level`) |
 | 2026-10-12 | 0 (part) | Item 6, plain `codex exec --sandbox workspace-write` from a Claude session, hooks not trusted: ran with no owner step, 73 s, 175k input tokens (154k cached), 1.8k output. Item 4: the 25-line brief arrived whole (end marker quoted back). Item 3, untrusted case: the probe edit of a `sensitive_paths` file was applied, no hook ran and nothing said so (tool result `{}`). Review quality: found the planted even-length median bug, missed the division by zero in `percent_change` and the missing tests. Codex also could not run `make` (known). `codex exec` has a `--dangerously-bypass-hook-trust` flag (runs hooks without stored trust for one run); the auto mode classifier refused the test run with it |
 | 2026-10-12 | 0 (open) | Waiting on the owner: enable Codex in Orca and trust the throwaway project's hooks (`/hooks`), then items 1, 3 (trusted case) and 5 (same diff with a Claude subagent reviewer). One `config.toml` entry for the throwaway folder was added by the run |
+| 2026-10-12 | 0 | Owner enabled Codex in Orca and trusted the hooks (doctor A4c passed). Item 1: `worker-start --spec ... --worktree id:<existing> --agent codex` started a background worker in about a minute; the review and the report file were done about 1 minute after the turn began. **The result did not come back**: the worker's `orca orchestration send` (its `worker_done`) failed after 106 s inside the Codex sandbox ("Could not read Orca runtime metadata ... Orca is not running"), so `check --wait` timed out at 9 minutes with no message. The coordinator found the result only by reading the transcript (`worker-read`) and the report file, then had to `worker-stop` the worker. Item 2: the worker ran in the existing checkout (`worktree: reused`); no new worktree. Item 3, trusted case: the probe edit of the `sensitive_paths` file was refused by the PreToolUse hook with the full sensitive-gate message, and the Stop hook fired (`make verify` failed, `ruff` not installed; Codex stopped after the one hold). Item 4: brief arrived whole. Review quality the same as the direct run: the even-length median bug found, the division by zero missed. Tokens of the Orca run are not in the transcript Orca returns |
+| 2026-10-12 | 0 | Item 5, same diff, Claude subagent reviewer (brief without the hook probe): 12 s, 37.6k tokens, 2 tool calls. It found both planted bugs (even-length median, division by zero in `percent_change`), plus the empty-list crash, a sign question on a negative baseline, and the missing tests. Codex, both runs: 1 of 2 planted bugs, nothing else; 73 s and 175k input tokens (154k cached) in the direct run. One small diff, one run each: a direction, not a measure. Cleanup: the Orca project entry is removed and the folder emptied; 7 `config.toml` entries for the throwaway folder remain in the Orca Codex home (owner's call, same as the earlier 7) |
 
 ## 7. Decision log
 
@@ -176,3 +189,5 @@ the number behind it in the decision log. Then move this plan to
 |---|---|---|
 | 2026-10-12 | Evidence (phase 0) before any rule text | Hook trust is per path; a dispatched worker with silent, skipped hooks would break the harness's main promise |
 | 2026-10-12 | The rule swaps a worker for the other model; it adds no worker | Subagents are already 15.2% of cost and the owner watches tokens |
+| 2026-10-12 | Phase 0 stop rule not hit: hooks run for a dispatched Codex worker when it is placed in an existing checkout whose hooks the owner has trusted. The rule must dispatch only there and must check trust first (doctor A4c) | Trusted: the sensitive gate refused the probe. Untrusted: the same edit was applied with no hook and no warning |
+| 2026-10-12 | Open for the owner before phase 1: how the result comes back (Q5), and whether phase 1 goes ahead at all (Q6) | The Codex worker could not send `worker_done` from its sandbox, so the coordinator waited 9 minutes for nothing; and on the one test diff Codex found less than the Claude reviewer, slower |
