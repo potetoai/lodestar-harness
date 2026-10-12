@@ -37,6 +37,8 @@ Check:
 - Review the actual code, not the agent's explanation.
 - Start from the diff you were given; open other files only when a finding
   needs them (`workflows/build-review.md`, Review cost).
+- What the dispatcher puts in the reviewer's brief:
+  `router/ORCA-INTEGRATION.md`, section 8, Subagent cost.
 - Look for concrete problems.
 - Do not request changes without a technical reason.
 - Distinguish blocking issues from suggestions.

@@ -10,6 +10,9 @@ Run in a fresh subagent, without the context of whoever wrote the criteria.
 Read the plan, the code it touches, and the data it changes. Do not write
 tests or code.
 
+What the dispatcher puts in the critic's brief:
+`router/ORCA-INTEGRATION.md`, section 8, Subagent cost.
+
 ## When
 
 - Tests-first tasks (`rules/testing.md`, section 3): after the criteria are

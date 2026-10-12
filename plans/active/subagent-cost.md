@@ -192,6 +192,7 @@ the rule that shortened the run.
 | 2026-10-12 | — | Plan written. Section 2 measured with a throwaway script over 58 subagent transcripts of 2026-10-03..2026-10-11; nothing merged, no rule changed |
 | 2026-10-12 | — | Owner's answers: Q1 yes as a test, Q3 yes but later. The briefs and reports of the critic re-runs were read for Q2 (section 2). Phases reordered: the replay checks, the call budget and the model test are phase 3 and wait for the owner |
 | 2026-10-12 | 0 | Owner: Q2 yes, Q4 choice A. `scripts/usage-report.py` prints a table per subagent role: runs, share, median cost, calls, first and peak context, the four-way cost split, tool calls per call. Baseline, `--since 2026-10-03 --until 2026-10-11`: the section 2 tables (critic 24 runs, 16 calls, 243k per run; reviewer 27 runs, 11 calls, 160k). Section 2 now holds the script's numbers; the first draft, from a throwaway script, had 58 runs and 18.5M. Also run on 2026-09-23..2026-10-02 (14 runs) and on an empty period |
+| 2026-10-12 | 1 | Rule written: "Subagent cost" in `router/ORCA-INTEGRATION.md`, section 8 (what every brief holds, the batch line, the critic and reviewer lists), linked from `workflows/build-review.md`, `agents/critic.md` and `agents/reviewer.md`. Text added only; no existing line changed. Open: the table after the next 10 critic and reviewer runs |
 
 ## 8. Decision log
 
@@ -202,3 +203,4 @@ the rule that shortened the run.
 | 2026-10-12 | The critic keeps its own fresh subagent and its model | It guards what a non-coder owner signs |
 | 2026-10-12 | Risk rating of the narrowed critic re-run (Q2). Chance of a miss: low to medium; impact: high, the owner signs the criteria. Against today: lower, not higher | All 6 re-runs in the data were narrowed already, by the dispatcher's own choice and with no limit. The rule adds the contradiction check, the full-run cases and a line the owner sees. Not known: what a full run would have added |
 | 2026-10-12 | The call budget moves from Do to Test | It is the one phase 1 idea that can make a run read less; it merges only after the replay |
+| 2026-10-12 | The critic's brief holds material only, not the author's reasons (one line beyond the phase 1 list) | A fuller brief must not carry the author's view into a run that is fresh on purpose (`agents/critic.md`, Role) |
