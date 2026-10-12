@@ -44,6 +44,10 @@ Match the cost to the change:
 A subagent reviewer skips the Lodestar startup steps (global `CLAUDE.md`,
 "For subagents"); the dispatch prompt holds the task goal and the diff.
 
+On high-risk work the owner may add one extra, read-only pass by a second
+model family after the reviewer: `router/ROUTER.md`, "Second opinion from
+another model family". It never replaces the reviewer.
+
 ## Agents
 
 ### Builder

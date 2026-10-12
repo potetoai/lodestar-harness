@@ -402,6 +402,52 @@ The workflow determines the role.
 
 The available agent determines who performs the role.
 
+## Second opinion from another model family
+
+When the runtime has a second model family (for example Codex beside
+Claude), the Router may add it as one extra, read-only opinion. "Second"
+means a family other than the one that built the change or wrote the
+criteria. It is never a swap: the workflow's own reviewer and critic are
+chosen and run as usual.
+
+- **When.** Risk is high or critical, tests-first mode, or the task touches
+  `sensitive_paths`. The Router does not offer it for SIMPLE or for the
+  same-session review of a small change (`workflows/build-review.md`,
+  "Review cost"); the owner's own request counts on any task.
+- **Opt-in.** The Router checks that a second model is available and offers
+  the pass in one line of the routing decision, which at this risk already
+  waits for the owner's approval. It adds the pass only when the owner says
+  yes. The owner never writes the brief and never picks the agent.
+- **What.** At most one pass per task. By default it reads the diff after
+  the reviewer's findings are fixed. When the owner asks for it instead, it
+  reads the acceptance criteria, after the critic and before the owner's
+  approval. The second model edits nothing and does not build.
+- **Where.** Only in an existing checkout whose hooks the owner has trusted
+  for that model (for Codex: doctor check A4c shows OK, not a warning). A
+  model that does not trust the hooks skips them with no warning, and trust
+  is stored per path, so never make a new worktree for this pass.
+- **How.** A direct run that returns its result when done (for Codex:
+  `codex exec`), in the model's read-only mode when it has one (for Codex:
+  `--sandbox read-only`), with a short brief in the task-spec form
+  (`router/ORCA-INTEGRATION.md`, section 8) passed as an argument or on
+  stdin: the goal, how to read the diff, "report findings, change no file".
+  After the run `git status` must show no change it made; revert any and
+  say so. One run, no retry. Under an orchestrator see
+  `router/ORCA-INTEGRATION.md`, section 6.
+- **Findings.** The session that holds the task judges each finding and
+  writes why it is valid or not. Valid ones are fixed and verified like
+  reviewer findings (`workflows/build-review.md`, "Process" steps 8-10, and
+  "Rules"); findings on criteria go under `## Criteria review`. The `agents`
+  list of the routing decision names the pass and its model family, for
+  example `second opinion (codex)`.
+- **Fallback.** No second model, hooks not trusted for it, the run errors,
+  or no result within 10 minutes: stop the run, go on without the pass and
+  say so in one line. The task does not wait for it.
+
+Why opt-in and extra, not a swap: on the one diff measured (2026-10-12) the
+second model found fewer problems than the same-model reviewer and took
+longer. Numbers and open questions: `plans/active/cross-model-dispatch.md`.
+
 ---
 
 # Parallelism

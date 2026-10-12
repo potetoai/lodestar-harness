@@ -363,6 +363,21 @@ The actual model/agent selection may change according to:
 
 Orca's own orchestration example demonstrates workers being started with different agents such as `--agent codex` and `--agent claude`.
 
+When a role goes to a second model family is decided by the Router, not
+here: `router/ROUTER.md`, "Second opinion from another model family". With
+Orca as the runtime, for that pass:
+
+* Prefer the direct run from the coordinator's session (for Codex:
+  `codex exec`). It returns when done and needs no wait.
+* If the pass runs as an Orca worker, place it in the existing, trusted
+  checkout (`--worktree current` or an exact existing workspace), never a
+  new worktree. The brief names one report file at a path git ignores; it
+  is the only file the worker may write. The Router reads that file (and
+  `worker-read` if needed), then stops the worker. Do not wait for
+  `worker_done`: a Codex worker could not send it from its sandbox
+  (measured 2026-10-12, a 9-minute wait for nothing). The report file is
+  the positive evidence that section 12 asks for.
+
 ---
 
 # 7. Capability Selection

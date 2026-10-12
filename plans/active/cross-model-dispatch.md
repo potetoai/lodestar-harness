@@ -162,6 +162,22 @@ the number behind it in the decision log. Then move this plan to
   extra opinion on high-risk work, opt-in), run a larger comparison first,
   or stop the plan?
 
+Owner's answers (2026-10-12):
+
+- **Q6:** go on to phase 1 with the narrower rule: an extra, opt-in opinion
+  on high-risk work, not a swap of the default reviewer. This also settles
+  Q1: no case is on by default. Cases 1 and 2 of the phase 1 draft are
+  dropped; case 3 stays only as an extra pass.
+- **Q5:** the owner asked for the way that costs the fewest tokens and
+  still works. Chosen: (b) the direct run, which returns when done; (a) the
+  report file only when the pass must run as an Orca worker. No wait for
+  `worker_done`.
+- **Q2:** Claude and Codex are both subscription plans (separate limits):
+  a Codex pass does not use Claude budget beyond the brief and the read of
+  its report.
+- **Q3:** later. Until answered the second model does not build.
+- **Q4:** not needed: phase 0 showed the hooks run in a trusted checkout.
+
 ## 5. Not in scope
 
 - Orchestration: starting, tracking and settling workers is the runtime's
@@ -182,6 +198,7 @@ the number behind it in the decision log. Then move this plan to
 | 2026-10-12 | 0 (open) | Waiting on the owner: enable Codex in Orca and trust the throwaway project's hooks (`/hooks`), then items 1, 3 (trusted case) and 5 (same diff with a Claude subagent reviewer). One `config.toml` entry for the throwaway folder was added by the run |
 | 2026-10-12 | 0 | Owner enabled Codex in Orca and trusted the hooks (doctor A4c passed). Item 1: `worker-start --spec ... --worktree id:<existing> --agent codex` started a background worker in about a minute; the review and the report file were done about 1 minute after the turn began. **The result did not come back**: the worker's `orca orchestration send` (its `worker_done`) failed after 106 s inside the Codex sandbox ("Could not read Orca runtime metadata ... Orca is not running"), so `check --wait` timed out at 9 minutes with no message. The coordinator found the result only by reading the transcript (`worker-read`) and the report file, then had to `worker-stop` the worker. Item 2: the worker ran in the existing checkout (`worktree: reused`); no new worktree. Item 3, trusted case: the probe edit of the `sensitive_paths` file was refused by the PreToolUse hook with the full sensitive-gate message, and the Stop hook fired (`make verify` failed, `ruff` not installed; Codex stopped after the one hold). Item 4: brief arrived whole. Review quality the same as the direct run: the even-length median bug found, the division by zero missed. Tokens of the Orca run are not in the transcript Orca returns |
 | 2026-10-12 | 0 | Item 5, same diff, Claude subagent reviewer (brief without the hook probe): 12 s, 37.6k tokens, 2 tool calls. It found both planted bugs (even-length median, division by zero in `percent_change`), plus the empty-list crash, a sign question on a negative baseline, and the missing tests. Codex, both runs: 1 of 2 planted bugs, nothing else; 73 s and 175k input tokens (154k cached) in the direct run. One small diff, one run each: a direction, not a measure. Cleanup: the Orca project entry is removed and the folder emptied; 7 `config.toml` entries for the throwaway folder remain in the Orca Codex home (owner's call, same as the earlier 7) |
+| 2026-10-12 | 1 | Owner answered Q2, Q5, Q6 and put Q3 off (section 4). Rule written in its narrow form: `router/ROUTER.md` ("Second opinion from another model family"), `router/ORCA-INTEGRATION.md` section 6, pointer lines in `workflows/build-review.md` and `rules/testing.md`. No line in `workflows/independent-compare.md`: the second model does not build. Links pass. A critic read the rule text: 8 findings, 7 taken (read-only mode and a `git status` check, A4c must show OK since it is only a warning in doctor, the report file as the one allowed write, findings judged by the session that holds the task, a 10-minute cap, no model family bound to reviewer or critic, at most one pass per task). Not taken: drop the one-line offer; kept, because the routing decision already waits at this risk, the owner decides at PR review |
 
 ## 7. Decision log
 
@@ -191,3 +208,6 @@ the number behind it in the decision log. Then move this plan to
 | 2026-10-12 | The rule swaps a worker for the other model; it adds no worker | Subagents are already 15.2% of cost and the owner watches tokens |
 | 2026-10-12 | Phase 0 stop rule not hit: hooks run for a dispatched Codex worker when it is placed in an existing checkout whose hooks the owner has trusted. The rule must dispatch only there and must check trust first (doctor A4c) | Trusted: the sensitive gate refused the probe. Untrusted: the same edit was applied with no hook and no warning |
 | 2026-10-12 | Open for the owner before phase 1: how the result comes back (Q5), and whether phase 1 goes ahead at all (Q6) | The Codex worker could not send `worker_done` from its sandbox, so the coordinator waited 9 minutes for nothing; and on the one test diff Codex found less than the Claude reviewer, slower |
+| 2026-10-12 | Phase 1 rule is narrower than the draft: one extra, read-only, opt-in pass on high-risk work; the reviewer and critic are never swapped | Owner's answer to Q6. On the one measured diff the second model found less and was slower, so a swap would lower review quality |
+| 2026-10-12 | The pass runs as a direct run that returns when done; a report file only under an orchestrator; never a wait for `worker_done` | Owner's answer to Q5 (fewest tokens that still works). The Orca wait cost 9 minutes and returned nothing |
+| 2026-10-12 | The second model does not build, also not in INDEPENDENT_COMPARE | Q3 put off by the owner |
