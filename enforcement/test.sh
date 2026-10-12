@@ -677,6 +677,12 @@ printf 'lint-file:\n\t@! grep -q BAD "$(FILE)" || { echo "BAD found in $(FILE)";
 echo ok > "$p/good.txt"; echo BAD > "$p/bad.txt"
 t "bootstrap installs .codex/hooks.json and the adapter" bash -c '[ -f "$1/.codex/hooks.json" ] && [ -f "$1/.claude/hooks/codex-hook.sh" ]' _ "$p"
 out=$(bash "$p/.claude/hooks/doctor.sh" "$p"); t "doctor A4b passes on a bootstrapped project" grep -qE '✅ A4b ' <<<"$out"
+# Trust is kept per Codex home, so A4c names the home it checked.
+mkdir -p "$tmp/fakecodex" "$tmp/cxhome"; printf '#!/bin/sh\n' > "$tmp/fakecodex/codex"; chmod +x "$tmp/fakecodex/codex"
+cxdoc() { CODEX_HOME=$tmp/cxhome PATH="$tmp/fakecodex:$PATH" bash "$p/.claude/hooks/doctor.sh" "$p"; }
+out=$(cxdoc); t "doctor A4c warns and names the Codex home it checked" grep -qE "⚠️ +A4c .*checked $tmp/cxhome;" <<<"$out"
+printf '[hooks.state."%s/.codex/hooks.json:stop:0:0"]\ntrusted_hash = "x"\n' "$(cd "$p" && { pwd -W 2>/dev/null || pwd; })" > "$tmp/cxhome/config.toml"
+out=$(cxdoc); t "doctor A4c passes when that home trusts the hooks" grep -qE "✅ A4c .*checked $tmp/cxhome;" <<<"$out"
 # Run the hook exactly as .codex/hooks.json words it, from a subfolder, with a
 # CLAUDE_PROJECT_DIR inherited from elsewhere (as when Claude starts Codex).
 cxcmd() { jq -r --arg e "$1" --arg h "$2'" '.hooks[$e][].hooks[].command | select(endswith(" " + $h))' "$p/.codex/hooks.json"; }

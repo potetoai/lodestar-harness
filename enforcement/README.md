@@ -67,6 +67,8 @@ only the hooks are added.
 Codex runs project hooks only after the owner trusts them: open Codex in the
 project, type `/hooks`, trust the Lodestar hooks. Codex asks again when
 `.codex/hooks.json` changes. Doctor A4c warns while they are not trusted.
+Codex keeps trust per home (`~/.codex`, or `CODEX_HOME` when an orchestrator
+sets it), so trust the hooks once in each; A4c names the home it checked.
 
 ## 3. Upgrade a project after the templates change
 
