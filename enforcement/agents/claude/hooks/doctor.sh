@@ -49,11 +49,14 @@ has_codex_hooks() {
 }
 # Codex skips project hooks until the owner trusts them (/hooks in Codex); it
 # records that in config.toml of its home. Fine when Codex is not installed.
+# Trust is kept per home: an orchestrator may start Codex with its own
+# CODEX_HOME, so A4c names the home it read.
+codex_home=${CODEX_HOME:-$HOME/.codex}
 codex_hooks_trusted() {
   command -v codex >/dev/null || return 0
-  local home=${CODEX_HOME:-$HOME/.codex} root
+  local root
   root=$(pwd -W 2>/dev/null || pwd)
-  tr '\\' / < "$home/config.toml" 2>/dev/null | grep -qiF "${root//\\//}/.codex/hooks.json:stop:"
+  tr '\\' / < "$codex_home/config.toml" 2>/dev/null | grep -qiF "${root//\\//}/.codex/hooks.json:stop:"
 }
 env_ok() {
   git ls-files 2>/dev/null | grep -qE '(^|/)\.env$' && return 1
@@ -120,7 +123,7 @@ check A2  ".ai/project.md filled in, no [placeholders]"  fail no_placeholders .a
 check A3  "Makefile has setup, lint, test, verify"       fail has_targets setup lint test verify
 check A4  ".claude/settings.json registers the hooks"    fail has_hooks
 check A4b ".codex/hooks.json registers the hooks (Codex)" fail has_codex_hooks
-check A4c "Codex trusts this project's hooks (run /hooks in Codex; again after .codex/hooks.json changes)" warn codex_hooks_trusted
+check A4c "Codex trusts this project's hooks (checked $codex_home; run /hooks in a Codex that uses this home; again after .codex/hooks.json changes)" warn codex_hooks_trusted
 check A5  ".github/workflows/ci.yml exists"              fail test -f .github/workflows/ci.yml
 check A6a ".gitignore exists"                            fail test -f .gitignore
 check A6b "no committed .env; .env.example if .env used" fail env_ok
