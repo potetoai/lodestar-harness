@@ -421,7 +421,8 @@ chosen and run as usual.
 - **What.** At most one pass per task. By default it reads the diff after
   the reviewer's findings are fixed. When the owner asks for it instead, it
   reads the acceptance criteria, after the critic and before the owner's
-  approval. The second model edits nothing and does not build.
+  approval. In this pass the second model edits nothing; building is a
+  separate, on-request case ("Second model as builder, on request").
 - **Where.** Only in an existing checkout whose hooks the owner has trusted
   for that model (for Codex: doctor check A4c shows OK, not a warning). A
   model that does not trust the hooks skips them with no warning, and trust
@@ -447,6 +448,47 @@ chosen and run as usual.
 Why opt-in and extra, not a swap: on the one diff measured (2026-10-12) the
 second model found fewer problems than the same-model reviewer and took
 longer. Numbers and open questions: `plans/active/cross-model-dispatch.md`.
+
+## Second model as builder, on request
+
+A second model family builds only when the owner asks for it on that task.
+The Router does not offer it and never picks it alone. The owner still
+writes no brief.
+
+- **What.** One clear change of low or medium risk: named target files and
+  an acceptance a machine can check. Never `sensitive_paths`, data or
+  security work. The plan, the acceptance criteria, the critic, tests for
+  high-risk work, the review and the final verification stay with the
+  session that holds the task.
+- **Where.** As for the second opinion: an existing checkout whose hooks
+  the owner has trusted for that model (for Codex: A4c shows OK), on a new
+  branch, never a new worktree.
+- **How.** A direct run that may write only inside the checkout (for Codex:
+  `codex exec --sandbox workspace-write`), the brief in the task-spec form
+  (`router/ORCA-INTEGRATION.md`, section 8) on stdin, 10 minutes at most.
+  The brief opens by saying that the run is a dispatched builder: no
+  routing, no onboarding, no readiness check, only this task (global
+  bootstrap, "For subagents"). Without that line a run may act as the
+  Router, fail the readiness check inside its sandbox and stop with nothing
+  done (seen 2026-10-12).
+- **Check.** The session that holds the task does all of it. `git status`
+  shows only the named targets. It runs the tests itself; the second model
+  may not be able to in its sandbox. For new tests it breaks the code under
+  test by hand, sees a new test fail, restores the file and confirms the
+  diff is empty. It reviews code and tests with the reviewer checklist and
+  looks first for the case that is missing: that is where the second model
+  was weakest each time it was measured. Then the workflow's own review and
+  verification run as usual.
+- **Fix rounds.** At most one, from the findings. Still not right, or no
+  result: the session finishes the work itself and says so.
+- **Record.** The `agents` list of the routing decision names it, for
+  example `builder (codex)`.
+- **Fallback.** No second model, no quota left, hooks not trusted, or the
+  run errors: the work is built as usual, said in one line.
+
+Why on request and not a default: two trials (2026-10-12) gave one pass and
+one fail, and the first model's own cost did not drop measurably on tasks
+of that size. Numbers: `plans/active/cross-model-dispatch.md`.
 
 ---
 
