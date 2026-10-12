@@ -28,6 +28,8 @@ SHELL_READ = re.compile(r"\b(cat|head|tail|sed)\b")
 ROUTE = re.compile(r"^[ \t]*\**Lodestar route:\**[ \t]*\**([A-Z_]+)\b\**"
                    r"(?:[ \t]+risk=\**([a-z]+)\**)?(?:[ \t]+escalated-from=\**([A-Z_]+)\**)?(.*)$", re.M)
 ROUTE_EXACT = re.compile(r"Lodestar route: [A-Z_]+ risk=[a-z]+(?: escalated-from=[A-Z_]+)?")
+# A subagent's role is the first role word in the start of its brief.
+ROLE = re.compile(r"\b(critic|reviewer|tester|builder|architect|qa)\b", re.I)
 
 
 def cost(u):
@@ -46,7 +48,9 @@ def scan(path):
     each owner message (the next call answers it)."""
     usage, ts, policy_ids, tools = {}, {}, {}, {}
     routes, owner = [], []
-    s = dict(date="", policy=0, hooks=0, asks=0, read_tok=0, tool_tok=0, off_format=0)
+    s = dict(date="", policy=0, hooks=0, asks=0, read_tok=0, tool_tok=0, off_format=0,
+             prompt=None, tool_calls=0)
+    tool_turns = set()
     with open(path, encoding="utf-8", errors="ignore") as fh:
         for line in fh:
             try:
@@ -62,6 +66,8 @@ def scan(path):
             if e.get("type") == "user" and not e.get("isMeta"):
                 texts = [content] if isinstance(content, str) else [
                     c.get("text", "") for c in content or [] if isinstance(c, dict) and c.get("type") == "text"]
+                if s["prompt"] is None:
+                    s["prompt"] = " ".join(texts)
                 if any(t.strip() and not t.lstrip().startswith("<") and "Stop hook feedback" not in t
                        for t in texts):
                     owner.append(len(usage))
@@ -74,6 +80,8 @@ def scan(path):
                 if c.get("type") == "tool_use":
                     name, inp = c.get("name"), c.get("input") or {}
                     tools[c["id"]] = name
+                    s["tool_calls"] += 1
+                    tool_turns.add(m.get("id"))
                     s["asks"] += name == "AskUserQuestion"
                     target = str(inp.get("file_path") or inp.get("command") or "")
                     if POLICY.search(target) and (name == "Read" or (name == "Bash" and SHELL_READ.search(target))):
@@ -94,7 +102,46 @@ def scan(path):
                         s["policy"] += n
     s["usage"], s["ts"] = list(usage.values()), list(ts.values())
     s["routes"], s["owner"] = routes, owner
+    s["tool_turns"] = len(tool_turns)
     return s
+
+
+def median(xs):
+    return sorted(xs)[len(xs) // 2]
+
+
+def subagent_report(subs):
+    """Per role: where the cost of subagent runs goes. A run pays for its whole
+    context again on every call, so calls per run is the number to watch
+    (plans/active/subagent-cost.md)."""
+    roles = {}
+    for sub in subs:
+        us = sub["usage"]
+        if not us:
+            continue
+        m = ROLE.search((sub["prompt"] or "")[:600])
+        first = cost(us[0]) - W_OUT * us[0].get("output_tokens", 0)
+        new = sum(W_IN * u.get("input_tokens", 0) + W_CW * u.get("cache_creation_input_tokens", 0) for u in us[1:])
+        again = sum(W_CR * u.get("cache_read_input_tokens", 0) for u in us[1:])
+        out = W_OUT * sum(u.get("output_tokens", 0) for u in us)
+        ctx = [context(u) for u in us]
+        roles.setdefault(m.group(1).lower() if m else "other", []).append(
+            (first + new + again + out, len(us), ctx[0], max(ctx), first, new, again, out,
+             sub["tool_calls"], sub["tool_turns"]))
+    total = sum(r[0] for rs in roles.values() for r in rs)
+    if not total:
+        return
+    print(f"Subagent runs: {sum(len(rs) for rs in roles.values())}, {int(total)} weighted units"
+          " (medians per run; split: first call / new input later / context re-sent / output)")
+    print(f"  {'role':10} {'runs':>4} {'share':>6} {'cost':>8} {'calls':>5} {'start':>7} {'peak':>7}"
+          f" {'split':>15} {'tools/call':>10}")
+    for role, rs in sorted(roles.items(), key=lambda kv: -sum(r[0] for r in kv[1])):
+        c = sum(r[0] for r in rs)
+        split = "/".join(f"{sum(r[i] for r in rs) / c * 100:.0f}" for i in (4, 5, 6, 7))
+        turns = sum(r[9] for r in rs)
+        print(f"  {role:10} {len(rs):4} {c / total * 100:5.1f}% {int(median([r[0] for r in rs])):8}"
+              f" {median([r[1] for r in rs]):5} {median([r[2] for r in rs]):7} {median([r[3] for r in rs]):7}"
+              f" {split:>15} {sum(r[8] for r in rs) / turns if turns else 0:10.2f}")
 
 
 def route_report(sessions, total):
@@ -179,6 +226,7 @@ def main():
             s["subs"] = [(sub["ts"][0] if sub["ts"] else "", sum(cost(u) for u in sub["usage"]))
                          for sub in subs]
             s["sub_cost"] = sum(c for _, c in s["subs"])
+            s["sub_scans"] = subs
             s["name"] = f"{d[:28]} {os.path.basename(f)[:8]}"
             sessions.append(s)
     if not sessions:
@@ -232,6 +280,7 @@ def main():
         saved, n = restart_saving(sessions, th)
         print(f"Restart at {th // 1000}k (handoff + /clear): cost -{saved:.0f}%, {n} restarts (upper estimate)")
     route_report(sessions, total)
+    subagent_report([sub for s in sessions for sub in s["sub_scans"]])
     print(f"Total weighted units: {int(total)}")
 
 
