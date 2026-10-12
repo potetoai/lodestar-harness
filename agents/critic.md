@@ -17,7 +17,8 @@ What the dispatcher puts in the critic's brief:
 
 - Tests-first tasks (`rules/testing.md`, section 3): after the criteria are
   written, before the owner approval. The approval hook records nothing for a
-  plan whose `## Criteria review` section is empty.
+  plan whose `## Criteria review` section is empty, or whose review does not
+  cover the criteria as they are now (Output, "Reviewed criteria").
 - COMPLEX plans (`workflows/complex.md`): before the Plan Approval Gate.
 - Again whenever the criteria change, before the new approval.
 
@@ -71,3 +72,15 @@ Write the findings into the plan under `## Criteria review`, one line each:
 the problem, the proposed fix, and what the author did ("fixed", or "kept,
 because ..."). With nothing to fix, write `- No findings.` The author then
 shows the owner the updated criteria and the review lines.
+
+Reviewed criteria. Once every finding is answered, the author ends the
+section with the line that names the criteria the review covers:
+
+    - Reviewed criteria: <hash>
+
+The hash comes from
+`bash -c '. .claude/hooks/lodestar-lib.sh; criteria_hash < <plan file>'`.
+Any later change to the criteria makes the line stale, and the approval hook
+records nothing until a critic run covers the change (Re-run after a criteria
+change) and the line is written again. Do not renew the line without that
+run.

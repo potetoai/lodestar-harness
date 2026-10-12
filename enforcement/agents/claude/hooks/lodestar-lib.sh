@@ -28,10 +28,19 @@ criteria_hash() {
 
 # Does a plan (on stdin) have a filled "## Criteria review" section? The
 # critic (lodestar-harness agents/critic.md) fills it before the owner is asked to
-# approve. A bullet other than the template's "- ..." counts.
+# approve. A bullet other than the template's "- ..." and the
+# "- Reviewed criteria:" line counts.
 criteria_reviewed() {
   tr -d '\r' | sed -n '/^## Criteria review/,/^## /p' | sed '1d;/^## /d' |
-    grep -E '^[[:space:]]*- ' | grep -qvE '^[[:space:]]*- \.\.\.[[:space:]]*$'
+    grep -E '^[[:space:]]*- ' | grep -qvE '^[[:space:]]*- (\.\.\.[[:space:]]*|Reviewed criteria:.*)$'
+}
+
+# Does a plan's criteria review (plan on stdin) cover the criteria with hash
+# $1? The review names them in a "- Reviewed criteria: <hash>" line; criteria
+# changed after that line was written are not covered.
+review_covers() {
+  [ -n "$1" ] && tr -d '\r' | sed -n '/^## Criteria review/,/^## /p' |
+    grep -qE "^[[:space:]]*- Reviewed criteria:[[:space:]]*\`?$1\`?[[:space:]]*\$"
 }
 
 # Is this criteria hash approved in an approvals log (file content on stdin)?
