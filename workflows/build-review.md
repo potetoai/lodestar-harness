@@ -50,7 +50,8 @@ another model family". It never replaces the reviewer.
 
 When the owner asks for it, a second model family may be the builder of a
 clear low or medium-risk change: `router/ROUTER.md`, "Second model as
-builder, on request". Review and verification are unchanged.
+builder, on request". The session that holds the task runs the tests
+itself and its check of the result is the review of a small change.
 
 ## Agents
 

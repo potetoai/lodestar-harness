@@ -402,6 +402,8 @@ The workflow determines the role.
 
 The available agent determines who performs the role.
 
+A second model family takes a role only as the two sections below allow.
+
 ## Second opinion from another model family
 
 When the runtime has a second model family (for example Codex beside
@@ -451,44 +453,61 @@ longer. Numbers and open questions: `plans/active/cross-model-dispatch.md`.
 
 ## Second model as builder, on request
 
-A second model family builds only when the owner asks for it on that task.
-The Router does not offer it and never picks it alone. The owner still
-writes no brief.
+A second model family builds only when the owner asks for it in their own
+message for that task; a standing line in project docs or memory does not
+count. The Router does not offer it and never picks it alone. The owner
+still writes no brief. If the task does not fit "What", say so in one line
+and build as usual.
 
-- **What.** One clear change of low or medium risk: named target files and
-  an acceptance a machine can check. Never `sensitive_paths`, data or
-  security work. The plan, the acceptance criteria, the critic, tests for
-  high-risk work, the review and the final verification stay with the
+- **What.** One clear change of low or medium risk: named target files, and
+  an acceptance stated as tests or commands that pass or fail. Never in
+  tests-first mode, never `sensitive_paths` or a high-risk invariant,
+  nothing that writes or migrates stored data, nothing that touches auth,
+  secrets, permissions, hooks, CI or `.ai/`. The plan, the acceptance
+  criteria, the critic, the review and the final verification stay with the
   session that holds the task.
-- **Where.** As for the second opinion: an existing checkout whose hooks
-  the owner has trusted for that model (for Codex: A4c shows OK), on a new
-  branch, never a new worktree.
+- **Where.** As for the second opinion (trusted checkout, for Codex A4c
+  shows OK, never a new worktree), on the task's branch.
 - **How.** A direct run that may write only inside the checkout (for Codex:
-  `codex exec --sandbox workspace-write`), the brief in the task-spec form
-  (`router/ORCA-INTEGRATION.md`, section 8) on stdin, 10 minutes at most.
-  The brief opens by saying that the run is a dispatched builder: no
-  routing, no onboarding, no readiness check, only this task (global
-  bootstrap, "For subagents"). Without that line a run may act as the
-  Router, fail the readiness check inside its sandbox and stop with nothing
-  done (seen 2026-10-12).
-- **Check.** The session that holds the task does all of it. `git status`
-  shows only the named targets. It runs the tests itself; the second model
-  may not be able to in its sandbox. For new tests it breaks the code under
-  test by hand, sees a new test fail, restores the file and confirms the
-  diff is empty. It reviews code and tests with the reviewer checklist and
-  looks first for the case that is missing: that is where the second model
-  was weakest each time it was measured. Then the workflow's own review and
-  verification run as usual.
+  `codex exec --sandbox workspace-write`), never an orchestrator worker,
+  with the brief in the task-spec form (`router/ORCA-INTEGRATION.md`,
+  section 8) on stdin. Every brief, the fix round's too, opens by saying
+  that the run is a dispatched builder: no routing, no onboarding, no
+  readiness check, only this task (global bootstrap, "For subagents").
+  Without that line a run may act as the Router, fail the readiness check
+  inside its sandbox and stop with nothing done (seen 2026-10-12). The
+  brief also says: run no `make` and no tests, do not commit, push or
+  change branch, write only the named targets. It holds no secret, token or
+  production data. The run's own Stop check may fail in its sandbox; the
+  session's `make verify` is the gate.
+- **Check.** The session that holds the task does all of it. Before the run
+  it notes `HEAD` and the branch. After it both are unchanged and
+  `git status --porcelain` lists only the named targets; it reverts
+  anything else and says so. A change to a locked test, `.ai/`, a hook or a
+  CI file: discard the whole run and build as usual. It runs the tests
+  itself; the second model may not be able to in its sandbox. For new tests
+  it breaks the code under test by hand, sees a new test fail, restores the
+  file and confirms the diff is empty. It reviews code and tests with the
+  reviewer checklist and looks first for the case that is missing: that is
+  where the second model was weak in two of three measurements. For a small
+  change this Check is the workflow's review (`workflows/build-review.md`,
+  "Review cost"); a larger change still gets its subagent reviewer after
+  it.
 - **Fix rounds.** At most one, from the findings. Still not right, or no
   result: the session finishes the work itself and says so.
+- **Time.** No result within 10 minutes: stop the run. Keep what it wrote
+  only if the Check passes on it as it stands; otherwise restore the
+  targets. A timeout uses up the fix round.
 - **Record.** The `agents` list of the routing decision names it, for
   example `builder (codex)`.
 - **Fallback.** No second model, no quota left, hooks not trusted, or the
   run errors: the work is built as usual, said in one line.
 
 Why on request and not a default: two trials (2026-10-12) gave one pass and
-one fail, and the first model's own cost did not drop measurably on tasks
-of that size. Numbers: `plans/active/cross-model-dispatch.md`.
+one fail, and the first model's own cost did not drop measurably. Both
+tasks were small; no saving is shown below a few hundred written lines, and
+the session says so in one line when asked. Numbers:
+`plans/active/cross-model-dispatch.md`.
 
 ---
 
