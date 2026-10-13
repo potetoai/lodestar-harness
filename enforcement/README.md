@@ -7,6 +7,7 @@ Machine checks that every Lodestar project must pass. The rules are in
 |---|---|---|
 | `bootstrap.sh` | tool | Installs or upgrades the checks in a project |
 | `test.sh` | tool | Self-test for bootstrap, doctor and hooks |
+| `user-path.ps1` | tool | Windows: puts a folder first in the user `PATH`; called by `setup-machine.sh` |
 | `VERSION` | tool | Template version, recorded in each project's `.ai/enforcement.json` |
 | `agents/claude/` | [managed] | Claude Code hooks, `settings.json`, `doctor.sh`; `global/` holds the machine-wide reminder |
 | `agents/codex/` | [managed] | Codex `hooks.json` and `codex-hook.sh`, the adapter that runs the same hooks for Codex |

@@ -58,17 +58,20 @@ winget_bin() {   # add winget's make/jq folders to PATH for this run
 # runs this script can use winget_bin above, but new Windows terminals (and
 # Orca's agent processes) need the paths in the user environment too. Put
 # them before WindowsApps so `bash` resolves to Git Bash, not the WSL shim.
+user_path() {   # user_path check|add WINDOWS_DIR (see user-path.ps1)
+  LODESTAR_PATH_MODE=$1 LODESTAR_PATH_ENTRY=$2 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(cygpath -w "$here/user-path.ps1")" >/dev/null 2>&1
+}
 add_user_path() {   # add_user_path WINDOWS_DIR LABEL
   local d=$1 label=$2
   [ $windows = 1 ] || return 0
   [ -d "$d" ] || return 0
   d=$(cygpath -w "$d")
-  if LODESTAR_PATH_ENTRY="$d" powershell.exe -NoProfile -Command '$add=$env:LODESTAR_PATH_ENTRY; $path=[Environment]::GetEnvironmentVariable("Path", "User"); [Environment]::ExpandEnvironmentVariables($path).Split(";", [StringSplitOptions]::RemoveEmptyEntries) -contains $add' 2>/dev/null | grep -qi true; then
+  if user_path check "$d"; then
     ok "$label is on the Windows user PATH"
   elif [ $check = 1 ]; then
     warn "$label is not on the Windows user PATH (restart Orca after adding it)."
   elif ask "Add $label to the Windows user PATH?"; then
-    if LODESTAR_PATH_ENTRY="$d" powershell.exe -NoProfile -Command '$add=$env:LODESTAR_PATH_ENTRY; $path=[Environment]::GetEnvironmentVariable("Path", "User"); $entries=@($path -split ";" | Where-Object { $_ -and -not $_.Equals($add, [StringComparison]::OrdinalIgnoreCase) }); [Environment]::SetEnvironmentVariable("Path", (($add + $entries) -join ";"), "User")'; then
+    if user_path add "$d"; then
       ok "added $label to the Windows user PATH (restart Orca to use it)"
     else
       bad "could not add $label to the Windows user PATH"

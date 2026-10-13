@@ -4,7 +4,17 @@
 set -uo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 tmp=$(mktemp -d)
-trap 'rm -rf "$tmp"' EXIT
+# setup-machine.sh writes the Windows user PATH. Every run here gets a scratch
+# registry key instead (user-path.ps1), so the self-test never writes the real one.
+regkey="HKCU:\\Software\\LodestarHarnessTest-$$"
+pshell() { powershell.exe -NoProfile -Command "$1" 2>/dev/null | tr -d '\r'; }
+reg_set() { LK=$1 LT=$2 LV=$3 pshell 'New-Item -Path $env:LK -Force | Out-Null; Set-ItemProperty -LiteralPath $env:LK -Name Path -Value $env:LV -Type $env:LT'; }
+reg_get() { LK=$1 pshell '$k = Get-Item -LiteralPath $env:LK; $k.GetValueKind("Path").ToString() + " " + $k.GetValue("Path", "", "DoNotExpandEnvironmentNames")'; }
+if command -v powershell.exe >/dev/null; then
+  export LODESTAR_PATH_KEY=$regkey
+  real_path=$(reg_get 'HKCU:\Environment'); reg_set "$regkey" ExpandString 'C:\Scratch'
+fi
+trap 'rm -rf "$tmp"; command -v powershell.exe >/dev/null && LK=$regkey pshell "Remove-Item -LiteralPath \$env:LK -Recurse -Force"' EXIT
 failed=0
 pass() { echo "PASS $1"; }
 bad()  { echo "FAIL $1"; failed=1; }
@@ -562,6 +572,27 @@ sm "$h" --yes; t "setup updates only the managed block" bash -c 'grep -q "^top$"
 h=$tmp/home5; mkdir -p "$h/.claude"
 printf 'top\n<!-- orca-workflow:begin x -->\nstale\n<!-- orca-workflow:end -->\nbottom\n' > "$h/.claude/CLAUDE.md"
 sm "$h" --yes; t "setup rewrites a block with the old orca-workflow markers" bash -c 'grep -q "^bottom$" "$1" && ! grep -q "orca-workflow:begin" "$1" && grep -q "lodestar-harness:begin" "$1"' _ "$h/.claude/CLAUDE.md"
+
+# 19b. user-path.ps1 (Windows): puts a folder first in the user PATH, keeps
+#      %VAR% entries and the value type, and here writes a scratch key only.
+if command -v powershell.exe >/dev/null; then
+  up() { LODESTAR_PATH_MODE=$1 LODESTAR_PATH_ENTRY=$2 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(cygpath -w "$here/user-path.ps1")" >/dev/null 2>&1; }
+  reg_set "$regkey" ExpandString '%USERPROFILE%\bin;C:\A;C:\B'
+  up check 'C:\New'; t "user PATH: check says a missing folder is missing" [ $? = 1 ]
+  t "user PATH: check changes nothing" [ "$(reg_get "$regkey")" = 'ExpandString %USERPROFILE%\bin;C:\A;C:\B' ]
+  up add 'C:\New'
+  t "user PATH: add puts the folder first, keeps the rest and the %VAR% entry" [ "$(reg_get "$regkey")" = 'ExpandString C:\New;%USERPROFILE%\bin;C:\A;C:\B' ]
+  up check 'C:\New'; t "user PATH: check finds the folder after add" [ $? = 0 ]
+  up add 'C:\New'
+  t "user PATH: a second add changes nothing" [ "$(reg_get "$regkey")" = 'ExpandString C:\New;%USERPROFILE%\bin;C:\A;C:\B' ]
+  up add 'c:\a\'
+  t "user PATH: a folder already there in another spelling moves, with no duplicate" [ "$(reg_get "$regkey")" = 'ExpandString c:\a\;C:\New;%USERPROFILE%\bin;C:\B' ]
+  up check "$(cygpath -w "$USERPROFILE")\\bin"; t "user PATH: check finds a folder stored as a %VAR% entry" [ $? = 0 ]
+  reg_set "$regkey" String 'C:\A;C:\B'; up add 'C:\Program Files\Git\bin'
+  t "user PATH: a plain-text value stays plain text; a folder with spaces is one entry" [ "$(reg_get "$regkey")" = 'String C:\Program Files\Git\bin;C:\A;C:\B' ]
+  reg_set "$regkey" ExpandString 'C:\Scratch'; sm "$tmp/home2" --yes
+  t "setup --yes writes the scratch key, not the real user PATH" bash -c '[ "$1" = "$2" ] && [[ $3 == *";C:\Scratch" ]]' _ "$real_path" "$(reg_get 'HKCU:\Environment')" "$(reg_get "$regkey")"
+fi
 
 # 20. Python template: tools go into .venv; VENV_ARGS can expose system packages.
 p=$tmp/venvargs; mkdir -p "$p"; cp "$here/stacks/python/Makefile" "$p/"
