@@ -67,9 +67,9 @@ add_user_path() {   # add_user_path WINDOWS_DIR LABEL
   [ -d "$d" ] || return 0
   d=$(cygpath -w "$d")
   if user_path check "$d"; then
-    ok "$label is on the Windows user PATH"
+    ok "$label is on the Windows user PATH, ahead of WindowsApps"
   elif [ $check = 1 ]; then
-    warn "$label is not on the Windows user PATH (restart Orca after adding it)."
+    warn "$label is not on the Windows user PATH ahead of WindowsApps (restart Orca after adding it)."
   elif ask "Add $label to the Windows user PATH?"; then
     if user_path add "$d"; then
       ok "added $label to the Windows user PATH (restart Orca to use it)"
@@ -77,7 +77,7 @@ add_user_path() {   # add_user_path WINDOWS_DIR LABEL
       bad "could not add $label to the Windows user PATH"
     fi
   else
-    warn "$label is not on the Windows user PATH. Direct Windows terminals will not find it."
+    warn "$label is not on the Windows user PATH ahead of WindowsApps. Direct Windows terminals will not find it."
   fi
 }
 need_tool() {   # need_tool NAME WINGET_ID HINT

@@ -590,6 +590,15 @@ if command -v powershell.exe >/dev/null; then
   up check "$(cygpath -w "$USERPROFILE")\\bin"; t "user PATH: check finds a folder stored as a %VAR% entry" [ $? = 0 ]
   reg_set "$regkey" String 'C:\A;C:\B'; up add 'C:\Program Files\Git\bin'
   t "user PATH: a plain-text value stays plain text; a folder with spaces is one entry" [ "$(reg_get "$regkey")" = 'String C:\Program Files\Git\bin;C:\A;C:\B' ]
+  reg_set "$regkey" ExpandString 'C:\A;%LOCALAPPDATA%\Microsoft\WindowsApps;C:\Late;"C:\Q dir"'
+  up check 'C:\A'; t "user PATH: check accepts a folder ahead of WindowsApps" [ $? = 0 ]
+  up check 'C:\Late'; t "user PATH: check rejects a folder that comes after WindowsApps" [ $? = 1 ]
+  up check 'C:\Q dir\'; t "user PATH: a quoted entry is the same folder, here after WindowsApps" [ $? = 1 ]
+  up add 'C:\Late'
+  t "user PATH: add moves a late folder to the front" [ "$(reg_get "$regkey")" = 'ExpandString C:\Late;C:\A;%LOCALAPPDATA%\Microsoft\WindowsApps;"C:\Q dir"' ]
+  up add 'C:\Q dir'
+  t "user PATH: add replaces the quoted entry, no duplicate" [ "$(reg_get "$regkey")" = 'ExpandString C:\Q dir;C:\Late;C:\A;%LOCALAPPDATA%\Microsoft\WindowsApps' ]
+  LODESTAR_PATH_KEY='HKCU:\Software\LodestarHarnessTest-none' up add 'C:\A'; t "user PATH: a key that cannot be read is an error (exit 3), not 'missing'" [ $? = 3 ]
   reg_set "$regkey" ExpandString 'C:\Scratch'; sm "$tmp/home2" --yes
   t "setup --yes writes the scratch key, not the real user PATH" bash -c '[ "$1" = "$2" ] && [[ $3 == *";C:\Scratch" ]]' _ "$real_path" "$(reg_get 'HKCU:\Environment')" "$(reg_get "$regkey")"
 fi
