@@ -506,7 +506,7 @@ say_owner() { # $1 = promptId, $2 = text; then an assistant line and a tool resu
   jq -nc '{type:"user",message:{role:"user",content:[{type:"tool_result",content:"sai sai"}]}}' >> "$tr"
 }
 fb() { CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/feedback-check.sh" 2>/dev/null \
-  <<<"{\"transcript_path\":\"$(native "$tr")\",\"stop_hook_active\":$1}"; }
+  <<<"{\"transcript_path\":\"$(native "$tr")\",\"session_id\":\"claude-feedback-fixture\",\"stop_hook_active\":$1}"; }
 say_owner p1 "thêm cột ngày vào bảng"
 fb false; t "feedback hook quiet on a normal request" [ $? = 0 ]
 say_owner p2 "sai rồi, phải dùng giờ Việt Nam"
@@ -794,7 +794,7 @@ mkdir -p "$tmp/fakecodex" "$tmp/cxhome"; printf '#!/bin/sh\n' > "$tmp/fakecodex/
 cxdoc() { CODEX_HOME=$tmp/cxhome PATH="$tmp/fakecodex:$PATH" bash "$p/.claude/hooks/doctor.sh" "$p"; }
 out=$(cxdoc); t "doctor A4c warns and names the Codex home it checked" grep -qE "⚠️ +A4c .*checked $tmp/cxhome;" <<<"$out"
 printf '[hooks.state."%s/.codex/hooks.json:stop:0:0"]\ntrusted_hash = "x"\n' "$(cd "$p" && { pwd -W 2>/dev/null || pwd; })" > "$tmp/cxhome/config.toml"
-out=$(cxdoc); t "doctor A4c passes when that home trusts the hooks" grep -qE "✅ A4c .*checked $tmp/cxhome;" <<<"$out"
+out=$(cxdoc); t "doctor A4c warns on stale trust in that home" grep -qE "⚠️ +A4c .*checked $tmp/cxhome;" <<<"$out"
 # Run the hook exactly as .codex/hooks.json words it, from a subfolder, with a
 # CLAUDE_PROJECT_DIR inherited from elsewhere (as when Claude starts Codex).
 cxcmd() { jq -r --arg e "$1" --arg h "$2'" '.hooks[$e][].hooks[].command | select(endswith(" " + $h))' "$p/.codex/hooks.json"; }
@@ -894,4 +894,5 @@ p=$tmp/pparts; mkdir -p "$p"; git -C "$p" init -q
 bash "$here/bootstrap.sh" "$p" --stack python=backend --stack node-ts=frontend >/dev/null
 t "node-ts in a subdir gets no root .prettierignore" bash -c '[ ! -e "$1/.prettierignore" ] && [ ! -e "$1/frontend/.prettierignore" ]' _ "$p"
 
+bash "$here/test-parity.sh" || failed=1
 [ $failed = 0 ] && echo "All tests passed." || { echo "Some tests failed."; exit 1; }
