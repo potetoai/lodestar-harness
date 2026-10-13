@@ -16,12 +16,12 @@ approved criteria.
 
 ## Acceptance criteria
 
-- [ ] C1: CI rejects a later Tests-First round that modifies, deletes or renames a previously locked test when the round only updates progress under already approved criteria.
-- [ ] C2: CI accepts a later round that adds and locks new tests under unchanged approved criteria, provided previously locked tests remain unchanged.
-- [ ] C3: CI permits a valid Tests-First round to revise locked tests when a plan changed by that commit has a criteria hash different from that plan at the immediately preceding valid round, approved in the current commit's approval log, and absent from the preceding round's approval log. The approval and criteria revision may be committed between rounds or in the revising round.
-- [ ] C4: Copying or restoring criteria whose hash was already approved at the preceding valid round, or reusing an approval present in an intervening valid round, does not authorize another revision of locked tests.
-- [ ] C5: An ordinary commit, a Tests-First trailer without an approved plan change, or changed criteria without owner approval cannot revise locked tests, even if a later valid round follows.
-- [ ] C6: Within the existing CI review range, a valid approved revision does not release older locked tests for subsequent unapproved revisions, and every old locked path remains protected by CI even if a later lock omits it or is missing.
+- [x] C1: CI rejects a later Tests-First round that modifies, deletes or renames a previously locked test when the round only updates progress under already approved criteria.
+- [x] C2: CI accepts a later round that adds and locks new tests under unchanged approved criteria, provided previously locked tests remain unchanged.
+- [x] C3: CI permits a valid Tests-First round to revise locked tests when a plan changed by that commit has a criteria hash different from that plan at the immediately preceding valid round, approved in the current commit's approval log, and absent from the preceding round's approval log. The approval and criteria revision may be committed between rounds or in the revising round.
+- [x] C4: Copying or restoring criteria whose hash was already approved at the preceding valid round, or reusing an approval present in an intervening valid round, does not authorize another revision of locked tests.
+- [x] C5: An ordinary commit, a Tests-First trailer without an approved plan change, or changed criteria without owner approval cannot revise locked tests, even if a later valid round follows.
+- [x] C6: Within the existing CI review range, a valid approved revision does not release older locked tests for subsequent unapproved revisions, and every old locked path remains protected by CI even if a later lock omits it or is missing.
 
 ## Criteria review
 
@@ -50,7 +50,7 @@ approved criteria.
 - [x] Obtain owner approval of the reviewed criteria.
 - [x] Write regression tests first and demonstrate the relevant failures on the old implementation.
 - [x] Implement the CI check and increment the managed template version.
-- [ ] Run self-tests and documentation link checks; obtain independent security review.
+- [x] Run self-tests and documentation link checks; obtain independent security review.
 - [ ] Open a PR with evidence and await the owner's merge instruction.
 
 ## Progress log
@@ -68,8 +68,9 @@ approved criteria.
 | 2026-10-13 | Session closure | Saved for continuation | At the owner's request, hook/rule parity findings were sent to the existing Codex parity session via Orca (input accepted; no new turn observed). That session owns parity and the shared checkout is now on its `feat/codex-lodestar-parity` branch. This CI task remains separate and incomplete: reviewed plan only, no implementation or regression tests, criteria approval pending. Do not commit this plan into parity or change its branch while that session works. |
 | 2026-10-13 | Owner approval | Approved | Owner explicitly replied "duyệt" for the unchanged reviewed C1-C6 criteria in this session. Source-repository evidence is this conversation and plan; no installed consuming-project approvals log was created. Work continues only in the isolated `potetoai/ci-relock-fresh-approval` worktree. |
 | 2026-10-13 | Tests first | Regressions demonstrated | Added 28 CI assertions in section 9 (119 lines). Old CI incorrectly accepts 14 prohibited histories; 14 positive or existing-protection assertions pass. Failures cover stale progress-only modification/deletion/rename, unrelated fresh approval, copied/restored/consumed approval, intermediate unauthorized edits, and omitted/missing later locks. Shell syntax and whitespace checks pass. Full self-tests exited 1 as expected: 367 assertions, 353 passed and only the 14 new regressions failed; all 339 pre-existing assertions passed. The suite exited and its scratch registry key was removed. No started process remains. Red-run log: system temporary directory, `lodestar-ci-relock-red.log`. |
-
 | 2026-10-13 | Implementation | Complete; verification running | CI now compares each valid later round with its immediately preceding valid round and requires fresh approval on a plan changed by the revising commit. Every earlier lock is still checked. Only ci-checks.sh and VERSION (2.3.7) changed; test checkpoint 7be822d is unchanged. Syntax, internal links and whitespace checks pass; full self-test is running. |
+| 2026-10-13 | Independent review | Security review passed | Fresh Codex reviewer inspected the complete diff, CI and approval helpers, tests and approved criteria. No code or security findings. Two minor table-formatting errors in this plan were fixed; reviewer did not rerun the suite. Full self-test remains in progress. |
+| 2026-10-13 | Final verification | Passed | Full Windows self-test exited 0: all 367 assertions passed, including all 28 new regressions. Old implementation had 14 expected failures; all 339 original assertions passed before and after. Independent security review passed. Tests are unchanged from checkpoint 7be822d; shell syntax, documentation links and diff whitespace pass. |
 
 ## Decision log
 
@@ -80,7 +81,6 @@ approved criteria.
 | 2026-10-13 | Temporarily use independent Codex critic and reviewer | Explicit owner instruction after Claude exhausted its session quota. |
 | 2026-10-13 | Apply the existing source-repository readiness exemption | Missing installed project hooks alone did not establish an onboarding requirement here. The earlier request for an owner waiver was mistaken; no tech-debt skip is needed. |
 | 2026-10-13 | Freeze regression tests by the normal source test checkpoint | This source repository is exempt from consuming-project onboarding. Owner approval is in the conversation and plan; no source `approvals.log`, synthetic owner prompt, or managed `test-lock` is created. Builder must preserve the checkpoint tests. |
-
 | 2026-10-13 | Keep the fresh-approval check local to CI | Reuse existing criteria and approval helpers without changing runtime hooks or policy files owned by the parallel parity task. Preserve the existing review range and cumulative protection from older lock snapshots. |
 
 ## Debt left on purpose
