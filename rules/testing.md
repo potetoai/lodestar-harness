@@ -203,7 +203,9 @@ the owner changes their mind, a test that cannot work):
 1. The builder stops and tells the owner in plain words what is wrong.
 2. If the owner agrees, update the criteria in the plan and ask for the
    approval word again. This opens a relock window: the tester may rewrite the
-   locked tests.
+   locked tests. Only an approval given after the last `Tests-First:` round
+   opens it; a copy of the approved plan, or criteria put back to a version
+   approved before that round, do not.
 3. The tester changes only the affected tests (they must fail on the current
    code, or the report says why not), updates `.ai/test-lock`, and commits a
    new `Tests-First:` round that includes the updated plan and approvals log.
