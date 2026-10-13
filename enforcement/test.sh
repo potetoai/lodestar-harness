@@ -274,6 +274,125 @@ echo 'def test_lock(): assert 1 == 1' > tests/test_lock.py; g add -A; g commit -
 out=$(bash "$here/agents/claude/hooks/ci-checks.sh" main 2>&1); rc=$?
 t "PR: a new round with owner-approved changed criteria passes" [ $rc = 0 ]
 t "PR: summary shows the criteria in English with approval" bash -c 'grep -q "Acceptance criteria" <<<"$1" && grep -q "The owner approved exactly" <<<"$1" && grep -q "future dates allowed" <<<"$1"' _ "$out"
+# Relocking: only fresh approval for a plan changed by the revising round
+# authorizes edits; progress-only rounds may add tests and retain older locks.
+relock_branch() { g checkout -q -B "$1" "${2:-b6base}"; }
+progress_round() {
+  echo "- Progress: $1" >> .ai/plans/active/lock-demo.md
+  g add -A; g commit -qm "$1" -m "Tests-First: lock demo"
+}
+add_locked_test() {
+  echo 'def test_next(): assert False' > tests/test_next.py
+  echo tests/test_next.py >> .ai/test-lock
+}
+weaken_locked_test() { echo 'def test_lock(): assert True' > tests/test_lock.py; }
+for action in modify delete rename; do
+  relock_branch "relock-$action"
+  case $action in
+    modify) weaken_locked_test ;;
+    delete) g rm -q tests/test_lock.py ;;
+    rename) g mv tests/test_lock.py tests/test_renamed.py ;;
+  esac
+  progress_round "progress-only $action"
+  check; t "PR relock C1: progress-only $action of an old locked test fails" [ $? = 1 ]
+done
+relock_branch relock-add; add_locked_test; progress_round 'append new tests'
+check; t "PR relock C2: add-only round under unchanged criteria passes" [ $? = 0 ]
+g branch -q relock-added
+weaken_locked_test; progress_round 'rewrite after add-only round'
+check; t "PR relock C1: an add-only round cannot authorize an old test rewrite" [ $? = 1 ]
+
+relock_branch relock-between
+mkplan lock-demo "lock demo works" "future dates allowed"; approve
+g add -A; g commit -qm 'criteria and approval between rounds'
+weaken_locked_test; progress_round 'apply criteria approved between rounds'
+check; t "PR relock C3: criteria and approval between rounds permit revision" [ $? = 0 ]
+relock_branch relock-new-plan
+mkplan revised "a genuinely new criterion"; approve; weaken_locked_test
+progress_round 'fresh criteria on a new changed plan'
+check; t "PR relock C3: a new changed plan with fresh approved criteria permits revision" [ $? = 0 ]
+relock_branch relock-unrelated
+mkplan other "other fresh criterion"; approve
+g add -A; g commit -qm 'approve another plan between rounds'
+weaken_locked_test; progress_round 'only old plan progress changes'
+check; t "PR relock C3: fresh approval for an unchanged plan cannot authorize revision" [ $? = 1 ]
+relock_branch relock-same-criteria
+# Approval may be newly appended, but its criteria hash is already in the old log.
+approve; weaken_locked_test; progress_round 'approve identical criteria again'
+check; t "PR relock C4: approving identical criteria again cannot authorize revision" [ $? = 1 ]
+relock_branch relock-copy
+cp .ai/plans/active/lock-demo.md .ai/plans/active/copied.md
+weaken_locked_test; progress_round 'copy approved criteria'
+check; t "PR relock C4: copying already approved criteria cannot authorize revision" [ $? = 1 ]
+relock_branch relock-restore b6r
+mkplan lock-demo "lock demo works"; weaken_locked_test
+progress_round 'restore older approved criteria'
+check; t "PR relock C4: restoring older approved criteria cannot authorize revision" [ $? = 1 ]
+relock_branch relock-consumed
+mkplan lock-demo "lock demo works" "future dates allowed"; approve
+add_locked_test; progress_round 'consume fresh approval in an add-only round'
+check; t "PR relock C2: fresh approved add-only round passes" [ $? = 0 ]
+weaken_locked_test; progress_round 'reuse approval consumed by preceding round'
+check; t "PR relock C4: an intervening add-only round consumes fresh approval" [ $? = 1 ]
+
+relock_branch relock-no-approval
+mkplan lock-demo "lock demo works" "unapproved criterion"; weaken_locked_test
+progress_round 'criteria changed without approval'
+check; t "PR relock C5: changed criteria without approval cannot revise locked tests" [ $? = 1 ]
+relock_branch relock-ordinary
+mkplan lock-demo "lock demo works" "fresh criterion"; approve
+g add -A; g commit -qm 'approve fresh criterion'
+weaken_locked_test; g commit -qam 'ordinary rewrite despite fresh approval'
+progress_round 'valid round after ordinary rewrite'
+check; t "PR relock C5: later valid round cannot excuse ordinary rewrite with fresh approval" [ $? = 1 ]
+relock_branch relock-trailer
+weaken_locked_test; g commit -qam 'rewrite without a plan change' -m 'Tests-First: invalid'
+mkplan lock-demo "lock demo works" "fresh criterion"; approve
+progress_round 'valid round after invalid trailer'
+check; t "PR relock C5: later valid round cannot excuse invalid Tests-First rewrite" [ $? = 1 ]
+relock_branch relock-edit-restore
+weaken_locked_test; g commit -qam 'unauthorized rewrite'
+g checkout b6base -- tests/test_lock.py; g commit -qm 'restore unauthorized rewrite'
+check; t "PR relock C5: restoration does not erase an unauthorized intermediate edit" [ $? = 1 ]
+relock_branch relock-progress-restore
+weaken_locked_test; progress_round 'unauthorized progress-only rewrite'
+g checkout b6base -- tests/test_lock.py; progress_round 'restore via progress-only round'
+check; t "PR relock C5: progress-only restoration does not erase an unauthorized round" [ $? = 1 ]
+relock_branch relock-progress-fresh
+weaken_locked_test; progress_round 'unauthorized round before fresh approval'
+mkplan lock-demo "lock demo works" "future dates allowed"; approve
+progress_round 'fresh valid round after unauthorized revision'
+check; t "PR relock C5: fresh valid round does not erase an earlier unauthorized round" [ $? = 1 ]
+
+relock_branch relock-successive b6r
+mkplan lock-demo "lock demo works" "future dates allowed" "later dates allowed"; approve
+weaken_locked_test; progress_round 'second independently approved revision'
+check; t "PR relock C3: two successive independently approved revisions pass" [ $? = 0 ]
+relock_branch relock-post-approved b6r
+weaken_locked_test; g commit -qam 'ordinary rewrite after approved revision'
+check; t "PR relock C6: approved revision cannot release old tests for ordinary edits" [ $? = 1 ]
+relock_branch relock-post-approved-round b6r
+weaken_locked_test; progress_round 'unapproved rewrite after approved revision'
+check; t "PR relock C6: approved revision cannot release old tests for progress-only rewrites" [ $? = 1 ]
+for lock_state in omitted missing; do
+  relock_branch "relock-lock-$lock_state" relock-added
+  if [ "$lock_state" = omitted ]; then
+    echo tests/test_next.py > .ai/test-lock
+  else
+    g rm -q .ai/test-lock
+  fi
+  mkplan lock-demo "lock demo works" "future dates allowed"; approve
+  weaken_locked_test; progress_round "approved revision with old lock $lock_state"
+  check; t "PR relock C6: approved revision with old lock $lock_state passes" [ $? = 0 ]
+  g branch -q "relock-lock-$lock_state-base"
+  echo 'def test_lock(): assert 2 == 2' > tests/test_lock.py
+  g commit -qam 'ordinary edit of an omitted old locked path'
+  check; t "PR relock C6: old lock $lock_state still protects against ordinary edits" [ $? = 1 ]
+  relock_branch "relock-lock-$lock_state-round" "relock-lock-$lock_state-base"
+  echo 'def test_lock(): assert 2 == 2' > tests/test_lock.py
+  progress_round 'progress-only edit of an omitted old locked path'
+  check; t "PR relock C6: old lock $lock_state still protects against unapproved rounds" [ $? = 1 ]
+done
 newbranch b8; mkdir -p .claude/hooks .github/workflows .ai/plans
 cp "$here/agents/claude/hooks/ci-checks.sh" "$here/agents/claude/hooks/lint-file.sh" .claude/hooks/
 cp "$here/github/ci.yml" .github/workflows/; cp "$here/project/.ai/plans/TEMPLATE.md" .ai/plans/
