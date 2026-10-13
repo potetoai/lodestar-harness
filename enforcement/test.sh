@@ -319,8 +319,34 @@ guard tests/test_lock.py; t "guard blocks editing a locked test" [ $? = 2 ]
 guard .ai/test-lock; t "guard blocks editing the lock" [ $? = 2 ]
 guard .ai/approvals.log; t "guard blocks editing the approvals log" [ $? = 2 ]
 guard app/ui.py; t "guard allows other files" [ $? = 0 ]
+# A later step of the same approved plan adds its tests to the lock: lines may
+# be added, and every line already there stays as it is.
+# lockedit TOOL TOOL_INPUT_JSON: an edit of .ai/test-lock (it holds "tests/test_lock.py").
+lockedit() { CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/protect-tests.sh" 2>/dev/null \
+  <<<"$(jq -n --arg n "$1" --arg f "$(native "$p/.ai/test-lock")" --argjson i "$2" '{tool_name: $n, tool_input: ({file_path: $f} + $i)}')"; }
+lockedit Write '{"content":"tests/test_lock.py\ntests/test_new.py\n"}'; t "lock: Write that adds a line is allowed" [ $? = 0 ]
+lockedit Write '{"content":"tests/test_lock.py\r\ntests/test_new.py\r\n"}'; t "lock: Write that adds a line with CRLF is allowed" [ $? = 0 ]
+lockedit Edit '{"old_string":"tests/test_lock.py","new_string":"tests/test_lock.py\ntests/test_new.py"}'; t "lock: Edit that adds a line is allowed" [ $? = 0 ]
+lockedit MultiEdit '{"edits":[{"old_string":"tests/test_lock.py","new_string":"tests/test_lock.py\ntests/test_new.py"},{"old_string":"tests/test_new.py","new_string":"tests/test_new.py\ntests/test_more.py"}]}'
+t "lock: MultiEdit that adds lines is allowed" [ $? = 0 ]
+lockedit Write '{"content":"tests/test_new.py\n"}'; t "lock: Write that drops a line is blocked" [ $? = 2 ]
+lockedit Write '{"content":""}'; t "lock: Write that empties the lock is blocked" [ $? = 2 ]
+lockedit Write '{"content":"# tests/test_lock.py\ntests/test_new.py\n"}'; t "lock: turning a line into a comment is blocked" [ $? = 2 ]
+lockedit Write '{"content":"Tests/test_lock.py\ntests/test_new.py\n"}'; t "lock: changing the case of a line is blocked" [ $? = 2 ]
+lockedit Write '{"content":"tests/test_lock.py.bak\ntests/test_new.py\n"}'; t "lock: a longer line does not stand for the old one" [ $? = 2 ]
+lockedit Write '{}'; t "lock: Write without content is blocked" [ $? = 2 ]
+lockedit Edit '{"old_string":"tests/test_lock.py","new_string":"tests/test_other.py"}'; t "lock: Edit that changes a line is blocked" [ $? = 2 ]
+lockedit Edit '{"old_string":"test_lock","new_string":"test_x","replace_all":true}'; t "lock: Edit with replace_all that changes a line is blocked" [ $? = 2 ]
+lockedit Edit '{"old_string":"tests/no_such.py","new_string":"tests/no_such.py\ntests/test_new.py"}'; t "lock: Edit whose old_string is not in the lock is blocked" [ $? = 2 ]
+lockedit Edit '{"old_string":"","new_string":"tests/test_new.py\n"}'; t "lock: Edit with an empty old_string is blocked" [ $? = 2 ]
+lockedit MultiEdit '{"edits":[{"old_string":"tests/test_lock.py","new_string":"tests/test_lock.py\ntests/test_new.py"},{"old_string":"tests/test_lock.py\n","new_string":""}]}'
+t "lock: MultiEdit that adds, then drops a line is blocked" [ $? = 2 ]
+lockedit MultiEdit '{"edits":[]}'; t "lock: MultiEdit without edits is blocked" [ $? = 2 ]
+lockedit apply_patch '{"content":"tests/test_lock.py\ntests/test_new.py\n"}'; t "lock: a tool whose result is not known is blocked" [ $? = 2 ]
+guard tests/test_lock.py; t "lock: a locked test stays blocked" [ $? = 2 ]
 mkplan lock-demo "lock demo works" "changed by the agent alone"
 guard tests/test_lock.py; t "guard: criteria changed without approval keep the lock" [ $? = 2 ]
+lockedit Write '{"content":"tests/test_lock.py\ntests/test_new.py\n"}'; t "lock: criteria changed without approval block adding a line too" [ $? = 2 ]
 approve
 guard tests/test_lock.py; t "guard: owner-approved changed criteria open the relock window" [ $? = 0 ]
 g checkout -q -f b6base; g clean -qfd
