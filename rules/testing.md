@@ -179,6 +179,12 @@ automatically; when unsure, select it.
    plan in it is rejected by CI and ignored by the hooks. The lock must list
    at least one test changed on the branch: a lock left from an earlier task
    does not open the gate, and an earlier task's round is no baseline.
+   When one set of approved criteria covers several steps, the tester of a
+   later step adds its test paths to `.ai/test-lock` and commits a new
+   `Tests-First:` round the same way; the commit must change the plan file
+   (its progress log), or CI rejects the round. While the plan is approved the lock may
+   gain lines; a line already in it cannot be changed or removed (the hook
+   blocks an edit that does either), and no new approval is needed.
 4. **Implementation (builder role).** Make the tests pass. Anything beyond
    the approved criteria (a new criterion, a behavior change elsewhere) needs
    the owner's approval first: stop, ask, and update the plan. The builder never

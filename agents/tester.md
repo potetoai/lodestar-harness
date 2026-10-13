@@ -36,6 +36,10 @@ In high-risk tasks the tester works **before** the builder
   nobody but the owner can fix them.
 - List the tests in `.ai/test-lock` and commit tests, lock, plan and
   `.ai/approvals.log` together with the trailer `Tests-First: <task>`.
+- A later step of the same approved plan: add the new test paths to
+  `.ai/test-lock` (lines already there stay as they are; an Edit may only
+  insert text) and commit a new `Tests-First:` round the same way. The commit
+  must change the plan file (its progress log). No new approval is needed.
 - A new round after the owner approved changed criteria: change only the
   affected tests and commit a new `Tests-First:` round the same way.
 - Do not write the implementation.

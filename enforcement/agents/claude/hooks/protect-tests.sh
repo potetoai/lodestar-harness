@@ -7,10 +7,13 @@
 #   active (a plan in .ai/plans/active/). The lock expires when the plan moves
 #   to completed/. It reopens only when the owner approved changed criteria
 #   (relock window), so the tester can write the new round of tests.
+# - The lock may gain lines while an active plan is approved (a later step
+#   of the plan adds its tests); a line already in it cannot change.
 [ "$LODESTAR_SKIP_HOOKS" = "1" ] && exit 0
 cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
 
-file=$(jq -j '.tool_input.file_path // .tool_input.notebook_path // empty')
+input=$(cat)
+file=$(jq -j '.tool_input.file_path // .tool_input.notebook_path // empty' <<<"$input")
 [ -z "$file" ] && exit 0
 
 # Path relative to the project, forward slashes, compared case-insensitively.
@@ -32,6 +35,13 @@ locked=0
 lock_paths < .ai/test-lock | grep -qixF -- "$f" && locked=1
 if [ $locked = 1 ]; then
   relock_window && exit 0
+  if [ "${f,,}" = ".ai/test-lock" ]; then
+    lock_append_only "$input" && exit 0
+    echo "Blocked: .ai/test-lock is locked by the tests-first mode. While the plan is approved you may" >&2
+    echo "add lines for new tests; every line already there must stay as it is. To change or remove a" >&2
+    echo "line, stop and ask the owner: once they approve the changed criteria, the tester writes a new round." >&2
+    exit 2
+  fi
   echo "Blocked: $f is locked by the tests-first mode (.ai/test-lock)." >&2
   echo "Make the code pass the tests; do not change them. If a test or criterion is wrong, stop" >&2
   echo "and ask the owner. Once they approve the changed criteria, the tester writes a new round." >&2

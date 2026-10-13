@@ -120,6 +120,56 @@ relock_window() {
   return 1
 }
 
+# Append-only edit of the test lock (the hook's input JSON in $1): while the
+# plan is approved, a later step may add its test paths. Every path already
+# in the lock must still be there, unchanged, in the content after the edit.
+# The plan: each active plan the last valid Tests-First round carried
+# approved must still be approved; with no such plan (a first lock, not
+# committed yet), any approved active plan. An Edit may only insert text
+# (its new_string keeps the old_string at one end): the Edit tool does more
+# than swap strings when it removes text. An edit whose result cannot be
+# worked out, or that holds a control character, counts as a change.
+lock_append_only() {
+  local c p seen=0 ok=1 new old
+  if c=$(last_valid_tests_first); then
+    while IFS= read -r p; do
+      [[ $p == .ai/plans/active/*.md ]] && [ -f "$p" ] && plan_approved_at "$c" "$p" || continue
+      seen=1; plan_approved_now "$p" || return 1
+    done < <(git diff-tree --root --no-commit-id --name-only -r "$c")
+  fi
+  if [ $seen = 0 ]; then
+    for p in .ai/plans/active/*.md; do
+      [ -f "$p" ] && plan_approved_now "$p" && { ok=0; break; }
+    done
+    [ $ok = 0 ] || return 1
+  fi
+  new=$(jq -r --rawfile cur .ai/test-lock '
+    def cr: gsub("\r"; "");
+    def swap($e):
+      (($e.old_string // "") | cr) as $o | (($e.new_string // "") | cr) as $n
+      | if ($o | length) == 0 then error("no old_string")
+        elif (($n | startswith($o)) or ($n | endswith($o))) | not then error("not an insertion")
+        else . end
+      | (. / $o) as $parts
+      | if ($parts | length) < 2 then error("old_string not found")
+        elif $e.replace_all == true then $parts | join($n)
+        elif ($parts | length) > 2 then error("old_string not unique")
+        else $parts | join($n) end;
+    .tool_input as $t
+    | if .tool_name == "Write" and ($t.content | type) == "string" then $t.content
+      elif .tool_name == "Edit" then ($cur | cr) | swap($t)
+      elif .tool_name == "MultiEdit" and ($t.edits | type) == "array" and ($t.edits | length) > 0
+        then reduce $t.edits[] as $e ($cur | cr; swap($e))
+      else error("result not known") end
+    | if any(explode[]; . < 32 and . != 9 and . != 10 and . != 13) then error("control character") else . end
+    ' <<<"$1" 2>/dev/null) || return 1
+  new=$(lock_paths <<<"$new")
+  while IFS= read -r old; do
+    grep -qxF -- "$old" <<<"$new" || return 1
+  done < <(lock_paths < .ai/test-lock)
+  return 0
+}
+
 # A valid Tests-First commit carries the trailer and changes a plan whose
 # criteria are approved at that commit. Anything else cannot lock or relock.
 valid_tests_first() {
