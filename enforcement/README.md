@@ -70,6 +70,10 @@ project, type `/hooks`, trust the Lodestar hooks. Codex asks again when
 Codex keeps trust per home (`~/.codex`, or `CODEX_HOME` when an orchestrator
 sets it), so trust the hooks once in each; A4c names the home it checked.
 
+Doctor stops with "wrong bash" (exit 2, nothing checked) when it is started
+by the WSL shim in a Windows folder or by a bash without `grep`. That is not
+a project failure: run it again with Git Bash.
+
 ## 3. Upgrade a project after the templates change
 
 Raise `VERSION`, then in each project:

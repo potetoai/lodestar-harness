@@ -19,6 +19,10 @@ p=$tmp/empty; mkdir -p "$p"; git -C "$p" init -q
 out=$(bash "$here/agents/claude/hooks/doctor.sh" "$p"); rc=$?
 t "doctor fails on empty project" [ $rc = 1 ]
 t "doctor lists missing Makefile" grep -q '❌ A3' <<<"$out"
+mkdir "$tmp/nobin"
+out=$(PATH="$tmp/nobin" "$BASH" "$here/agents/claude/hooks/doctor.sh" "$p"); rc=$?
+t "doctor stops with exit 2 under a bash without grep" [ $rc = 2 ]
+t "doctor names the wrong bash and checks nothing" bash -c 'grep -q "wrong bash" <<<"$1" && ! grep -q "❌" <<<"$1"' _ "$out"
 
 # 2. Bootstrap, then a second run changes nothing.
 p=$tmp/py; mkdir -p "$p"; git -C "$p" init -q
