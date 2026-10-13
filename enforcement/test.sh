@@ -343,6 +343,22 @@ lockedit MultiEdit '{"edits":[{"old_string":"tests/test_lock.py","new_string":"t
 t "lock: MultiEdit that adds, then drops a line is blocked" [ $? = 2 ]
 lockedit MultiEdit '{"edits":[]}'; t "lock: MultiEdit without edits is blocked" [ $? = 2 ]
 lockedit apply_patch '{"content":"tests/test_lock.py\ntests/test_new.py\n"}'; t "lock: a tool whose result is not known is blocked" [ $? = 2 ]
+lockedit Write '{"content":"tests/test\u0000_lock.py\ntests/test_new.py\n"}'; t "lock: Write with a NUL inside an old line is blocked" [ $? = 2 ]
+lockedit Edit '{"old_string":"tests/test_lock.py","new_string":"tests/test\u0000_lock.py"}'; t "lock: Edit that puts a NUL inside a line is blocked" [ $? = 2 ]
+lockedit Write '{"content":" tests/test_lock.py\ntests/test_new.py\n"}'; t "lock: a space before an old line is blocked" [ $? = 2 ]
+lockedit Write '{"content":"tests/test_lock.py\t\ntests/test_new.py\n"}'; t "lock: a tab after an old line is blocked" [ $? = 2 ]
+# The Edit tool also removes the line break after text it deletes, so a
+# comment line could swallow the path below it: an Edit may only insert.
+printf '#x\ntests/test_lock.py\n' > .ai/test-lock
+lockedit Edit '{"old_string":"x","new_string":""}'; t "lock: Edit that removes text is blocked (it could join a comment and a path)" [ $? = 2 ]
+lockedit Edit '{"old_string":"#x","new_string":"#y"}'; t "lock: Edit that is not an insertion is blocked" [ $? = 2 ]
+lockedit Edit '{"old_string":"#x","new_string":"#x\ntests/test_new.py"}'; t "lock: Edit that inserts a line after a comment is allowed" [ $? = 0 ]
+printf 'tests/test_lock.py\r\n# note\r\n' > .ai/test-lock
+lockedit Edit '{"old_string":"# note","new_string":"# note\ntests/test_new.py"}'; t "lock: Edit that adds a line to a CRLF lock is allowed" [ $? = 0 ]
+lockedit Edit '{"old_string":"tests/test_lock.py","new_string":"tests/test_other.py"}'; t "lock: Edit that changes a line of a CRLF lock is blocked" [ $? = 2 ]
+printf 'tests/test_lock.py\n# a\n# a\n' > .ai/test-lock
+lockedit Edit '{"old_string":"# a","new_string":"# a\ntests/test_new.py"}'; t "lock: Edit whose old_string is there twice is blocked without replace_all" [ $? = 2 ]
+g checkout -q -- .ai/test-lock
 guard tests/test_lock.py; t "lock: a locked test stays blocked" [ $? = 2 ]
 mkplan lock-demo "lock demo works" "changed by the agent alone"
 guard tests/test_lock.py; t "guard: criteria changed without approval keep the lock" [ $? = 2 ]
@@ -354,7 +370,15 @@ mkdir -p .ai/plans/completed; g mv .ai/plans/active/lock-demo.md .ai/plans/compl
 guard tests/test_lock.py; t "guard: the lock expires when the task is completed" [ $? = 0 ]
 mkplan other-task "something else"
 guard tests/test_lock.py; t "guard: a stale lock does not block the next task" [ $? = 0 ]
-g checkout -q -f b6base; cd "$here"
+# Two plans in one round: the lock gains lines only while both are approved.
+g checkout -q -f b6base; g clean -qfd; newbranch b6m
+mkplan two-a "a works"; approve; mkplan two-b "b works"; approve
+echo 'def test_lock(): assert False' > tests/test_lock.py; echo tests/test_lock.py > .ai/test-lock
+g add -A; g commit -qm "tests" -m "Tests-First: two plans"
+lockedit Write '{"content":"tests/test_lock.py\ntests/test_new.py\n"}'; t "lock: with two approved plans in the round, adding a line is allowed" [ $? = 0 ]
+mkplan two-a "a works" "changed by the agent alone"
+lockedit Write '{"content":"tests/test_lock.py\ntests/test_new.py\n"}'; t "lock: one of the round's plans changed without approval blocks adding a line" [ $? = 2 ]
+g checkout -q -f b6base; g clean -qfd; cd "$here"
 
 # 10b. approval hook: records only the owner's approval words.
 p=$tmp/appr; mkdir -p "$p/.claude/hooks" "$p/.ai/plans/active"; cp "$here/agents/claude/hooks/lodestar-lib.sh" "$p/.claude/hooks/"

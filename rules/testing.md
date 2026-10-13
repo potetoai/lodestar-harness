@@ -181,7 +181,8 @@ automatically; when unsure, select it.
    does not open the gate, and an earlier task's round is no baseline.
    When one set of approved criteria covers several steps, the tester of a
    later step adds its test paths to `.ai/test-lock` and commits a new
-   `Tests-First:` round the same way. While the plan is approved the lock may
+   `Tests-First:` round the same way; the commit must change the plan file
+   (its progress log), or CI rejects the round. While the plan is approved the lock may
    gain lines; a line already in it cannot be changed or removed (the hook
    blocks an edit that does either), and no new approval is needed.
 4. **Implementation (builder role).** Make the tests pass. Anything beyond
