@@ -52,14 +52,20 @@ command.
 ## Step 4: Restart
 
 Close Git Bash, open a new terminal, and restart Claude Code (and Orca, if
-you use it) so they see `make` and `jq`.
+you use it) so they see the updated User `PATH`. Setup adds Git Bash, `make`
+and `jq` to that path; Git Bash is placed before WindowsApps so `bash` does
+not resolve to the WSL shim.
 
-Quick check inside Claude Code:
+Quick check in PowerShell or an Orca terminal:
 
+```powershell
+make --version
+bash --version
+jq --version
 ```
-! make --version
-! jq --version
-```
+
+Then, from the project folder, `make verify` and
+`bash .claude/hooks/doctor.sh` run directly.
 
 ## Optional: compact long sessions earlier
 
