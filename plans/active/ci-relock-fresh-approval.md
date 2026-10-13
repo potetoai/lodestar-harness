@@ -49,7 +49,7 @@ approved criteria.
 - [x] Complete independent criteria review; confirm the source repository's existing readiness exemption.
 - [x] Obtain owner approval of the reviewed criteria.
 - [x] Write regression tests first and demonstrate the relevant failures on the old implementation.
-- [ ] Implement the CI check and increment the managed template version.
+- [x] Implement the CI check and increment the managed template version.
 - [ ] Run self-tests and documentation link checks; obtain independent security review.
 - [ ] Open a PR with evidence and await the owner's merge instruction.
 
@@ -69,6 +69,8 @@ approved criteria.
 | 2026-10-13 | Owner approval | Approved | Owner explicitly replied "duyệt" for the unchanged reviewed C1-C6 criteria in this session. Source-repository evidence is this conversation and plan; no installed consuming-project approvals log was created. Work continues only in the isolated `potetoai/ci-relock-fresh-approval` worktree. |
 | 2026-10-13 | Tests first | Regressions demonstrated | Added 28 CI assertions in section 9 (119 lines). Old CI incorrectly accepts 14 prohibited histories; 14 positive or existing-protection assertions pass. Failures cover stale progress-only modification/deletion/rename, unrelated fresh approval, copied/restored/consumed approval, intermediate unauthorized edits, and omitted/missing later locks. Shell syntax and whitespace checks pass. Full self-tests exited 1 as expected: 367 assertions, 353 passed and only the 14 new regressions failed; all 339 pre-existing assertions passed. The suite exited and its scratch registry key was removed. No started process remains. Red-run log: system temporary directory, `lodestar-ci-relock-red.log`. |
 
+| 2026-10-13 | Implementation | Complete; verification running | CI now compares each valid later round with its immediately preceding valid round and requires fresh approval on a plan changed by the revising commit. Every earlier lock is still checked. Only ci-checks.sh and VERSION (2.3.7) changed; test checkpoint 7be822d is unchanged. Syntax, internal links and whitespace checks pass; full self-test is running. |
+
 ## Decision log
 
 | Date | Decision | Why |
@@ -78,6 +80,8 @@ approved criteria.
 | 2026-10-13 | Temporarily use independent Codex critic and reviewer | Explicit owner instruction after Claude exhausted its session quota. |
 | 2026-10-13 | Apply the existing source-repository readiness exemption | Missing installed project hooks alone did not establish an onboarding requirement here. The earlier request for an owner waiver was mistaken; no tech-debt skip is needed. |
 | 2026-10-13 | Freeze regression tests by the normal source test checkpoint | This source repository is exempt from consuming-project onboarding. Owner approval is in the conversation and plan; no source `approvals.log`, synthetic owner prompt, or managed `test-lock` is created. Builder must preserve the checkpoint tests. |
+
+| 2026-10-13 | Keep the fresh-approval check local to CI | Reuse existing criteria and approval helpers without changing runtime hooks or policy files owned by the parallel parity task. Preserve the existing review range and cumulative protection from older lock snapshots. |
 
 ## Debt left on purpose
 

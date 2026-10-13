@@ -7,7 +7,7 @@
 #      reason on the same line: "# noqa: F401 -- <reason>".
 #   3. Every "Tests-First:" commit includes a plan whose criteria the owner
 #      approved (.ai/approvals.log). Tests it locks (.ai/test-lock) must not
-#      change later, except in another such commit (a new approved round).
+#      change later, except in a valid round with freshly approved criteria.
 #   4. New TODO/FIXME/HACK comments are listed for the reviewer (no failure).
 #   5. A plain-English summary of the criteria and their approval goes to
 #      the PR's check summary, so the owner can read it without code.
@@ -101,6 +101,21 @@ else
   echo "✅ no new lint suppressions"
 fi
 
+# A valid later round may revise old tests only with fresh approval for a
+# plan it changes. Compare with the preceding valid round, including rounds
+# that only added tests or omitted the lock, so approval cannot be reused.
+fresh_relock_approval() {
+  local c=$1 previous=$2 p now then log
+  log=$(git show "$previous:.ai/approvals.log" 2>/dev/null)
+  while IFS= read -r p; do
+    [[ $p == .ai/plans/*.md ]] && plan_approved_at "$c" "$p" || continue
+    now=$(git show "$c:$p" 2>/dev/null | criteria_hash)
+    then=$(git show "$previous:$p" 2>/dev/null | criteria_hash)
+    [ "$now" != "$then" ] && ! hash_approved "$now" <<<"$log" && return 0
+  done < <(git diff-tree --root --no-commit-id --name-only -r "$c")
+  return 1
+}
+
 # 3. Tests-First commits carry an approved plan; locked tests stay unchanged.
 locked_ok=1
 for c in $(git log --reverse --format=%H --grep='^Tests-First:' "$from..HEAD"); do
@@ -111,8 +126,14 @@ for c in $(git log --reverse --format=%H --grep='^Tests-First:' "$from..HEAD"); 
   fi
   lock=$(git show "$c:.ai/test-lock" 2>/dev/null | lock_paths)
   [ -n "$lock" ] || continue
-  for later in $(git rev-list "$c..HEAD"); do
-    valid_tests_first "$later" && continue   # a new round of tests with newly approved criteria
+  previous_round=$c
+  for later in $(git rev-list --reverse "$c..HEAD"); do
+    relock_ok=0
+    if valid_tests_first "$later"; then
+      fresh_relock_approval "$later" "$previous_round" && relock_ok=1
+      previous_round=$later
+    fi
+    [ "$relock_ok" = 1 ] && continue
     touched=$(git diff-tree --root --no-commit-id --name-only -r "$later" | grep -Fxf <(printf '%s\n' "$lock"))
     if [ -n "$touched" ]; then
       fail "Commit $(git log -1 --format='%h %s' "$later") changes locked tests:"
