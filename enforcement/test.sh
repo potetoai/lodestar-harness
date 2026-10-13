@@ -378,6 +378,7 @@ g checkout -q -f b6r; g clean -qfd
 guard tests/test_lock.py; t "guard: a second round locks its tests again" [ $? = 2 ]
 mkplan lock-demo "lock demo works"
 guard tests/test_lock.py; t "guard: criteria put back to an earlier approved version do not open the relock window" [ $? = 2 ]
+lockedit Write '{"content":"tests/test_new.py\n"}'; t "lock: criteria put back to an earlier approved version do not let a line be removed" [ $? = 2 ]
 g checkout -q -f b6base; g clean -qfd
 mkdir -p .ai/plans/completed; g mv .ai/plans/active/lock-demo.md .ai/plans/completed/
 guard tests/test_lock.py; t "guard: the lock expires when the task is completed" [ $? = 0 ]
