@@ -3,7 +3,7 @@
 # Check this project against the lodestar-harness Project Readiness Standard.
 # Usage: doctor.sh [project-dir] [--quiet]
 #   --quiet  print only the items that are not OK
-# Exit 1 when a required item fails.
+# Exit 1 when a required item fails, 2 when the wrong bash ran it (nothing checked).
 quiet=0 dir=.
 for a in "$@"; do
   case "$a" in
@@ -12,6 +12,25 @@ for a in "$@"; do
   esac
 done
 cd "$dir" || { echo "doctor: cannot open $dir" >&2; exit 1; }
+
+# A wrong bash makes healthy items fail. On Windows plain `bash` can be the
+# WSL shim (no make, jq or git there), and Git's usr\bin\bash.exe started
+# directly has no grep. Stop before any check, so the result is not read as
+# a project failure.
+wrong_bash() {
+  echo "doctor: wrong bash, nothing was checked: $1."
+  echo "On Windows run it with Git Bash: & \"C:\\Program Files\\Git\\bin\\bash.exe\" .claude/hooks/doctor.sh"
+  echo "This is not a project failure: do not start onboarding for it."
+  exit 2
+}
+for tool in grep awk find sort tail tr wc date dirname; do
+  command -v "$tool" >/dev/null 2>&1 || wrong_bash "this shell has no $tool"
+done
+if grep -qi microsoft /proc/version 2>/dev/null && [[ $(pwd) == /mnt/[a-z]/* ]]; then
+  for tool in make jq git; do
+    command -v "$tool" >/dev/null 2>&1 || wrong_bash "this is WSL in a Windows folder, without $tool"
+  done
+fi
 
 fails=0
 ok()   { [ $quiet = 1 ] || echo "✅ $1  $2"; }
