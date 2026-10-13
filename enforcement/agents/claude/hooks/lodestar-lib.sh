@@ -108,14 +108,17 @@ branch_changed_files() {
 
 # Relock window: the owner approved changed criteria after the last valid
 # Tests-First round, so the tester may rewrite locked tests until the new
-# round is committed. Without a fresh owner approval it never opens.
+# round is committed. Without a fresh owner approval it never opens: criteria
+# already in the approvals log of that round (a copy of the approved plan,
+# or a plan put back to an earlier approved version) do not count.
 relock_window() {
-  local c p now then
+  local c p now then log
   c=$(last_valid_tests_first) || return 1
+  log=$(git show "$c:.ai/approvals.log" 2>/dev/null)
   for p in .ai/plans/active/*.md; do
     [ -f "$p" ] && plan_approved_now "$p" || continue
     now=$(criteria_hash < "$p"); then=$(git show "$c:$p" 2>/dev/null | criteria_hash)
-    [ "$now" != "$then" ] && return 0
+    [ "$now" != "$then" ] && ! hash_approved "$now" <<<"$log" && return 0
   done
   return 1
 }

@@ -365,6 +365,19 @@ guard tests/test_lock.py; t "guard: criteria changed without approval keep the l
 lockedit Write '{"content":"tests/test_lock.py\ntests/test_new.py\n"}'; t "lock: criteria changed without approval block adding a line too" [ $? = 2 ]
 approve
 guard tests/test_lock.py; t "guard: owner-approved changed criteria open the relock window" [ $? = 0 ]
+# The window needs an approval newer than the last round: a copy of the
+# approved plan, or criteria the owner approved before that round, do not open it.
+g checkout -q -f b6base; g clean -qfd
+cp .ai/plans/active/lock-demo.md .ai/plans/active/copy.md
+guard tests/test_lock.py; t "guard: a copy of the approved plan does not open the relock window" [ $? = 2 ]
+lockedit Write '{"content":"tests/test_new.py\n"}'; t "lock: a copy of the approved plan does not let a line be removed" [ $? = 2 ]
+rm .ai/plans/active/copy.md
+mkplan second "second works"; approve
+guard tests/test_lock.py; t "guard: a new plan the owner approves mid-task opens the relock window" [ $? = 0 ]
+g checkout -q -f b6r; g clean -qfd
+guard tests/test_lock.py; t "guard: a second round locks its tests again" [ $? = 2 ]
+mkplan lock-demo "lock demo works"
+guard tests/test_lock.py; t "guard: criteria put back to an earlier approved version do not open the relock window" [ $? = 2 ]
 g checkout -q -f b6base; g clean -qfd
 mkdir -p .ai/plans/completed; g mv .ai/plans/active/lock-demo.md .ai/plans/completed/
 guard tests/test_lock.py; t "guard: the lock expires when the task is completed" [ $? = 0 ]
@@ -573,7 +586,11 @@ echo 'def test_a(): pass' > tests/test_a.py
 stopl; t "stop hook blocks an edit to a locked test after unlock (no CI)" [ $? = 2 ]
 g commit -qam "weaken" -m "Tests-First: sneaky"
 stopl; t "stop hook: a fake Tests-First trailer does not reset the lock" [ $? = 2 ]
-g reset -q --hard HEAD~1; mkplan t "a works" "b allowed"; approve
+g reset -q --hard HEAD~1
+cp .ai/plans/active/t.md .ai/plans/active/copy.md; echo 'def test_a(): pass' > tests/test_a.py
+stopl; t "stop hook: a copy of the approved plan keeps the lock" [ $? = 2 ]
+rm .ai/plans/active/copy.md
+mkplan t "a works" "b allowed"; approve
 echo 'def test_a(): assert 1' > tests/test_a.py
 stopl; t "stop hook: relock window after owner approves changed criteria" [ $? = 0 ]
 g add -A; g commit -qm "new round" -m "Tests-First: t v2"
