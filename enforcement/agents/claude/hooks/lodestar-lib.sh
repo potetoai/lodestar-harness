@@ -120,6 +120,38 @@ relock_window() {
   return 1
 }
 
+# Append-only edit of the test lock (the hook's input JSON in $1): while an
+# active plan is approved, a later step may add its test paths. Every path
+# already in the lock must still be there, unchanged, in the content after
+# the edit. An edit whose result cannot be worked out counts as a change.
+lock_append_only() {
+  local p ok=1 new old
+  for p in .ai/plans/active/*.md; do
+    [ -f "$p" ] && plan_approved_now "$p" && { ok=0; break; }
+  done
+  [ $ok = 0 ] || return 1
+  new=$(jq -r --rawfile cur .ai/test-lock '
+    def cr: gsub("\r"; "");
+    def swap($e):
+      (($e.old_string // "") | cr) as $o | (($e.new_string // "") | cr) as $n
+      | if ($o | length) == 0 then error("no old_string") else . end
+      | (. / $o) as $parts
+      | if ($parts | length) < 2 then error("old_string not found")
+        elif $e.replace_all == true then $parts | join($n)
+        else $parts[0] + $n + ($parts[1:] | join($o)) end;
+    .tool_input as $t
+    | if .tool_name == "Write" and ($t.content | type) == "string" then $t.content
+      elif .tool_name == "Edit" then ($cur | cr) | swap($t)
+      elif .tool_name == "MultiEdit" and ($t.edits | type) == "array" and ($t.edits | length) > 0
+        then reduce $t.edits[] as $e ($cur | cr; swap($e))
+      else error("result not known") end' <<<"$1" 2>/dev/null) || return 1
+  new=$(lock_paths <<<"$new")
+  while IFS= read -r old; do
+    grep -qxF -- "$old" <<<"$new" || return 1
+  done < <(lock_paths < .ai/test-lock)
+  return 0
+}
+
 # A valid Tests-First commit carries the trailer and changes a plan whose
 # criteria are approved at that commit. Anything else cannot lock or relock.
 valid_tests_first() {
