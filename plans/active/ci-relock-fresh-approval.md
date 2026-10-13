@@ -51,7 +51,7 @@ approved criteria.
 - [x] Write regression tests first and demonstrate the relevant failures on the old implementation.
 - [x] Implement the CI check and increment the managed template version.
 - [x] Run self-tests and documentation link checks; obtain independent security review.
-- [ ] Open a PR with evidence and await the owner's merge instruction.
+- [x] Open a PR with evidence and await the owner's merge instruction.
 
 ## Progress log
 
@@ -72,6 +72,7 @@ approved criteria.
 | 2026-10-13 | Independent review | Security review passed | Fresh Codex reviewer inspected the complete diff, CI and approval helpers, tests and approved criteria. No code or security findings. Two minor table-formatting errors in this plan were fixed; reviewer did not rerun the suite. Full self-test remains in progress. |
 | 2026-10-13 | Final verification | Passed | Full Windows self-test exited 0: all 367 assertions passed, including all 28 new regressions. Old implementation had 14 expected failures; all 339 original assertions passed before and after. Independent security review passed. Tests are unchanged from checkpoint 7be822d; shell syntax, documentation links and diff whitespace pass. |
 | 2026-10-13 | PR publication | Blocked by automatic approval review | The combined branch push and PR creation command was rejected before execution: the reviewer requires explicit owner approval to export code and metadata to the GitHub origin repository. Implementation and verification are complete; the PR body is prepared locally. No push or PR was performed. Await explicit publication approval; do not retry indirectly. |
+| 2026-10-13 | PR publication | Published; awaiting owner merge instruction | Owner explicitly authorized the GitHub push and requested Codex attribution. Branch published and PR #32 opened with verification evidence; a PR comment identifies Codex as the implementer, tester and independent reviewer. The earlier automatic approval blocker is resolved. Merge remains subject to the owner's instruction and green CI. |
 
 ## Decision log
 
