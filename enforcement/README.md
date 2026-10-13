@@ -30,7 +30,9 @@ winget install --exact --id ezwinports.make
 winget install --exact --id jqlang.jq
 ```
 
-Then restart the terminal and Claude Code (and Orca, if you use it) so they see the new `PATH`.
+Then restart the terminal and Claude Code (and Orca, if you use it) so they see
+the new User `PATH`. `setup-machine.sh` adds Git Bash, `make`, and `jq` to it,
+so direct Windows commands resolve to Git Bash rather than the WSL shim.
 On macOS: `brew install make jq`. On Linux both are usually installed.
 
 Then register the global reminder. At the start of every session in a

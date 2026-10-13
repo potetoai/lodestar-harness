@@ -54,6 +54,29 @@ winget_bin() {   # add winget's make/jq folders to PATH for this run
     [ -d "$d" ] && case ":$PATH:" in *":$d:"*) ;; *) PATH="$PATH:$d" ;; esac
   done
 }
+# WinGet's portable packages are not added to PATH by winget. A shell that
+# runs this script can use winget_bin above, but new Windows terminals (and
+# Orca's agent processes) need the paths in the user environment too. Put
+# them before WindowsApps so `bash` resolves to Git Bash, not the WSL shim.
+add_user_path() {   # add_user_path WINDOWS_DIR LABEL
+  local d=$1 label=$2
+  [ $windows = 1 ] || return 0
+  [ -d "$d" ] || return 0
+  d=$(cygpath -w "$d")
+  if LODESTAR_PATH_ENTRY="$d" powershell.exe -NoProfile -Command '$add=$env:LODESTAR_PATH_ENTRY; $path=[Environment]::GetEnvironmentVariable("Path", "User"); [Environment]::ExpandEnvironmentVariables($path).Split(";", [StringSplitOptions]::RemoveEmptyEntries) -contains $add' 2>/dev/null | grep -qi true; then
+    ok "$label is on the Windows user PATH"
+  elif [ $check = 1 ]; then
+    warn "$label is not on the Windows user PATH (restart Orca after adding it)."
+  elif ask "Add $label to the Windows user PATH?"; then
+    if LODESTAR_PATH_ENTRY="$d" powershell.exe -NoProfile -Command '$add=$env:LODESTAR_PATH_ENTRY; $path=[Environment]::GetEnvironmentVariable("Path", "User"); $entries=@($path -split ";" | Where-Object { $_ -and -not $_.Equals($add, [StringComparison]::OrdinalIgnoreCase) }); [Environment]::SetEnvironmentVariable("Path", (($add + $entries) -join ";"), "User")'; then
+      ok "added $label to the Windows user PATH (restart Orca to use it)"
+    else
+      bad "could not add $label to the Windows user PATH"
+    fi
+  else
+    warn "$label is not on the Windows user PATH. Direct Windows terminals will not find it."
+  fi
+}
 need_tool() {   # need_tool NAME WINGET_ID HINT
   local name=$1 id=$2 hint=$3
   if command -v "$name" >/dev/null 2>&1; then ok "$name: $("$name" --version 2>&1 | head -n1)"; return; fi
@@ -74,6 +97,17 @@ need_tool() {   # need_tool NAME WINGET_ID HINT
 command -v git >/dev/null 2>&1 && ok "git: $(git --version)" || bad "git is missing. Install Git for Windows: https://git-scm.com"
 need_tool make ezwinports.make "Windows: winget install --exact --id ezwinports.make · macOS: brew install make · Linux: apt install make"
 need_tool jq jqlang.jq "Windows: winget install --exact --id jqlang.jq · macOS: brew install jq · Linux: apt install jq"
+# Keep Windows-native agent terminals independent of the shell that happened
+# to run setup-machine.sh. Git's bin directory supplies bash.exe; the two
+# WinGet package paths supply make.exe and jq.exe.
+if [ $windows = 1 ]; then
+  git_exec=$(cygpath -w "$(git --exec-path)" | tr '\\' /)
+  git_bin=$(dirname "$(dirname "$(dirname "$git_exec")")")/bin
+  add_user_path "$git_bin" "Git Bash"
+  base="$(cygpath -u "${LOCALAPPDATA:-}" 2>/dev/null)/Microsoft/WinGet/Packages"
+  for d in "$base"/ezwinports.make_*/bin; do [ -d "$d" ] && add_user_path "$d" "make"; done
+  for d in "$base"/jqlang.jq_*; do [ -d "$d" ] && add_user_path "$d" "jq"; done
+fi
 command -v claude >/dev/null 2>&1 && ok "claude: $(claude --version 2>&1 | head -n1)" || warn "Claude Code is not installed or not on PATH."
 command -v gh >/dev/null 2>&1 && ok "gh: $(gh --version | head -n1)" || warn "GitHub CLI (gh) is missing: needed for PRs and CI checks. https://cli.github.com"
 command -v python >/dev/null 2>&1 && ok "python: $(python --version 2>&1)" || warn "python is missing: needed for Python projects."
