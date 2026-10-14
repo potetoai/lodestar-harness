@@ -151,7 +151,10 @@ global_block "$home/.claude/CLAUDE.md"
 # Codex reads AGENTS.md from its home: ~/.codex, or CODEX_HOME when set (an
 # orchestrator such as Orca gives Codex a home of its own). Write both.
 codex_homes=("$home/.codex")
-[ -n "${CODEX_HOME:-}" ] && [ "${CODEX_HOME//\\//}" != "$home/.codex" ] && codex_homes+=("$CODEX_HOME")
+if [ -n "${CODEX_HOME:-}" ]; then
+  active=$(cygpath -u "$CODEX_HOME" 2>/dev/null || printf '%s' "${CODEX_HOME//\\//}")
+  [ "$active" != "$(cygpath -u "$home/.codex" 2>/dev/null || printf '%s' "$home/.codex")" ] && codex_homes+=("$active")
+fi
 for d in "${codex_homes[@]}"; do
   if command -v codex >/dev/null 2>&1 || [ -d "$d" ]; then global_block "$d/AGENTS.md"; fi
 done
@@ -169,6 +172,16 @@ elif command -v jq >/dev/null 2>&1; then
 else
   bad "global reminder hooks need jq; install jq and run this again."
 fi
+# Codex: the same reminders in each Codex home's hooks.json. Installing is
+# not trusting: the owner reviews them in Codex (/hooks), once per home.
+for d in "${codex_homes[@]}"; do
+  command -v codex >/dev/null 2>&1 || [ -d "$d" ] || continue
+  if ! command -v jq >/dev/null 2>&1; then bad "Codex reminder hooks in $d need jq."
+  elif CODEX_HOME=$d bash "$here/agents/codex/global/install.sh" --check >/dev/null 2>&1; then ok "Codex reminder hooks are installed in $d"
+  elif [ $check = 1 ]; then bad "Codex reminder hooks are missing in $d (run without --check to install)."
+  elif msg=$(CODEX_HOME=$d bash "$here/agents/codex/global/install.sh" 2>&1); then ok "installed the Codex reminder hooks in $d (trust them in Codex: /hooks)"
+  else bad "Codex reminder hooks in $d: $msg"; fi
+done
 
 # 5. Self-test: proves hooks, bootstrap and doctor work on this machine.
 if [ $selftest = 1 ]; then

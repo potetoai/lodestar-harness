@@ -6,14 +6,14 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'cd ./$(git rev-parse --show-cdup) && exec bash .claude/hooks/codex-hook.sh protect-tests'",
-            "commandWindows": "& (Join-Path (git --exec-path) ../../../bin/bash.exe) -c 'cd ./$(git rev-parse --show-cdup) && exec bash .claude/hooks/codex-hook.sh protect-tests'; exit $LASTEXITCODE",
+            "command": "bash -c 'cd ./$(git rev-parse --show-cdup) && [ -r .claude/hooks/codex-hook.sh ] || exit 2; exec bash .claude/hooks/codex-hook.sh protect-tests'",
+            "commandWindows": "$b = Join-Path (git --exec-path) ../../../bin/bash.exe; $global:LASTEXITCODE = 2; & $b -c 'cd ./$(git rev-parse --show-cdup) && exec bash .claude/hooks/codex-hook.sh protect-tests'; if ($LASTEXITCODE -eq 0) { exit 0 }; exit 2",
             "timeout": 30
           },
           {
             "type": "command",
-            "command": "bash -c 'cd ./$(git rev-parse --show-cdup) && exec bash .claude/hooks/codex-hook.sh sensitive-gate'",
-            "commandWindows": "& (Join-Path (git --exec-path) ../../../bin/bash.exe) -c 'cd ./$(git rev-parse --show-cdup) && exec bash .claude/hooks/codex-hook.sh sensitive-gate'; exit $LASTEXITCODE",
+            "command": "bash -c 'cd ./$(git rev-parse --show-cdup) && [ -r .claude/hooks/codex-hook.sh ] || exit 2; exec bash .claude/hooks/codex-hook.sh sensitive-gate'",
+            "commandWindows": "$b = Join-Path (git --exec-path) ../../../bin/bash.exe; $global:LASTEXITCODE = 2; & $b -c 'cd ./$(git rev-parse --show-cdup) && exec bash .claude/hooks/codex-hook.sh sensitive-gate'; if ($LASTEXITCODE -eq 0) { exit 0 }; exit 2",
             "timeout": 30
           }
         ]
@@ -23,8 +23,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'cd ./$(git rev-parse --show-cdup) && exec bash .claude/hooks/codex-hook.sh guard-install'",
-            "commandWindows": "& (Join-Path (git --exec-path) ../../../bin/bash.exe) -c 'cd ./$(git rev-parse --show-cdup) && exec bash .claude/hooks/codex-hook.sh guard-install'; exit $LASTEXITCODE",
+            "command": "bash -c 'cd ./$(git rev-parse --show-cdup) && [ -r .claude/hooks/codex-hook.sh ] || exit 2; exec bash .claude/hooks/codex-hook.sh guard-install'",
+            "commandWindows": "$b = Join-Path (git --exec-path) ../../../bin/bash.exe; $global:LASTEXITCODE = 2; & $b -c 'cd ./$(git rev-parse --show-cdup) && exec bash .claude/hooks/codex-hook.sh guard-install'; if ($LASTEXITCODE -eq 0) { exit 0 }; exit 2",
             "timeout": 30
           }
         ]
@@ -51,6 +51,12 @@
             "command": "bash -c 'cd ./$(git rev-parse --show-cdup) && exec bash .claude/hooks/codex-hook.sh verify-before-stop'",
             "commandWindows": "& (Join-Path (git --exec-path) ../../../bin/bash.exe) -c 'cd ./$(git rev-parse --show-cdup) && exec bash .claude/hooks/codex-hook.sh verify-before-stop'; exit $LASTEXITCODE",
             "timeout": 300
+          },
+          {
+            "type": "command",
+            "command": "bash -c 'cd ./$(git rev-parse --show-cdup) && exec bash .claude/hooks/codex-hook.sh feedback-check'",
+            "commandWindows": "& (Join-Path (git --exec-path) ../../../bin/bash.exe) -c 'cd ./$(git rev-parse --show-cdup) && exec bash .claude/hooks/codex-hook.sh feedback-check'; exit $LASTEXITCODE",
+            "timeout": 30
           }
         ]
       }

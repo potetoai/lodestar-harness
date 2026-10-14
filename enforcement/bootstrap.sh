@@ -42,6 +42,13 @@ cd "$dir"
 
 say() { printf '  %-8s %s\n' "$1" "$2"; }
 
+# Refuse malformed hook configuration before changing anything.
+for f in .claude/settings.json:claude/settings.json .codex/hooks.json:codex/hooks.json; do
+  [ -f "${f%%:*}" ] || continue
+  jq --arg kind project --slurpfile ours "$here/agents/${f#*:}" -f "$here/agents/merge-hooks.jq" "${f%%:*}" >/dev/null 2>&1 ||
+    { echo "${f%%:*} is not valid hook configuration. Fix it by hand and run this again; nothing was changed." >&2; exit 1; }
+done
+
 # Templates are written with LF. On Windows git may check this repo out as
 # CRLF (core.autocrlf=true); copied as is, every --upgrade would rewrite an
 # unchanged file and formatters such as Prettier would fail on it.
@@ -64,8 +71,12 @@ put() {
 for h in lodestar-lib lint-file verify-before-stop protect-tests sensitive-gate guard-install approval-record feedback-check ci-checks doctor; do
   put "$here/agents/claude/hooks/$h.sh" ".claude/hooks/$h.sh" managed
 done
+# Helpers sourced by feedback-check.sh (reminder state, Codex owner messages).
+put "$here/agents/claude/hooks/reminder-lib.sh" .claude/hooks/reminder-lib.sh managed
+put "$here/agents/claude/hooks/codex-owner.jq" .claude/hooks/codex-owner.jq managed
 # Codex runs the same hooks through an adapter (.codex/hooks.json below).
 put "$here/agents/codex/codex-hook.sh" .claude/hooks/codex-hook.sh managed
+put "$here/agents/codex/codex-patch.jq" .claude/hooks/codex-patch.jq managed
 put "$here/github/ci.yml" .github/workflows/ci.yml managed
 # Renamed in 2.0.0 (orca-lib.sh became lodestar-lib.sh).
 if [ $upgrade = 1 ] && [ -f .claude/hooks/orca-lib.sh ]; then rm .claude/hooks/orca-lib.sh; say removed .claude/hooks/orca-lib.sh; fi
@@ -165,30 +176,21 @@ elif ! grep -qxF '*.sh text eol=lf' .gitattributes 2>/dev/null; then
 fi
 
 # .claude/settings.json (Claude) and .codex/hooks.json (Codex, same format):
-# add our hooks, keep everything else.
-# ponytail: matches hooks by exact command string (a match takes our other
-# fields, such as commandWindows); if a new template version changes a
-# command, --upgrade adds it next to the old one. Remove the old
-# entry by hand, or match by script name if that starts to happen.
+# add or repair our hooks (event, matcher, fields), keep everything else.
+# agents/merge-hooks.jq says which hooks are ours. Malformed files were
+# refused at the start, before any change.
 merge_hooks() {   # merge_hooks OURS TARGET
   local ours=$1 target=$2 merged
   if [ ! -f "$target" ]; then
     put "$ours" "$target" managed
     return
   fi
-  merged=$(jq -s '
-    def cmds: [.[]?.hooks[]?.command];
-    .[0] as $cur | .[1] as $ours
-    # Our hooks already present take our current fields (e.g. commandWindows).
-    | ([$ours.hooks[][].hooks[]] | INDEX(.command)) as $by
-    | $cur | .hooks |= (. // {} | map_values(map(if .hooks then .hooks |= map($by[.command // ""] // .) else . end)))
-    | .hooks = reduce ($ours.hooks | to_entries[]) as $e (.hooks;
-        (.[$e.key] // []) as $arr | ($arr | cmds) as $have
-        # Compare hook by hook: a group may gain a new hook in a later version.
-        | .[$e.key] = $arr + [$e.value[]
-            | .hooks |= map(select(.command as $c | ($have | index($c)) == null))
-            | select(.hooks | length > 0)])
-  ' "$target" "$ours" | tr -d '\r')
+  # An empty file has no hooks; jq would print nothing for it.
+  if ! grep -q '[^[:space:]]' "$target"; then
+    copy "$ours" "$target"; say created "$target"
+    return
+  fi
+  merged=$(jq --arg kind project --slurpfile ours "$ours" -f "$here/agents/merge-hooks.jq" "$target" | tr -d '\r')
   if [ "$merged" != "$(jq . "$target" | tr -d '\r')" ]; then
     printf '%s\n' "$merged" > "$target"; say merged "$target"
   fi

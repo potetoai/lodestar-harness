@@ -10,12 +10,16 @@ Machine checks that every Lodestar project must pass. The rules are in
 | `user-path.ps1` | tool | Windows: puts a folder first in the user `PATH`; called by `setup-machine.sh` |
 | `VERSION` | tool | Template version, recorded in each project's `.ai/enforcement.json` |
 | `agents/claude/` | [managed] | Claude Code hooks, `settings.json`, `doctor.sh`; `global/` holds the machine-wide reminder |
-| `agents/codex/` | [managed] | Codex `hooks.json` and `codex-hook.sh`, the adapter that runs the same hooks for Codex |
+| `agents/codex/` | [managed] | Codex project adapter/configuration and global installers that run shared Lodestar checks |
 | `github/ci.yml` | [managed] | GitHub Actions workflow; calls only `make` |
 | `stacks/<lang>/` | [project] | Starting `Makefile`, `.gitignore`, deps for one language |
 | `project/` | [project] | Starting `AGENTS.md` and `.ai/` files |
 
 The project `.ai/project.md` comes from `../project/.ai/project.md`.
+
+Claude remains Orca's default agent. Codex uses the same policy when selected;
+installing its hooks does not change runtime defaults. See
+[runtime parity](runtime-parity.md) for lifecycle coverage and activation checks.
 
 ## 1. One-time machine setup
 
@@ -42,10 +46,20 @@ never blocks:
 
 ```bash
 bash /path/to/lodestar-harness/enforcement/agents/claude/global/install.sh
+# Codex: the active CODEX_HOME, or ~/.codex when unset.
+bash /path/to/lodestar-harness/enforcement/agents/codex/global/install.sh
 ```
 
-It adds one `SessionStart` hook to `~/.claude/settings.json`, keeps
-everything else, and saves a `.bak` copy first.
+Global installation registers session-start readiness/maintenance, per-prompt
+readiness and post-tool context reminders. Claude uses `~/.claude/settings.json`;
+Codex uses `<CODEX_HOME>/hooks.json`. The machine setup command installs Codex
+instructions and hooks in both the default and active homes. Existing Orca
+hooks and unrelated settings are preserved. Changed configuration is backed
+up; malformed or ambiguous hook configuration is reported rather than overwritten.
+
+The shared readiness script already exempts the Lodestar source repository,
+after its handoff reminder. This source repository uses its own `AGENTS.md`,
+README, self-tests and link checks, without another onboarding waiver.
 
 ## 2. Add the checks to a project
 
@@ -63,15 +77,21 @@ Then:
 4. Run `bash .claude/hooks/doctor.sh` until it prints "Ready".
 5. On GitHub, protect `main`: require a pull request and the `CI` check.
 
-Running `bootstrap.sh` again is safe: it only adds what is missing. An
-existing `.claude/settings.json` or `.codex/hooks.json` keeps its settings;
-only the hooks are added.
+Running `bootstrap.sh` again is safe: it preserves unrelated settings and
+hooks, adds missing Lodestar hooks and repairs their managed registrations.
+Events and matchers matter as well as commands; a guard on the wrong event
+does not satisfy registration checks.
 
 Codex runs project hooks only after the owner trusts them: open Codex in the
 project, type `/hooks`, trust the Lodestar hooks. Codex asks again when
-`.codex/hooks.json` changes. Doctor A4c warns while they are not trusted.
+the hook definition changes. Doctor A4c asks Codex which required hooks
+are missing (an untrusted project shows none), disabled, untrusted or
+modified, and warns when Codex does not answer; an old trust entry does not
+establish current trust. It starts Codex, so it does not run with `--quiet`.
 Codex keeps trust per home (`~/.codex`, or `CODEX_HOME` when an orchestrator
 sets it), so trust the hooks once in each; A4c names the home it checked.
+Review global hooks as well as project hooks. Activation remains pending
+until the required definitions are enabled/trusted and live execution is verified.
 
 Doctor stops with "wrong bash" (exit 2, nothing checked) when it is started
 by the WSL shim in a Windows folder or by a bash without `grep`. That is not
@@ -102,4 +122,5 @@ installed with LF line endings, also from a CRLF checkout of this repo.
 
 ```bash
 bash enforcement/test.sh
+bash scripts/check-links.sh
 ```

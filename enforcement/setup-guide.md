@@ -37,14 +37,28 @@ The script checks each item and prints a ✅ / ⚠️ / ❌ table:
 - `make` or `jq` missing: it asks, then installs them with winget.
 - It creates `~/.claude/CLAUDE.md` pointing to lodestar-harness on this machine,
   and the same block in `~/.codex/AGENTS.md` when Codex is installed.
+  When `CODEX_HOME` names another home, it installs the same instructions
+  and global hooks there too, preserving Orca's existing hooks.
   If a file already has your own content, the script only **adds** the
   Lodestar part and keeps a backup (`CLAUDE.md.bak`, `AGENTS.md.bak`).
 - It installs the machine-wide hooks: the readiness reminder, and the
   context nudge that asks for `/clear` once a session passes 200k tokens.
+  Claude uses its settings file; Codex uses `hooks.json` in its homes.
+  Claude remains the default agent in Orca; these registrations do not
+  change the default provider or model.
 - It runs the self-test (1–2 minutes).
 
 Items already in place show ✅ and are skipped. Running it again is always
 safe.
+
+In each Codex home you use, inspect `/hooks` and trust the current Lodestar
+definitions. New or changed definitions require review. An installed hook
+is not evidence that it ran: doctor names unverified activation, and the
+[runtime parity guide](runtime-parity.md) describes the live checks.
+
+The Lodestar source checkout itself is exempt from consuming-project
+onboarding. Its readiness hook still points to `.ai/handoff.md`; verification
+here is `bash enforcement/test.sh` and `bash scripts/check-links.sh`.
 
 To **only look, without changing anything**: add `--check` at the end of the
 command.

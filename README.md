@@ -7,6 +7,11 @@ This repo defines the **intelligence and engineering policy**: which workflow,
 which roles, which checks, and to what standard. It does not run orchestration
 itself.
 
+Claude remains the default agent in Orca. When the owner selects Codex, it
+follows the same Lodestar rules and checks; hook installation does not change
+the default agent. Runtime coverage and activation are described in
+[Runtime parity](enforcement/runtime-parity.md).
+
 > The agent runtime executes the work: Claude Code alone (subagents, git
 > worktrees), or an orchestrator such as Orca ADE when installed.
 > Lodestar-harness decides what should happen and to what standard.

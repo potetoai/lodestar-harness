@@ -3,29 +3,32 @@
 # Stop: when the owner's last message looks like a correction ("sai", "nhầm",
 # "làm lại", "wrong"...), hold the agent once and ask it to judge: if it made
 # a mistake, it logs one summary row in .ai/feedback-log.md
-# (rules/enforcement.md, section 8). The hook itself stores nothing: it reads
-# the last message from the session transcript and forgets it.
+# (rules/enforcement.md, section 8). Only hashed message identifiers persist.
 [ "$LODESTAR_SKIP_HOOKS" = "1" ] && exit 0
 cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
 [ -f .ai/feedback-log.md ] || exit 0      # not onboarded
 
-transcript=$(jq -j '.transcript_path // empty')
-[ -n "$transcript" ] && [ -f "$transcript" ] || exit 0
-
-# Last message the owner typed: string content, not a tool result.
-last=$(tac "$transcript" | jq -c 'select(.type == "user" and (.message.content | type) == "string" and (.isMeta | not))
-  | [(.promptId // .uuid), .message.content]' 2>/dev/null | head -n1 | tr -d '\r')
-[ -n "$last" ] || exit 0
-id=$(jq -r '.[0]' <<<"$last" | tr -d '\r')
-text=$(jq -r '.[1]' <<<"$last" | tr -d '\r')
-
-# Ask at most once per owner message.
-state="$(git rev-parse --git-dir 2>/dev/null)/lodestar-feedback-asked"
-[ "$(cat "$state" 2>/dev/null)" = "$id" ] && exit 0
+here=$(cd "$(dirname "$0")" && pwd)
+. "$here/reminder-lib.sh" || { echo 'Lodestar feedback unavailable: missing reminder helper.' >&2; exit 0; }
+reminder_input || { advisory_unavailable 'missing or invalid feedback transcript/session/dependency'; exit 0; }
+if [ "$runtime" = codex ]; then
+  last=$(jq -cs -f "$here/codex-owner.jq" "$transcript" 2>/dev/null) || { advisory_unavailable 'unsupported owner transcript'; exit 0; }
+else
+  # Read backwards and stop at the owner's last message; long transcripts stay cheap.
+  last=$(tac "$transcript" | jq -Rc 'fromjson? | select(.type == "user" and (.message.content | type) == "string" and (.isMeta | not)) | {id:(.promptId // .uuid), text:.message.content}' 2>/dev/null | head -n1 | tr -d '\r')
+  [ -n "$last" ] || last=null
+fi
+[ "$last" != null ] || exit 0
+id=$(jq -r '.id // empty' <<<"$last")
+text=$(jq -r '.text' <<<"$last")
+[ -n "$id" ] || { advisory_unavailable 'missing owner message identity'; exit 0; }
 
 grep -qiE '(^|[^[:alpha:]])(sai|nhầm|nham|làm lại|lam lai|sửa lại|sua lai|không đúng|khong dung|chưa đúng|chua dung|không phải|khong phai|quên|quen mat|wrong|mistake|not what i|redo)([^[:alpha:]]|$)' <<<"$text" || exit 0
 
-echo "$id" > "$state" 2>/dev/null
+reminder_project_dir=$(git rev-parse --absolute-git-dir 2>/dev/null)
+reminder_claim feedback "$id"; claimed=$?
+[ "$claimed" = 1 ] && exit 0
+[ "$claimed" = 0 ] || { advisory_unavailable 'cannot persist feedback reminder state'; exit 0; }
 cat >&2 <<'EOF'
 Check before finishing: the owner's last message may correct a mistake you made.
 - If it does: add one row to .ai/feedback-log.md now: date | short tag (reuse an

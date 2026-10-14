@@ -17,7 +17,8 @@ Distinguish installed configuration from hooks that the runtime actually runs.
   The earlier waiver request was unnecessary; the debt entry is closed.
   Consuming projects still require readiness. This clarification is in scope.
 - Independent criteria review and re-review are complete with no remaining
-  findings. Owner approved the reviewed criteria; tests-first work is next.
+  findings. Owner approved the reviewed criteria; tests are committed at
+  `ad7b4bd`. Implementation is partial and paused at the owner's request.
 - Use this repository's existing shell self-tests and documentation checks.
   Do not manufacture an approval log or claim installed approval hooks ran.
 
@@ -197,7 +198,8 @@ below are part of the hashed criteria, not optional implementation notes.
   no approval log or hook event was manufactured.
 - Subsequent owner clarification: "sửa lại, mặc định Orca thì vẫn là CLaude".
   Preserve Claude as Orca's default; the approved parity criteria are unchanged.
-- Test boundary: tests ready for commit; production code unchanged.
+- Test boundary: commit `ad7b4bd` (`Tests-First: codex-lodestar-parity`).
+  The following two test files are immutable during implementation.
   `enforcement/test-parity.sh` SHA-256:
   `1e87bc81cf6fc608acc39cc764846d3870310f2a41ebc3a0d51a5093deeb663e`.
   `enforcement/test.sh` SHA-256:
@@ -254,6 +256,43 @@ The transcript format is explicitly not a stable hook interface; normalize
 only verified formats and report unsupported data. Preserve CI and sandbox
 controls rather than promising that hooks can intercept every possible write.
 
+## Rollout plan (prepared 2026-10-15, nothing applied)
+
+Dry runs on copies only; no real home or project was changed.
+
+- Machine (`setup-machine.sh --check`): tools, PATH, the global Claude block
+  and both Codex `AGENTS.md` blocks are current; Claude global hooks are
+  installed. Missing: Codex reminder hooks in both homes.
+  - Default home `C:/Users/PC/.codex/hooks.json`: `{"hooks": {}}` becomes
+    SessionStart readiness, UserPromptSubmit readiness `--prompt` and
+    PostToolUse `*` context-nudge, each pointing at
+    `D:/AI/Lodestar-harness/enforcement/agents/codex/global/codex-global-hook.sh`.
+  - Active Orca home: the same three entries appended as new groups; every
+    Orca entry is unchanged. Check in the live smoke whether Orca rewrites
+    this file when it starts an account.
+  - Apply with `bash enforcement/setup-machine.sh` (asks before each change,
+    keeps `hooks.json.bak`). The hooks run this checkout's code, so install
+    only with the owner's go, for the live smoke on the reviewed branch.
+- Projects, from `main` (App01 `949d3a4`, vn30 `3670f34`), both 2.3.5:
+  `bootstrap.sh --upgrade` updates `codex-hook.sh`, `doctor.sh`,
+  `feedback-check.sh`, `lodestar-lib.sh` (2.3.6 relock fix), creates
+  `reminder-lib.sh`, `codex-owner.jq`, `codex-patch.jq`, rewrites the three
+  Codex guard commands (fail closed), adds Codex Stop `feedback-check` and
+  sets version 2.4.0; `.claude/settings.json` is unchanged. Six files,
+  +241/-67, three new. Doctor on the upgraded copies: Ready; A4c warns that
+  Codex has not trusted the hooks (expected).
+  - App01: clean on `main`; upgrade on a new branch, PR, CI, merge on green.
+  - vn30: its checkout holds another session's uncommitted docs work on
+    `docs/rsi-rules-pilot-plan`; do not switch it. Upgrade in a separate
+    worktree from `main`, PR, CI, merge on green.
+- Trust: changed `.codex/hooks.json` changes every hook hash, so existing
+  trust becomes `modified`. The owner reviews and trusts with `/hooks` in a
+  Codex using each home (default and Orca), per project. Never written for
+  the owner. Doctor A4c then shows trusted or the exact gap.
+- Order: owner go → machine install → live smoke in a throwaway
+  project (step 8) → source PR merged → project upgrade PRs → owner trust
+  → doctor A4c per project and home → report (C9).
+
 ## Progress log
 
 | Date | Phase | Result |
@@ -270,6 +309,16 @@ controls rather than promising that hooks can intercept every possible write.
 | 2026-10-13 | Approval | Owner approved `codex-lodestar-parity` at the reviewed hash; start tests first. |
 | 2026-10-13 | Runtime default | Owner clarified that Orca defaults to Claude. Recorded this constraint; no runtime defaults changed and no change to the approved criteria. |
 | 2026-10-13 | Tests first | Independent tester produced 121 focused checks: 46 passed, 75 failed on unmodified production. Runtime-derived synthetic transcript fixtures distinguish owner, injected and child-session content. Test hashes verified by coordinator; prepare immutable test commit. |
+| 2026-10-13 | Test boundary | Created `ad7b4bd` with the two test files, approved plan and task-owned investigation notes. Start implementation; unrelated files were not staged. |
+| 2026-10-13 | Partial implementation | Shared reminder/provenance helpers, feedback/context changes and global Codex adapter written but untested; policy/install docs drafted ahead of implementation. Project adapter replacement interrupted after deletion. No installer, doctor or live rollout completed. |
+| 2026-10-13 | Owner pause | Owner requested stop and a detailed handoff. Builder stopped with no background processes. `enforcement/agents/codex/codex-hook.sh` is missing; do not deploy this snapshot. Resume from `.ai/handoff.md`; frozen tests remain unchanged. |
+| 2026-10-13 | Evaluation and second pause | Claude session reviewed the partial work and restored `codex-hook.sh` from `ad7b4bd`; parity suite 63 passed / 58 failed, frozen test hashes unchanged. Found helpers not installed by bootstrap, a slower live `context-nudge.sh` and a lock that can stay stuck; recorded in `.ai/handoff.md`. Owner paused again before further implementation. |
+| 2026-10-14 | Reminder wiring | Bootstrap installs `reminder-lib.sh` and `codex-owner.jq`; adapter sets `LODESTAR_RUNTIME=codex`; Codex Stop registers `feedback-check`. `context-nudge.sh` reads the last 400 lines again (same speed as `ad7b4bd` on a 14 MB transcript); stale reminder locks are recovered after a minute. Parity 78 passed / 43 failed (C2=3, C3=9, C5=2, C6=3, C7=26); every C4 check passes. Full suite: only parity checks and the new A4c stale-trust check fail; links pass; test hashes unchanged. |
+| 2026-10-14 | Project adapter | Rewrote `codex-hook.sh` to fail closed by hook kind (guard blocks, Stop keeps only its repeated-Stop escape, advisory reports unavailable), strip Windows CRLF from jq output (a trailing CR had let a path skip the guards), and check all patch paths. New `codex-patch.jq` rebuilds `.ai/test-lock` exactly or not at all, for `lock_append_only`. Codex `approval-record` records only from the owner's own session (fixture-checked: child and unknown sessions refused, owner recorded). Feedback state moved back into the project git dir after a test run wrote fixture state to the real `~/.claude` (cleaned). Removed the Codex/source-exemption additions from the global CLAUDE.md and shortened README/ROUTER (token cost). Parity 106/15 (C2=3, C3=9, C6=3); full suite fails only those and A4c; links pass; test hashes unchanged. Independent review found 4 issues: Windows path aliases, missing guard library, a guard that cannot start on Windows, and lock rebuild on `@@ `. All fixed; attacks reproduced as blocked; suites unchanged. |
+| 2026-10-14 | Installers | New `enforcement/agents/merge-hooks.jq` decides which hooks are Lodestar's by generated command shape (script and check, not path), keeps the first one on the template event/matcher, removes misplaced or duplicate copies, appends missing ones, keeps all other hooks and refuses malformed files unchanged. Bootstrap uses it for both runtimes and refuses malformed configs before any change. New `agents/codex/global/install.sh` (with `--check`) registers readiness, prompt readiness and context nudge with Windows entry points; never writes `config.toml`. `setup-machine.sh` installs it in the default and active Codex homes. Scratch copy of the real Orca home: only three entries added, Orca hooks unchanged, second run no change. Parity 118/3 (C6 doctor only); full suite fails only those and A4c; links pass; test hashes unchanged. Unix `command` text left unchanged: frozen `test.sh` selects hooks by its ending. |
+| 2026-10-15 | Doctor | A4 and A4b check each hook on its event and matcher (A4b also requires feedback-check and the Codex helper files). A4c asks Codex `app-server hooks/list` for the project and names each required hook that is missing (untrusted project), disabled, untrusted or modified; no answer is a warning (unverified). Skipped with `--quiet` (it starts Codex). Live probes in a scratch home: untrusted, trusted, modified (stale hash), disabled and full-trust all reported correctly; an edited hook turned modified. Found: project trust is a separate layer; the app-server writes Codex state files into the home. Template 2.4.0; docs aligned. Parity 121/0; full suite, links and diff check pass; test hashes unchanged. |
+| 2026-10-15 | Independent review | Sonnet reviewer: 1 major, 3 minor, 2 suggestions; test hashes verified. Fixed: a UNC path (`//localhost/c$/...`) to a project file skipped every `apply_patch` guard (reproduced); network paths now block and subst/junction names map back to the project by file identity (reproduced as blocked). Empty `hooks.json` now merges as `{}` in bootstrap and the global installer. Unix guard commands exit 2 when the adapter is missing (the test-selected command ending is unchanged). Doctor A4c requires every copy of a check to be enabled and trusted. A Codex owner transcript whose user messages all lack the known marker reports unavailable. Indented patch headers make the lock rebuild fail. `runtime-parity.md` drops the unverified exec claim and states the shell-write, path and CLI-only approval limits. Left open: the Codex path slurps the whole transcript on Stop and owner prompts (slower on large rollouts); A4c does not match the event name until live hooks/list output confirms its format. |
+| 2026-10-15 | Rollout plan | Dry runs on copies of both Codex homes and of App01/vn30 `main`; diffs and order recorded under Rollout plan. Nothing real changed. vn30 has another session's docs work, so its upgrade goes in a separate worktree. |
 
 ## Decision log
 
@@ -281,3 +330,4 @@ controls rather than promising that hooks can intercept every possible write.
 | 2026-10-13 | Correct the earlier waiver interpretation | Source readiness exemption already exists; align shared text and tests instead of requesting onboarding or another waiver. |
 | 2026-10-13 | Define source test evidence explicitly | Source CI and plan paths differ from consuming-project hook machinery; no fabricated approval records. |
 | 2026-10-13 | Keep Claude as Orca's default agent | Explicit owner clarification; parity makes Codex conform when selected, not the default provider. |
+| 2026-10-13 | Pause implementation and preserve the partial snapshot | Explicit owner stop request; record completed and remaining work without continuing fixes, tests or rollout. |

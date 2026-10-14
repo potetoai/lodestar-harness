@@ -32,6 +32,11 @@ Orca is responsible for:
 
 The Router must not recreate Orca's orchestration lifecycle.
 
+Claude remains the default agent in Orca. Codex is used when selected by the
+owner and must satisfy the same Lodestar workflow and verification. Installing
+Codex hooks does not change Orca's agent/provider/model defaults or authorize
+automatic cross-model dispatch.
+
 ---
 
 # 2. Responsibility Boundary
