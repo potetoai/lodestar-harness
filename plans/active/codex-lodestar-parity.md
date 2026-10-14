@@ -275,7 +275,8 @@ Dry runs on copies only; no real home or project was changed.
     only with the owner's go, for the live smoke on the reviewed branch.
 - Projects, from `main` (App01 `949d3a4`, vn30 `3670f34`), both 2.3.5:
   `bootstrap.sh --upgrade` updates `codex-hook.sh`, `doctor.sh`,
-  `feedback-check.sh`, `lodestar-lib.sh` (2.3.6 relock fix), creates
+  `feedback-check.sh`, `lodestar-lib.sh` (2.3.6 relock fix), `ci-checks.sh`
+  (2.3.7 CI relock fix, from main after this dry run), creates
   `reminder-lib.sh`, `codex-owner.jq`, `codex-patch.jq`, rewrites the three
   Codex guard commands (fail closed), adds Codex Stop `feedback-check` and
   sets version 2.4.0; `.claude/settings.json` is unchanged. Six files,
@@ -319,6 +320,7 @@ Dry runs on copies only; no real home or project was changed.
 | 2026-10-15 | Doctor | A4 and A4b check each hook on its event and matcher (A4b also requires feedback-check and the Codex helper files). A4c asks Codex `app-server hooks/list` for the project and names each required hook that is missing (untrusted project), disabled, untrusted or modified; no answer is a warning (unverified). Skipped with `--quiet` (it starts Codex). Live probes in a scratch home: untrusted, trusted, modified (stale hash), disabled and full-trust all reported correctly; an edited hook turned modified. Found: project trust is a separate layer; the app-server writes Codex state files into the home. Template 2.4.0; docs aligned. Parity 121/0; full suite, links and diff check pass; test hashes unchanged. |
 | 2026-10-15 | Independent review | Sonnet reviewer: 1 major, 3 minor, 2 suggestions; test hashes verified. Fixed: a UNC path (`//localhost/c$/...`) to a project file skipped every `apply_patch` guard (reproduced); network paths now block and subst/junction names map back to the project by file identity (reproduced as blocked). Empty `hooks.json` now merges as `{}` in bootstrap and the global installer. Unix guard commands exit 2 when the adapter is missing (the test-selected command ending is unchanged). Doctor A4c requires every copy of a check to be enabled and trusted. A Codex owner transcript whose user messages all lack the known marker reports unavailable. Indented patch headers make the lock rebuild fail. `runtime-parity.md` drops the unverified exec claim and states the shell-write, path and CLI-only approval limits. Left open: the Codex path slurps the whole transcript on Stop and owner prompts (slower on large rollouts); A4c does not match the event name until live hooks/list output confirms its format. |
 | 2026-10-15 | Rollout plan | Dry runs on copies of both Codex homes and of App01/vn30 `main`; diffs and order recorded under Rollout plan. Nothing real changed. vn30 has another session's docs work, so its upgrade goes in a separate worktree. |
+| 2026-10-15 | Merge main | Committed the work (`ba6a8c0`) and opened draft PR #33; it conflicted with main, which gained PR #32 (CI relock fresh approval: `ci-checks.sh`, `test.sh`, VERSION 2.3.7). Merged main, VERSION 2.4.0. `test.sh` now holds PR #32's merged tests (SHA-256 33a0e3bf8083befe1739aa434ad548cc01be6d4a1c3b32ded1815ab1b08a3834); this task's tests from `ad7b4bd` are unchanged inside it, and `test-parity.sh` is unchanged. Full suite, parity 121/0 and links pass on the merged tree. |
 
 ## Decision log
 
