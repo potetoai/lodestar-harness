@@ -91,8 +91,7 @@ Done when: the numbers and a keep/drop decision per item are in the logs.
 ### Phase 1 — Shared language (item 15)
 
 - `project/.ai/project.md`: a short "Domain terms" section, one table:
-  owner's word (owner's language) | name in code | meaning | not to confuse
-  with. About 5 to 15 rows; it is a dictionary, not documentation.
+  term (English, Q3) | name in code | meaning | not to confuse with. About 5 to 15 rows; it is a dictionary, not documentation.
 - `workflows/onboarding.md`: fill the table from the code and docs, then let
   the owner correct it.
 - `router/ROUTER.md` intake gate, one line: when the owner uses a word that
@@ -173,7 +172,8 @@ per phase: keep, change or revert, with the number. Then move this plan to
   2026-10-15: keep it** and decide on the subagent-cost numbers.
 - **Q3 (phase 1):** the first column holds the owner's own words (Vietnamese
   for this owner), so the table bridges how the owner talks and how the code
-  names things. Recommended: yes.
+  names things. Recommended: yes. **Answered 2026-10-15: no, terms are in
+  English**, like other technical terms.
 
 ## 6. Not in scope
 
