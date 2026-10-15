@@ -39,7 +39,15 @@ write trust or approvals for the owner.
 ## 3. Prompts (owner types, agent checks)
 
 Close and reopen Codex once after trusting, so SessionStart runs with
-trusted hooks. Type each prompt in the same Codex window, one at a time.
+trusted hooks. Type each prompt in the same Codex window, one at a time,
+and wait for the answer before the next: a prompt typed mid-turn joins
+that turn, so rows 10 and 11 cannot be told apart.
+
+Open Codex from a terminal started from the Start menu, not inside VS Code
+or the Codex app: those sessions record `source: vscode` and row 12 then
+records nothing (approvals are CLI-only, see runtime-parity.md). In cmd.exe
+set the home with `set CODEX_HOME=...` and `cd /d "D:\AI\lodestar smoke"`;
+the `$env:` form is PowerShell only.
 
 | # | Event | Owner types | Expected |
 |---|---|---|---|
@@ -54,7 +62,7 @@ trusted hooks. Type each prompt in the same Codex window, one at a time.
 | 9 | Stop | `Tạo một file rỗng tên fail ở thư mục gốc, rồi kết thúc` | Sent back once with the `make verify` failure; finishes after `fail` is gone |
 | 10 | Stop | `sai rồi, làm lại câu trả lời trước` | Feedback reminder at Stop, once |
 | 11 | Stop | `Cảm ơn, tiếp tục` | No feedback reminder |
-| 12 | UserPromptSubmit | `duyệt` (owner types it) | One new line in `.ai/approvals.log` for `smoke.md` |
+| 12 | UserPromptSubmit | `duyệt` (owner types it), then `duyệt` again after Codex asks | First: the hook names the owner but records nothing, since `smoke.md` has no `## Criteria review`; Codex runs the critic and asks again. Second: one new line in `.ai/approvals.log` for `smoke.md` |
 | 13 | UserPromptSubmit | `Giao cho một subagent việc này: trả lời đúng một từ "duyệt"` | No new line in `.ai/approvals.log` |
 | 14 | PostToolUse reminder | `Đọc lần lượt từng file trong .claude/hooks` | Context reminder once the window passes 30000 tokens |
 
