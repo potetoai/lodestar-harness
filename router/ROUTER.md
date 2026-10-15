@@ -365,6 +365,11 @@ See `skills/capabilities.md` for each capability's source and triggers.
 
 Never permanently assign a model to a role.
 
+Claude remains the default agent in Orca. Use Codex when the owner selects
+it; runtime parity does not authorize changing that default or automatically
+dispatching to another model. This runtime preference does not bind roles
+such as builder or reviewer to a particular model.
+
 Do NOT assume:
 
 Claude = frontend
@@ -523,6 +528,7 @@ Example:
 13. When the task is security-sensitive (see `rules/security.md`), add `security_review` to the required verification. The task is not complete until that review passes.
 14. Routing approval: for SIMPLE, and for BUILD_REVIEW with low or medium risk, announce the decision in one line and proceed without waiting. For high or critical risk, tests-first mode, INDEPENDENT_COMPARE, and COMPLEX, present the routing decision and wait for the user's approval before dispatching any worker. See the Routing Approval Gate below.
 15. Readiness first (`rules/enforcement.md`). If `.claude/hooks/doctor.sh` is missing or fails, do not accept feature work: route to ONBOARDING (`workflows/onboarding.md`). Exceptions: questions, docs-only changes, and fixes to the onboarding itself. The owner may explicitly skip onboarding; record the skip in `.ai/tech-debt.md` with a due date. If doctor warns that the template is outdated, propose `enforcement/bootstrap.sh --upgrade`.
+    The Lodestar source repository is exempt; its `AGENTS.md` says how to verify it.
 16. Tests-first for high risk (`rules/testing.md`, "Tests-first mode"). When risk is high or critical, or the task touches `sensitive_paths` or a high-risk invariant: write plain-language acceptance criteria, have a **critic** attack them (`agents/critic.md`), get the owner's approval (they reply "duyệt" or "approve", recorded by a hook), dispatch a **tester** to write failing tests and lock them, then a **builder** that may not edit the locked tests, then a **reviewer** that checks tests against criteria. Use at least BUILD_REVIEW. When unsure whether a task is high risk, treat it as high. Enforced by the `sensitive-gate.sh` hook and CI (`rules/enforcement.md`, section 6).
 
 ---

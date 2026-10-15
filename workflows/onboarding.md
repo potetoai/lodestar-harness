@@ -13,6 +13,12 @@ follows the same process.
 
 ## When it runs
 
+The Lodestar source repository is already exempt from this workflow, as in
+the global readiness hook. Use its `AGENTS.md`/`README.md`,
+`bash enforcement/test.sh` and `bash scripts/check-links.sh`; do not ask for
+another onboarding waiver. The following requirements apply to projects
+that consume Lodestar templates.
+
 - The Router's intake gate finds no `.claude/hooks/doctor.sh`, or doctor fails.
 - The owner asks to onboard a project.
 

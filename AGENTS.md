@@ -28,6 +28,10 @@ Code alone, or Orca when present).
 
 ## Absolute rules
 
+- This source repository is exempt from consuming-project onboarding. Read
+  this file and `README.md` for context; verify with the two commands below.
+  Missing `.claude/hooks/doctor.sh` or `.ai/project.md` here does not require
+  onboarding or an owner waiver. Consuming projects still need readiness.
 - Never build an orchestration system; use the runtime's (Claude Code
   subagents, or Orca when present). Hooks, CI and
   doctor only verify.

@@ -49,6 +49,12 @@ Hooks and CI verify. They never dispatch work; orchestration stays in the agent 
 
 ## 3. Project Readiness Standard
 
+This standard applies to consuming projects. The Lodestar source repository
+is already exempt from their onboarding and installed doctor: its own
+`AGENTS.md`/`README.md` provide context, and its self-tests and link checks
+verify changes. The global readiness hook preserves its handoff reminder
+before applying this source exemption. Review and approval still apply.
+
 A project is ready when `bash .claude/hooks/doctor.sh` passes. Required
 items fail the check; recommended items only warn. `workflows/onboarding.md`
 gets a project there. Tier B items that a script cannot judge (linter proven
@@ -62,9 +68,9 @@ checked by the onboarding report and review.
 | A1b | No `CLAUDE.md` with its own text (Claude then skips `AGENTS.md`); only the line `@AGENTS.md` is allowed | Required |
 | A2 | `.ai/project.md` filled in, no `[placeholder]` lines | Required |
 | A3 | `Makefile` has `setup`, `lint`, `test`, `verify` | Required |
-| A4 | `.claude/settings.json` registers the lint, verify and test-lock hooks; all hook scripts present | Required |
-| A4b | `.codex/hooks.json` registers the same hooks for Codex, through `.claude/hooks/codex-hook.sh` | Required |
-| A4c | Codex trusts the project's hooks (`/hooks` in Codex; it skips untrusted hooks) | Recommended |
+| A4 | `.claude/settings.json` registers every Lodestar hook on its event and tool matcher; all hook scripts present | Required |
+| A4b | `.codex/hooks.json` registers the same hooks for Codex on their event and matcher, through `.claude/hooks/codex-hook.sh` | Required |
+| A4c | Codex trusts the project and its current hooks (`/hooks` in Codex; it skips untrusted hooks); asked from Codex, not read from `config.toml`; not run with `--quiet` | Recommended |
 | A5 | `.github/workflows/ci.yml` | Required |
 | A6 | `.gitignore`; no committed `.env`; `.env.example` when `.env` is used | Required |
 | A7 | CI runs a secret scan (gitleaks) | Required |
@@ -79,6 +85,14 @@ checked by the onboarding report and review.
 | C1 | `main` requires a PR and passing checks (set by hand on GitHub) | Recommended |
 | D1 | Maintenance done in the last 14 days (`.ai/last-maintenance`) | Recommended |
 | D2 | No repeated mistake in `.ai/feedback-log.md` without a machine rule | Recommended |
+
+Installed configuration and runtime activation are separate checks. A4b
+checks required events and matchers; a historical trust entry is not proof
+that all current Codex hooks are enabled and trusted. A4c asks Codex
+(`hooks/list`) and names each required hook that is missing, disabled,
+untrusted or modified; it reports unverified when Codex gives no answer. Review `/hooks` in the
+actual Codex home and verify lifecycle execution before claiming activation.
+See [runtime parity](../enforcement/runtime-parity.md) for the contract.
 
 ## 4. File ownership
 
