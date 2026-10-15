@@ -73,6 +73,7 @@ approved criteria.
 | 2026-10-13 | Final verification | Passed | Full Windows self-test exited 0: all 367 assertions passed, including all 28 new regressions. Old implementation had 14 expected failures; all 339 original assertions passed before and after. Independent security review passed. Tests are unchanged from checkpoint 7be822d; shell syntax, documentation links and diff whitespace pass. |
 | 2026-10-13 | PR publication | Blocked by automatic approval review | The combined branch push and PR creation command was rejected before execution: the reviewer requires explicit owner approval to export code and metadata to the GitHub origin repository. Implementation and verification are complete; the PR body is prepared locally. No push or PR was performed. Await explicit publication approval; do not retry indirectly. |
 | 2026-10-13 | PR publication | Published; awaiting owner merge instruction | Owner explicitly authorized the GitHub push and requested Codex attribution. Branch published and PR #32 opened with verification evidence; a PR comment identifies Codex as the implementer, tester and independent reviewer. The earlier automatic approval blocker is resolved. Merge remains subject to the owner's instruction and green CI. |
+| 2026-10-13 | Merge | PR #32 merged (`6942802`), VERSION 2.3.7 | Owner merged after green CI. The debt item on Codex test-lock paths is taken up by the Codex parity task (`codex-lodestar-parity`, PR #33: `codex-patch.jq` rebuilds `.ai/test-lock`). |
 
 ## Decision log
 
@@ -84,6 +85,7 @@ approved criteria.
 | 2026-10-13 | Apply the existing source-repository readiness exemption | Missing installed project hooks alone did not establish an onboarding requirement here. The earlier request for an owner waiver was mistaken; no tech-debt skip is needed. |
 | 2026-10-13 | Freeze regression tests by the normal source test checkpoint | This source repository is exempt from consuming-project onboarding. Owner approval is in the conversation and plan; no source `approvals.log`, synthetic owner prompt, or managed `test-lock` is created. Builder must preserve the checkpoint tests. |
 | 2026-10-13 | Keep the fresh-approval check local to CI | Reuse existing criteria and approval helpers without changing runtime hooks or policy files owned by the parallel parity task. Preserve the existing review range and cumulative protection from older lock snapshots. |
+| 2026-10-15 | Close the plan | All steps done and merged in PR #32; moved from `plans/active/` to `plans/completed/`. |
 
 ## Debt left on purpose
 
