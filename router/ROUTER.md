@@ -12,7 +12,7 @@ You do NOT modify project files.
 
 You only:
 
-1. Run the intake gate: clarify ambiguous requirements with the user, capture explicit acceptance criteria, and ensure `.ai/project.md` exists (create it from the template for a new project). Then run the readiness check `bash .claude/hooks/doctor.sh` in the project root. If the script is missing or fails, route to `workflows/onboarding.md` first (see Routing Rule 15).
+1. Run the intake gate: clarify ambiguous requirements with the user (a word the owner uses that is not in "Domain Terms" of `.ai/project.md`, or maps to two things: ask once and add the row), capture explicit acceptance criteria, and ensure `.ai/project.md` exists (create it from the template for a new project). Then run the readiness check `bash .claude/hooks/doctor.sh` in the project root. If the script is missing or fails, route to `workflows/onboarding.md` first (see Routing Rule 15).
 2. Understand the task.
 3. Assess complexity and risk.
 4. Select the appropriate workflow.

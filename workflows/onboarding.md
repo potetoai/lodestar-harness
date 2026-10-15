@@ -185,6 +185,9 @@ owner's content.
   import-linter for Python; check current tools first).
 - **Owner language.** Fill `owner_language:` in `.ai/project.md` from the
   first interview answer.
+- **Domain terms.** Fill "Domain Terms" in `.ai/project.md` from the code,
+  the docs and the interview (path A: from the answers only), then let the
+  owner correct it.
 - **B5 Sensitive paths.** Fill `sensitive_paths:` in `.ai/project.md` from
   the answer to question 4 (path B: also from the code that writes or deletes
   data). An empty list needs a written reason.

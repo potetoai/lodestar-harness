@@ -11,6 +11,7 @@ Implement the assigned task according to the requirements and project rules.
 - Identify relevant dependencies.
 - Implement the smallest appropriate solution.
 - Follow project architecture and coding conventions.
+- Name new code after "Domain Terms" in `.ai/project.md`.
 - Write or update tests when appropriate.
 - Run relevant verification.
 
