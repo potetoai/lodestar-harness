@@ -48,7 +48,8 @@ Stop early when nothing is worth a PR.
    `.ai/feedback-log.md` columns, or the `lint-file` recipe) and
    bring them up to date by hand in the same PR. If `.ai/project.md` has no
    `owner_language:` line, ask the owner which language they want to talk in
-   and add it. If the project keeps its handoff in another file (a status
+   and add it. If it has no "Domain Terms" table, add it as onboarding
+   (S2) says. If the project keeps its handoff in another file (a status
    file such as `DANG-LAM.md`), move it into `.ai/handoff.md` (gitignored)
    and delete the old file. Point every reference to the old file at
    `.ai/handoff.md`. The upgrade PR adds the `.gitignore` line, so a branch

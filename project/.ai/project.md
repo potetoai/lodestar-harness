@@ -30,6 +30,16 @@ and PRs stays in English (lodestar-harness `rules/documentation.md`, section 5).
 owner_language: en
 ```
 
+### Domain Terms
+
+The project's words for its own concepts, so the owner and every agent mean
+the same thing. A dictionary, not documentation: about 5 to 15 rows, terms in
+English. Name new code after the "Name in code" column.
+
+| Term | Name in code | Meaning | Not to confuse with |
+|---|---|---|---|
+| [term] | [`identifier`] | [one line] | [nearby term] |
+
 ---
 
 ## 2. Technology Stack

@@ -201,6 +201,7 @@ per phase: keep, change or revert, with the number. Then move this plan to
 | 2026-10-15 | 0 | Item 2: feedback logs of this repo, vn30 and App01 (27 rows). Misses of an existing rule were of short project rules (AGENTS.md rules 1 and 2, owner language), a plan, memory, and once the `.ai/project.md` merge policy (App01); none traced to `router/`, `ORCA-INTEGRATION.md` or `rules/testing.md` |
 | 2026-10-15 | 0 | Item 6: hook text reaching the model (throwaway scripts in the session scratchpad): about 22k tokens in all sessions (lint blocks 53, 52 of them on one App01 file; context nudge 27; SessionStart 77; approval 12); carried cost under 0.1%. Stop-hook forced turns: 47 counted, 1.08M weighted (1.2% of cost); the held turns read "`make verify` still red for the same reason, I changed nothing" while a tests-first tester was running |
 | 2026-10-15 | 0 | Seen, left to the projects: vn30 tag `unstated-assumption` twice (open), plus `unchecked-example` and `incomplete-rule-scan`, all "a claim shown before it was checked"; its next maintenance handles D2 |
+| 2026-10-15 | 1 | "Domain Terms" table added to the `project.md` template; onboarding fills it, maintenance adds it, the intake gate asks about unknown words, builder names after it, reviewer flags new names. Dry run on vn30 (read only, not written): 8 rows from AGENTS.md and `.claude/docs`, 2 need the owner; vn30's code names and the owner's words are Vietnamese (`hoi_tu`, `doan_quan_tinh`), so the English term is a third name |
 
 ## 8. Decision log
 

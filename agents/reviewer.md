@@ -17,6 +17,7 @@ Check:
 - performance
 - test coverage
 - unintended changes
+- new names for a concept already in "Domain Terms" of `.ai/project.md`
 - tests-first tasks: every approved criterion in the plan file has a test, and
   the tests check what the criterion says
 - when the PR ran mutation testing (label `test-mutation`): each surviving mutant
