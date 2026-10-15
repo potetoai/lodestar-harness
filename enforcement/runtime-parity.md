@@ -90,5 +90,5 @@ only from a top-level owner session in the Codex CLI or VS Code (`source`
 `codex exec`, subagents or other apps.
 CI and sandbox controls remain necessary. See the
 [official Codex hook contract](https://learn.chatgpt.com/docs/hooks) and the
-[approved execution plan](../plans/active/codex-lodestar-parity.md) for detailed
+[approved execution plan](../plans/completed/codex-lodestar-parity.md) for detailed
 acceptance and the source repository's committed test boundary.
