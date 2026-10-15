@@ -70,7 +70,9 @@ none were required.
 - Talk to the owner in the language set by `owner_language:` in
   `.ai/project.md` (ISO 639-1 code; missing means English), in plain words.
 - Write everything else in English: code, comments, docs, notes, plans,
-  `.ai/` files, commit messages, PR titles and bodies.
+  `.ai/` files, commit messages, PR titles and bodies. One exception: the
+  "Meaning" column of "Domain Terms" in `.ai/project.md` is in the owner's
+  language, so the owner can check it.
 - Acceptance criteria stay in English in the plan file, because the approval
   hook hashes that text. Before asking for approval, show the owner each
   criterion in their language with the English line next to it. The owner

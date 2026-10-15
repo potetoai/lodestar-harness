@@ -174,7 +174,8 @@ per phase: keep, change or revert, with the number. Then move this plan to
 - **Q3 (phase 1):** the first column holds the owner's own words (Vietnamese
   for this owner), so the table bridges how the owner talks and how the code
   names things. Recommended: yes. **Answered 2026-10-15: no, terms are in
-  English**, like other technical terms.
+  English**, like other technical terms. Later the same day: the "Meaning"
+  column is in the owner's language (owner, after the vn30 dry run).
 - **Q4 (from phase 0):** `verify-before-stop.sh` holds the agent again when
   nothing changed since its last failed `make verify` (seen while waiting for
   a tests-first tester: "still red, I changed nothing"). Add a phase that
@@ -212,3 +213,4 @@ per phase: keep, change or revert, with the number. Then move this plan to
 | 2026-10-15 | Item 4 (aligning too often): drop | 25 owner questions in 69 sessions, about half in one design session where each was a real decision |
 | 2026-10-15 | Item 6 (hook text): drop; Stop-hook repeat holds raised as Q4 | Hook text under 0.1% of cost; repeat holds 1.2%, above the 1% bar |
 | 2026-10-15 | Phase 3 check case added: lint blocked 52 times on one App01 file | A known friction case the `--friction` table should flag |
+| 2026-10-15 | "Meaning" column in the owner's language; `rules/documentation.md` section 5 names it as the one exception | Owner, after the vn30 dry run showed the English term is a third name the owner does not use |
