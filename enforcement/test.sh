@@ -117,6 +117,28 @@ stop false; t "stop hook passes when verify passes" [ $? = 0 ]
 touch "$p/fail"
 stop false; t "stop hook blocks when verify fails (exit 2)" [ $? = 2 ]
 stop true; t "stop hook lets go on second attempt" [ $? = 0 ]
+stop false; t "stop hook without git holds every failed stop" [ $? = 2 ]
+
+# 6b. Stop hook holds once per state: a later stop with the same files and the
+#     same failure ends (CI stays the gate); any change, or another failure,
+#     holds again. Digits in the output (timings) do not count as a change.
+p=$tmp/rehold; mkdir -p "$p"; git -C "$p" init -q
+printf 'verify:\n\t@[ -z "$$MSG" ] || { echo "$$MSG"; echo "took 0.$$RANDOM s"; exit 1; }\n' > "$p/Makefile"
+echo a > "$p/a.txt"; git -C "$p" add -A; git -C "$p" -c user.name=t -c user.email=t@t commit -qm init
+hold() { MSG=$1 CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/verify-before-stop.sh" 2>/dev/null <<<'{"stop_hook_active":false}'; }
+hold "test_a failed"; t "stop hook holds the first failed stop" [ $? = 2 ]
+hold "test_a failed"; t "stop hook lets a stop end when nothing changed" [ $? = 0 ]
+hold "test_a failed"; t "stop hook keeps letting it end while nothing changes" [ $? = 0 ]
+hold "test_b failed"; t "stop hook holds a different failure" [ $? = 2 ]
+echo b > "$p/new.txt"
+hold "test_b failed"; t "stop hook holds after a new untracked file" [ $? = 2 ]
+hold "test_b failed"; t "stop hook lets go again once that state was held" [ $? = 0 ]
+echo changed > "$p/a.txt"
+hold "test_b failed"; t "stop hook holds after a tracked file changes" [ $? = 2 ]
+git -C "$p" add -A
+hold "test_b failed"; t "stop hook: staging alone is no change" [ $? = 0 ]
+hold ""; t "stop hook passes when verify passes" [ $? = 0 ]
+hold "test_b failed"; t "stop hook holds again after a pass" [ $? = 2 ]
 
 # 7. Global reminder hook: speaks only in projects that are not ready; never blocks.
 g=$here/agents/claude/global/check-readiness.sh
@@ -704,6 +726,7 @@ stopl() { CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/verify-before-st
 stopl; t "stop hook passes when locked tests are untouched" [ $? = 0 ]
 echo 'def test_a(): pass' > tests/test_a.py
 stopl; t "stop hook blocks an edit to a locked test after unlock (no CI)" [ $? = 2 ]
+stopl; t "stop hook blocks a locked-test edit on every stop" [ $? = 2 ]
 g commit -qam "weaken" -m "Tests-First: sneaky"
 stopl; t "stop hook: a fake Tests-First trailer does not reset the lock" [ $? = 2 ]
 g reset -q --hard HEAD~1
