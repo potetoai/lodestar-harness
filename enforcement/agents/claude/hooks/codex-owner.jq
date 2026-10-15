@@ -3,7 +3,7 @@
 ([.[] | select(.type == "session_meta") | .payload] | last) as $meta
 | if $meta == null then error("missing session provenance")
   elif ($meta.source | type) == "object" or $meta.thread_source == "subagent" or $meta.thread_source == "guardian_review" or $meta.parent_thread_id != null then null
-  elif $meta.source != "cli" or $meta.thread_source != "user" then error("unsupported session provenance")
+  elif ($meta.source != "cli" and $meta.source != "vscode") or $meta.thread_source != "user" then error("unsupported session provenance")
   else
     [.[] | select(.type == "response_item" and .payload.type == "message" and .payload.role == "user")] as $users
     # User messages none of which carry the known owner marker: a format we do not read.

@@ -69,13 +69,13 @@ run() {
 if [ "$hook" = approval-record ]; then
   t=$(jq -j '.transcript_path // empty' <<<"$input")
   owner=$(jq -js '([.[] | select(.type == "session_meta") | .payload] | last) as $m
-    | $m != null and $m.source == "cli" and $m.thread_source == "user" and $m.parent_thread_id == null' "$t" 2>/dev/null)
+    | $m != null and ($m.source == "cli" or $m.source == "vscode") and $m.thread_source == "user" and $m.parent_thread_id == null' "$t" 2>/dev/null)
   if [ "$owner" != true ]; then
     # Say so only when the prompt looks like an approval, not on every prompt.
     low=$(jq -r '.prompt // empty' <<<"$input" | tr -d '\r'); low=${low,,}
     low=${low#"${low%%[![:space:][:punct:]]*}"}
     grep -qE '^(duyệt|duyet|approve|approved)([^[:alpha:]]|$)' <<<"$low" &&
-      echo "Lodestar: approvals are recorded only in the owner's own Codex session. This session is delegated or its origin is unknown, so nothing was recorded; ask the owner to approve in their own session."
+      echo "Lodestar: approvals are recorded only when the owner types them in their own Codex CLI or VS Code session. This session is not one (a subagent, codex exec, another app, or unknown), so nothing was recorded; ask the owner to type the approval in Codex CLI or VS Code."
     exit 0
   fi
 fi

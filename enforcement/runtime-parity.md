@@ -85,7 +85,9 @@ shell command can still write files (for example `apply_patch` run through
 `Bash`), and only the install and Git guard sees it. Network, stream and
 device paths in a patch are blocked; other names for the project folder
 (subst drive, junction) are mapped back to it. Codex approvals are recorded
-only from an owner CLI session, not from Codex app or IDE sessions.
+only from a top-level owner session in the Codex CLI or VS Code (`source`
+`cli` or `vscode`, `thread_source` `user`, no parent thread), not from
+`codex exec`, subagents or other apps.
 CI and sandbox controls remain necessary. See the
 [official Codex hook contract](https://learn.chatgpt.com/docs/hooks) and the
 [approved execution plan](../plans/active/codex-lodestar-parity.md) for detailed

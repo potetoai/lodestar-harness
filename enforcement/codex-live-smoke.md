@@ -43,9 +43,9 @@ trusted hooks. Type each prompt in the same Codex window, one at a time,
 and wait for the answer before the next: a prompt typed mid-turn joins
 that turn, so rows 10 and 11 cannot be told apart.
 
-Open Codex from a terminal started from the Start menu, not inside VS Code
-or the Codex app: those sessions record `source: vscode` and row 12 then
-records nothing (approvals are CLI-only, see runtime-parity.md). In cmd.exe
+Open Codex from a terminal or in VS Code (`source: cli` or `source:
+vscode` with `thread_source: user`). Other apps and `codex exec` record
+nothing at row 12 (see runtime-parity.md). In cmd.exe
 set the home with `set CODEX_HOME=...` and `cd /d "D:\AI\lodestar smoke"`;
 the `$env:` form is PowerShell only.
 
