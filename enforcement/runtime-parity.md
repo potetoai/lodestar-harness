@@ -54,7 +54,8 @@ write trust state or bypass review to make an activation check pass.
 
 The parity plan targets Codex 0.162.1 on Windows with Git Bash and PowerShell
 hook entry points. Record the version and live evidence at verification time;
-fixture tests alone are not evidence of activation. Claude compatibility is
+fixture tests alone are not evidence of activation. The steps are in
+[codex-live-smoke.md](codex-live-smoke.md). Claude compatibility is
 checked by the existing and targeted regression tests; report any live Claude
 run separately. Other versions and platforms require their own verification.
 
