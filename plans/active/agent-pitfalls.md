@@ -140,8 +140,9 @@ throwaway project (deleted after) shows the push block and a clean stop.
 - Claude transcripts only; Codex after parity (PR #33) merges.
 
 Done when: run over 2026-10-13..2026-10-14 in this repo, it flags the known
-case where the Codex builder deleted the adapter (handoff of 2026-10-13), and
-a maintenance dry run stays within 5 excerpts.
+case where the Codex builder deleted the adapter (handoff of 2026-10-13); run
+since 2026-10-12, it flags the App01 session where lint blocked 52 times on
+one file (phase 0); and a maintenance dry run stays within 5 excerpts.
 
 ### Phase 4 — Effort by role (item 1, only if Q2 is yes)
 
@@ -174,6 +175,14 @@ per phase: keep, change or revert, with the number. Then move this plan to
   for this owner), so the table bridges how the owner talks and how the code
   names things. Recommended: yes. **Answered 2026-10-15: no, terms are in
   English**, like other technical terms.
+- **Q4 (from phase 0):** `verify-before-stop.sh` holds the agent again when
+  nothing changed since its last failed `make verify` (seen while waiting for
+  a tests-first tester: "still red, I changed nothing"). Add a phase that
+  lets the agent stop when the tree and the failure are the same as at the
+  last hold? The first hold after any change stays, and CI stays the gate.
+  Idea 10 of `plans/completed/token-efficiency.md` was dropped on 2026-10-12
+  at 0.5% of turns; phase 0 measured 1.2% of cost. A yes adds this one
+  exception to "Not in scope". Recommended: yes, tests first.
 
 ## 6. Not in scope
 
@@ -188,9 +197,17 @@ per phase: keep, change or revert, with the number. Then move this plan to
 | Date | Phase | Note |
 |---|---|---|
 | 2026-10-15 | — | Plan written; all 18 items rated against main 2.3.7 |
+| 2026-10-15 | 0 | Baseline `python scripts/usage-report.py --since 2026-10-12`, all projects: 69 sessions, 3,183 turns, 92.0M weighted units; policy reading 1.9%, output 16.4%, subagents 27.9% (tester 54% of it, mostly Codex parity), turns above 150k 18.7%; owner questions 25 (13 in one RSI design session, each a real decision); Stop-hook turns 42; Read 53% of tool-result tokens |
+| 2026-10-15 | 0 | Item 2: feedback logs of this repo, vn30 and App01 (27 rows). Misses of an existing rule were of short project rules (AGENTS.md rules 1 and 2, owner language), a plan, memory, and once the `.ai/project.md` merge policy (App01); none traced to `router/`, `ORCA-INTEGRATION.md` or `rules/testing.md` |
+| 2026-10-15 | 0 | Item 6: hook text reaching the model (throwaway scripts in the session scratchpad): about 22k tokens in all sessions (lint blocks 53, 52 of them on one App01 file; context nudge 27; SessionStart 77; approval 12); carried cost under 0.1%. Stop-hook forced turns: 47 counted, 1.08M weighted (1.2% of cost); the held turns read "`make verify` still red for the same reason, I changed nothing" while a tests-first tester was running |
+| 2026-10-15 | 0 | Seen, left to the projects: vn30 tag `unstated-assumption` twice (open), plus `unchecked-example` and `incomplete-rule-scan`, all "a claim shown before it was checked"; its next maintenance handles D2 |
 
 ## 8. Decision log
 
 | Date | Decision | Why |
 |---|---|---|
 | 2026-10-15 | Shortening Router and rules not redone | Owner dropped it on 2026-10-12 (policy reading 1.1% of cost); phase 0 checks the quality side only |
+| 2026-10-15 | Item 2 (long files): drop | 0 rule misses traced to the long Lodestar files; 1 to `.ai/project.md`, under the 2-miss bar |
+| 2026-10-15 | Item 4 (aligning too often): drop | 25 owner questions in 69 sessions, about half in one design session where each was a real decision |
+| 2026-10-15 | Item 6 (hook text): drop; Stop-hook repeat holds raised as Q4 | Hook text under 0.1% of cost; repeat holds 1.2%, above the 1% bar |
+| 2026-10-15 | Phase 3 check case added: lint blocked 52 times on one App01 file | A known friction case the `--friction` table should flag |
