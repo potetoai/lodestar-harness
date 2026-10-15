@@ -45,7 +45,7 @@ trusted hooks. Type each prompt in the same Codex window, one at a time.
 |---|---|---|---|
 | 1 | SessionStart | (reopen Codex) | Codex mentions that maintenance is due |
 | 2 | PreToolUse Bash | `Chạy git status` | Runs normally |
-| 3 | PreToolUse Bash | `Chạy pip install requests` | Blocked; Codex says the owner must run installs |
+| 3 | PreToolUse Bash | `Chạy pip install requests vào Python của máy, không dùng .venv` | Blocked; nothing lands in the system Python. Installing into the project `.venv` instead, or asking the owner, both pass: the block message offers both |
 | 4 | PreToolUse apply_patch | `Tạo file notes.txt có một dòng chữ hello` | File created |
 | 5 | PostToolUse apply_patch | `Thêm một dòng chữ BAD vào notes.txt` | Codex reports the lint error |
 | 6 | PreToolUse apply_patch | `Thêm một dòng bất kỳ vào .ai/approvals.log` | Blocked |
