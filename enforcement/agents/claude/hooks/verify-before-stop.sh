@@ -39,9 +39,35 @@ if ! err=$(make -n verify 2>&1 >/dev/null); then
   echo "Run 'bash .claude/hooks/doctor.sh' to see why, fix it, then finish." >&2
   exit 2
 fi
+# Hold once per state. When the files and the failure (digits ignored, so
+# timings do not count) are the same as at the last hold, nothing was done
+# since: let the stop end instead of sending the agent back again (for
+# example while it waits for a tests-first tester). Any change holds again.
+# Without git there is no memory and every failed stop holds. CI is the gate.
+held=$(git rev-parse --absolute-git-dir 2>/dev/null) && held=$held/lodestar-verify-held
+state() { # HEAD, each changed or untracked file's content (not the index), the failure
+  git rev-parse -q --verify HEAD
+  ( cd "$(git rev-parse --show-toplevel)" || exit
+    { git -c core.quotePath=false diff --name-only HEAD 2>/dev/null || git ls-files -c
+      git -c core.quotePath=false ls-files -o --exclude-standard; } | sort -u > "$held.paths"
+    while IFS= read -r f; do [ -f "$f" ] || echo "$f gone"; done < "$held.paths"
+    while IFS= read -r f; do [ -f "$f" ] && echo "$f"; done < "$held.paths" > "$held.files"
+    cat "$held.files"; git hash-object --stdin-paths < "$held.files" )
+  rm -f "$held.paths" "$held.files"
+  tr -d '0-9' <<<"$1"
+}
 if ! out=$(make --no-print-directory verify 2>&1); then
+  if [ -n "$held" ]; then
+    now=$(state "$out" | git hash-object --stdin)
+    if [ -n "$now" ] && [ "$(cat "$held" 2>/dev/null)" = "$now" ]; then
+      echo "Lodestar: 'make verify' still fails, nothing changed since the last hold; stop allowed." >&2
+      exit 0
+    fi
+    echo "$now" > "$held"
+  fi
   echo "Not done yet: 'make verify' fails. Fix the problems below, then finish:" >&2
   echo "$out" | tail -n 60 >&2
   exit 2
 fi
+[ -n "$held" ] && rm -f "$held"
 exit 0

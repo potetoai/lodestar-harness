@@ -31,6 +31,11 @@ such as CI.
 `verify` stays fast so the Stop hook never stalls a session. Slow tests go in
 `verify-full`, which CI enforces.
 
+The Stop hook holds a failed `verify` once per state: when neither the files
+nor the failure changed since the last hold, the stop ends (for example while
+the agent waits for a tests-first tester). Any change holds again. CI stays
+the gate.
+
 ## 2. Three layers
 
 1. `AGENTS.md` explains the rules (Claude and Codex both read it).
