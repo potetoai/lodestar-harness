@@ -385,5 +385,40 @@ printf '[hooks.state."%s/.codex/hooks.json:stop:0:0"]\ntrusted_hash = "stale-fix
 capture env CODEX_HOME="$tmp/trust home" PATH="$tmp/bin:$PATH" bash "$p/.claude/hooks/doctor.sh" "$p"
 t 'C6 stale Stop trust cannot report trusted hooks' bash -c '! grep -qE "✅ A4c " <<<"$1" && grep -qiE "unverified|stale|untrusted|unknown|changed|/hooks" <<<"$1"' _ "$out"
 
+# C2: approvals record only from a top-level session the owner types in: the
+# Codex CLI or the VS Code extension. codex exec, Orca-desktop threads without
+# a user thread source and subagents never record. Content is synthetic.
+new_project 'approval provenance'
+mkdir -p "$p/.ai/plans/active"
+printf '## Acceptance criteria\n\n- [ ] provenance fixture\n' > "$p/.ai/plans/active/prov.md"
+hash=$(. "$here/agents/claude/hooks/lodestar-lib.sh"; criteria_hash < "$p/.ai/plans/active/prov.md")
+printf '\n## Criteria review\n\n- No findings (fixture).\n- Reviewed criteria: %s\n' "$hash" >> "$p/.ai/plans/active/prov.md"
+transcript="$tmp/approval.jsonl"
+approve_from() {
+  rm -f "$p/.ai/approvals.log"
+  printf '%s\n' "$1" > "$transcript"
+  capture cx approval-record "$(jq -nc --arg t "$transcript" --arg d "$(native "$p/sub")" '{transcript_path:$t,cwd:$d,prompt:"duyệt"}')"
+}
+recorded() { [ "$rc" = 0 ] && grep -qF "$hash" "$p/.ai/approvals.log"; }
+refused() { [ "$rc" = 0 ] && [ ! -e "$p/.ai/approvals.log" ] && grep -qi 'nothing was recorded' <<<"$out"; }
+approve_from '{"type":"session_meta","payload":{"source":"cli","thread_source":"user","originator":"codex-tui"}}'
+t 'C2 owner CLI session records approval' recorded
+approve_from '{"type":"session_meta","payload":{"source":"vscode","thread_source":"user","originator":"codex-tui"}}'
+t 'C2 owner VS Code session records approval' recorded
+approve_from '{"type":"session_meta","payload":{"source":"vscode","thread_source":"user","originator":"codex_vscode"}}'
+t 'C2 owner VS Code extension session records approval' recorded
+approve_from '{"type":"session_meta","payload":{"source":"exec","thread_source":"user","originator":"codex_exec"}}'
+t 'C2 codex exec session cannot record approval' refused
+approve_from '{"type":"session_meta","payload":{"source":"vscode","thread_source":null,"originator":"orca_desktop"}}'
+t 'C2 session without user thread source cannot record approval' refused
+approve_from '{"type":"session_meta","payload":{"source":{"subagent":{"thread_spawn":{"parent_thread_id":"parent","depth":1}}},"thread_source":"subagent","parent_thread_id":"parent"}}'
+t 'C2 subagent session cannot record approval' refused
+approve_from '{"type":"session_meta","payload":{"source":"vscode","thread_source":"user","parent_thread_id":"parent"}}'
+t 'C2 VS Code session with a parent thread cannot record approval' refused
+printf '%s\n' '{"type":"session_meta","payload":{"source":"vscode","thread_source":"user"}}' > "$transcript"
+jq -nc '{type:"response_item",payload:{type:"message",id:"vscode-fix",role:"user",content:[{type:"input_text",text:"wrong, redo"}],internal_chat_message_metadata_passthrough:{turn_id:"vscode-fix",create_time:1791853300,content_item_kinds:["user.text"]}}}' >> "$transcript"
+capture cx feedback-check "$(jq -nc --arg t "$transcript" --arg d "$(native "$p/sub")" '{transcript_path:$t,session_id:"vscode-owner",cwd:$d}')"
+t 'C4 owner VS Code correction delivers feedback reminder' notice 'feedback-log.md'
+
 echo "Parity tests: $passed passed, $failed failed."
 [ "$failed" = 0 ]
