@@ -168,9 +168,9 @@ per phase: keep, change or revert, with the number. Then move this plan to
 - **Q1 (phase 2):** where a prototype lives. (a) A `proto/<name>` branch in
   its own worktree of the project: real code to start from, hooks stay on,
   push is blocked by machine. (b) A scratch folder outside the project: no
-  hooks at all, but no project code. Recommended: (a).
-- **Q2 (phase 4):** do phase 4 at all, or drop item 1. Recommended: keep it
-  and decide on the subagent-cost numbers.
+  hooks at all, but no project code. **Answered 2026-10-15: (a).**
+- **Q2 (phase 4):** do phase 4 at all, or drop item 1. **Answered
+  2026-10-15: keep it** and decide on the subagent-cost numbers.
 - **Q3 (phase 1):** the first column holds the owner's own words (Vietnamese
   for this owner), so the table bridges how the owner talks and how the code
   names things. Recommended: yes.
