@@ -7,7 +7,7 @@
 
 ## 1. Why this plan
 
-Four idea plans in `plans/ideas/` (`token-diet.md`, `context-budget.md`,
+Four idea plans in `plans/completed/ideas/` (moved from `plans/ideas/` on 2026-10-16) (`token-diet.md`, `context-budget.md`,
 `measure-and-trim.md`, `lodestar-efficiency-plan.md`) all aim at fewer tokens and fewer owner steps.
 They overlap, and all assume the main cost is the policy text agents read at
 startup (estimated 19k–35k tokens per task). This plan measures real sessions

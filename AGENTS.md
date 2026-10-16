@@ -22,7 +22,8 @@ Code alone, or Orca when present).
 | `enforcement/` | Hooks, CI, `bootstrap.sh`, `doctor.sh` for projects |
 | `project/.ai/project.md` | Per-project context template |
 | `plans/active/` | Execution plans in progress, with progress and decision logs |
-| `plans/ideas/` | Idea plans kept for reference; rated in an active plan before any work |
+| `plans/ideas/` | Idea plans not yet rated; rated in an active plan before any work |
+| `plans/completed/ideas/` | Rated idea plans, kept for reference |
 | `scripts/` | Repo tooling (`check-links.sh`) |
 | `LICENSE`, `THIRD_PARTY.md` | MIT; tools used but not bundled |
 

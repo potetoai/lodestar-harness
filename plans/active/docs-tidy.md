@@ -90,10 +90,11 @@ for any miss traced to a moved rule. None: move this plan to
   plans in `plans/ideas/` (`token-efficiency.md`, Q3). (a) Move rated ideas
   to `plans/completed/ideas/`, so `plans/ideas/` means "not yet rated".
   Recommended. (b) Keep them where they are; each already says at its top
-  that it was merged.
+  that it was merged. **Answered 2026-10-16: (a).**
 - **Q2 (phase 2-3):** run phases 2 and 3 now, or after
   `agent-pitfalls.md` phase 5 (about 2026-10-30), so the moved text does not
-  mix with that plan's measurements? Recommended: after.
+  mix with that plan's measurements? Recommended: after. **Answered
+  2026-10-16: after.**
 
 ## 5. Not in scope
 
@@ -106,10 +107,13 @@ for any miss traced to a moved rule. None: move this plan to
 
 | Date | Phase | Note |
 |---|---|---|
-| 2026-10-16 | - | Plan written from the harness review (items 8 and 9) |
+| 2026-10-16 | - | Plan written from the harness review (items 8 and 9); PR #44 merged the fixes for items 1-7 |
+| 2026-10-16 | 1 | Four rated idea plans moved to `plans/completed/ideas/`; paths updated in `AGENTS.md`, `token-efficiency.md` (line 10; its 2026-10-02 decision rows kept as history) and `subagent-cost.md` (path only); `plans/ideas/` is now empty. Links pass |
 
 ## 7. Decision log
 
 | Date | Decision | Why |
 |---|---|---|
 | 2026-10-16 | Plan item 9 although shortening was dropped on 2026-10-12 | Owner asked; the aim is one place per rule (the review found four docs that disagreed), not tokens |
+| 2026-10-16 | Q1 (a): rated ideas live in `plans/completed/ideas/` | Owner; `plans/ideas/` then means "not yet rated" |
+| 2026-10-16 | Q2: phases 2-3 wait until `agent-pitfalls.md` phase 5 (about 2026-10-30) | Owner; moved text must not mix with that plan's measurements |
