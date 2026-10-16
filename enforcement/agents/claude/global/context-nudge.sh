@@ -11,8 +11,27 @@ at=${LODESTAR_NUDGE_AT:-200000}
 step=100000
 here=$(cd "$(dirname "$0")" && pwd)
 . "$here/../hooks/reminder-lib.sh" || { echo 'Lodestar context unavailable: missing reminder helper.' >&2; exit 0; }
-reminder_input || { advisory_unavailable 'missing or invalid context transcript/session/dependency'; exit 0; }
+input=$(cat)
+reminder_input <<<"$input" || { advisory_unavailable 'missing or invalid context transcript/session/dependency'; exit 0; }
 [[ $at =~ ^[0-9]+$ ]] && [ "$at" -gt 0 ] || { advisory_unavailable 'invalid context threshold'; exit 0; }
+
+# Inside a Claude subagent the input names it (agent_id), but transcript_path
+# is the parent session's: measure the subagent's own transcript, never the
+# parent's (measured: nudges said 200k at a subagent's 36k; runs past 300k got
+# none). No file for it stays quiet.
+# jq reads only the top-level field (a tool's input may hold its own
+# agent_id); it runs only when the text appears at all.
+agent=
+if [ "$runtime" = claude ] && [[ $input == *'"agent_id"'* ]]; then
+  agent=$(jq -r '.agent_id // empty | strings | select(test("^[A-Za-z0-9_-]+$"))' <<<"$input" 2>/dev/null | tr -d '\r')
+fi
+if [ -n "$agent" ]; then
+  case $transcript in
+    *agent-"$agent".jsonl) ;;
+    *) transcript="${transcript%.jsonl}/subagents/agent-$agent.jsonl" ;;
+  esac
+  [ -r "$transcript" ] && [ -s "$transcript" ] || exit 0
+fi
 
 # Context of the last API call: what the next turn re-reads. Only the tail is
 # read (this runs after every tool call on transcripts of many MB); a line still
@@ -31,9 +50,19 @@ ctx=$(tail -n 400 "$transcript" | jq -Rrn "[inputs | fromjson? | objects] | if l
 [ "$ctx" -ge "$at" ] || exit 0
 
 band=$(( (ctx - at) / step + 1 ))
-reminder_claim "context-$at" "$band"; claimed=$?
+reminder_claim "context-$at${agent:+-$agent}" "$band"; claimed=$?
 [ "$claimed" = 1 ] && exit 0
 [ "$claimed" = 0 ] || { advisory_unavailable 'cannot persist context reminder state'; exit 0; }
+
+if [ -n "$agent" ]; then
+  cat >&2 <<EOF
+Context of this subagent is now about $((ctx / 1000))k tokens. Every call re-reads all of it.
+- Finish the step you are on; do not start a new one.
+- Report now: what is done, what is left, and what the next agent needs to know, so the dispatcher can send a fresh subagent for the rest.
+- Do not write .ai/handoff.md or ask the owner for /clear.
+EOF
+  exit 2
+fi
 
 cat >&2 <<EOF
 Context is now about $((ctx / 1000))k tokens. Every turn re-reads all of it, so from here each step costs much more.

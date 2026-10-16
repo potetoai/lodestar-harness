@@ -480,6 +480,11 @@ On top of that, per role:
   builder got. For a tests-first task also the approved criteria and the
   locked test list.
 
+A subagent past the context threshold (200k by default) gets a nudge to stop and report what is done
+and what is left (`enforcement/agents/claude/global/context-nudge.sh`). Send
+a fresh subagent for the rest, with that report in its brief; do not resume
+the full one (measured 2026-10-16: tester runs reached 383k).
+
 ---
 
 # 9. Dispatch Rules

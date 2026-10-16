@@ -176,6 +176,7 @@ the rule that shortened the run.
 | 2026-10-12 | 1 | PR #23 merged (9bc8a18). Open: the table after the next 10 critic and reviewer runs |
 | 2026-10-12 | 2 | Rule written: "Re-run after a criteria change" in `agents/critic.md` (what a narrowed run still checks, when a full run is required, the line under `## Criteria review`). Text added only |
 | 2026-10-16 | — | `--since 2026-10-09`: tester 25 runs, 47.7% of subagent cost, median 826k, peak up to 383k. The top 3 runs (36% of tester cost) read: tests only, no production edits; cost is context re-sent. Causes: (a) the lint hook blocked half-done edits (13 blocks in one run, unused names); (b) the context nudge measures the parent session, not the subagent (nudges said 200k at a subagent's own 36k-61k; runs past 300k got none). (a) fixed: an "Editing" line in `agents/tester.md` and `agents/builder.md`. `--excerpt` crashed on a cp1252 console; fixed. (b) is open, owner said later |
+| 2026-10-16 | — | (b) fixed: `context-nudge.sh` reads the subagent's own transcript (`<session>/subagents/agent-<agent_id>.jsonl`, agent_id per the Claude Code hooks docs) and asks it to report, not /clear; its steps are kept apart from the parent's. 5 tests in `enforcement/test.sh`. Dispatcher line in `router/ORCA-INTEGRATION.md`, "Subagent cost": a fresh subagent for the rest. Check at the next measurement: tester peak context and calls per run, and that a real subagent past 200k got a nudge with its own number (the tests use a made-up payload; a missing subagent file stays silent) |
 
 ## 8. Decision log
 
