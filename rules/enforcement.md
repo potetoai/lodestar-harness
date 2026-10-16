@@ -36,6 +36,12 @@ nor the failure changed since the last hold, the stop ends (for example while
 the agent waits for a tests-first tester). Any change holds again. CI stays
 the gate.
 
+After `verify` passes, the Stop hook also holds once per HEAD while the
+current branch has commits on no remote branch: push the own branch (always
+allowed, no need to ask), or on the default branch move the commits to a
+feature branch. Local refs only, no network; skipped with no remote, a
+detached HEAD or a `proto/*` branch.
+
 ## 2. Three layers
 
 1. `AGENTS.md` explains the rules (Claude and Codex both read it).
@@ -121,6 +127,7 @@ for one session. An agent must never set it. CI still enforces everything.
 | Owner approval | UserPromptSubmit hook | The owner replying with a message that starts with the approval word, "duyệt" or "approve" (plus the plan's name when several plans wait) records the plan's criteria hash in `.ai/approvals.log`; the agent cannot edit that file; changed criteria need a new approval; a plan with an empty `## Criteria review` (critic, `agents/critic.md`), or whose review has no `- Reviewed criteria:` line with the hash of the current criteria, is not recorded |
 | Tests-first gate | PreToolUse hook + CI | Editing a non-test file in `sensitive_paths` needs owner-approved criteria and locked tests (or `No-Test-Reason:` in the plan); CI needs the approved plan in the PR and prints an English summary of the criteria for the owner |
 | Mutation testing | CI (`ci-checks.sh`), report only, on request | Only with the PR label `test-mutation`: `make test-mutation` runs on the PR's changed files in `sensitive_paths`; the score and surviving mutants go to the PR summary; never fails the PR (`rules/testing.md`) |
+| Push before stopping | Stop hook (`verify-before-stop.sh`) | Once per HEAD, the agent cannot end its turn while the current branch has commits that exist on no remote branch; it pushes its own branch (or, on the default branch, moves the commits to a feature branch). Uncommitted edits are not checked: the agent may stop to wait for the owner |
 | Locked tests | PreToolUse + Stop hooks + CI | Files in `.ai/test-lock` (tests-first mode) cannot be edited by the agent; CI fails if a later commit changes them. The lock itself may only gain lines, while the plan is approved |
 
 Tests-first mode and the levels-to-commands map: `rules/testing.md`.

@@ -237,6 +237,10 @@ When a task's work is complete and its verification has passed, the worker pushe
 its own feature branch and opens a pull request against the base branch, with the
 verification evidence in the PR body. Pushing the worker's own branch and opening
 a PR is allowed by default. Pushing directly to a shared or base branch is not.
+Commit, push and open the PR without asking the owner; report it in one line.
+Push before stopping to wait for the owner too: a commit only on this machine
+is lost with it. The Stop hook (`verify-before-stop.sh`) holds a stop once per
+HEAD while the branch has commits on no remote branch.
 
 Merge policy by workflow:
 

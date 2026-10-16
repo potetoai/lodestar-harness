@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Managed by lodestar-harness. Edit in lodestar-harness/enforcement, not by hand.
-# Stop: do not let the agent finish while `make verify` fails.
+# Stop: do not let the agent finish while `make verify` fails, or while
+# commits exist only on this machine (push them; rules/git.md section 12).
 [ "$LODESTAR_SKIP_HOOKS" = "1" ] && exit 0
 cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
 export NO_COLOR=1 FORCE_COLOR=0  # plain text for the agent
@@ -35,7 +36,36 @@ if ls .ai/plans/active/*.md >/dev/null 2>&1 && [ -f .claude/hooks/lodestar-lib.s
   fi
 fi
 
-[ -f Makefile ] || exit 0
+# Commits that exist only on this machine are lost with it, and finished work
+# waits for a push nobody asked for. Pushing one's own branch is always
+# allowed, so send the agent back once per HEAD to push it. Reads only local
+# refs (no network). No remote, or a detached HEAD: nothing to push to.
+push_check() {
+  local b n gd main
+  b=$(git symbolic-ref --short -q HEAD 2>/dev/null) || return 0
+  [ -n "$(git remote 2>/dev/null)" ] || return 0
+  # Upstream deleted (PR merged with --delete-branch, squashed): nothing to push.
+  [ "$(git for-each-ref --format='%(upstream:track)' "refs/heads/$b")" = "[gone]" ] && return 0
+  n=$(git rev-list --count HEAD --not --remotes 2>/dev/null) || return 0
+  [ "$n" -gt 0 ] 2>/dev/null || return 0
+  gd=$(git rev-parse --absolute-git-dir) || return 0
+  [ "$(cat "$gd/lodestar-push-held" 2>/dev/null)" = "$(git rev-parse HEAD)" ] && return 0
+  git rev-parse HEAD > "$gd/lodestar-push-held"
+  main=$(git symbolic-ref --short -q refs/remotes/origin/HEAD 2>/dev/null); main=${main#origin/}
+  if [ "$b" = "${main:-main}" ] || [ "$b" = master ]; then
+    echo "Not done yet: $n commit(s) on $b exist only on this machine, and $b takes changes only through a PR." >&2
+    echo "Move them to a feature branch (git switch -c <name>), push it and open a PR." >&2
+  else
+    echo "Not done yet: $n commit(s) on $b exist only on this machine. Push the branch" >&2
+    echo "(git push -u origin $b; pushing your own branch is always allowed, no need to ask)." >&2
+    echo "If the work is finished and verified, open the PR, and merge it when lodestar rules/git.md section 12 allows." >&2
+    echo "If you wait for the owner, push first, then wait. If these are not your commits" >&2
+    echo "(the owner's own work), leave them and tell the owner." >&2
+  fi
+  return 2
+}
+
+[ -f Makefile ] || { push_check; exit; }
 # Never skip silently: a Makefile that make cannot run (for example a folder
 # name with accents on Windows) must reach the agent.
 if ! err=$(make -n verify 2>&1 >/dev/null); then
@@ -74,4 +104,4 @@ if ! out=$(make --no-print-directory verify 2>&1); then
   exit 2
 fi
 [ -n "$held" ] && rm -f "$held"
-exit 0
+push_check
