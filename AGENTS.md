@@ -16,7 +16,7 @@ Code alone, or Orca when present).
 | Path | What |
 |---|---|
 | `router/` | Router and the execution contract (Orca adapter, optional) |
-| `workflows/` | simple, build-review, independent-compare, complex |
+| `workflows/` | simple, build-review, independent-compare, complex, prototype; onboarding, maintenance |
 | `agents/` | Role definitions |
 | `rules/` | Global policy; index in `rules/README.md` |
 | `enforcement/` | Hooks, CI, `bootstrap.sh`, `doctor.sh` for projects |
