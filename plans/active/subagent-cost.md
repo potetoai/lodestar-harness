@@ -79,7 +79,7 @@ Rating: **Do** · **Drop**.
 | D | Call budget in the brief (a number per role): past it, report what was checked and what was not, instead of going on | Cuts the 31+ call tail (46% of cost). Soft limit, in the brief only; no hook, no orchestration. It can cut a run short, so it needs a replay of about 10 runs first | **Drop** (owner, 2026-10-12) |
 | E | A rule for the critic re-run after a criteria change: what a narrowed run must still check, and when a full run is required | Saving: about none, dispatchers narrow the run already. It puts limits on a habit that has none today | **Do** as a safety rule |
 | F | Reviewer on a cheaper model (idea 16, dropped at 1.3%) | About 40% of reviewer cost if quality holds; the one earlier trial (Haiku, 2026-10-02) gave a wrong finding | **Drop** (owner, 2026-10-12) |
-| G | Critic on a cheaper model, or in the author's session for small criteria (`plans/ideas/token-diet.md`, phase 4.1) | Largest single saving, and the largest risk: the critic guards what a non-coder owner signs (decision of 2026-10-12, cross-model plan) | **Drop** |
+| G | Critic on a cheaper model, or in the author's session for small criteria (`plans/completed/ideas/token-diet.md`, phase 4.1) | Largest single saving, and the largest risk: the critic guards what a non-coder owner signs (decision of 2026-10-12, cross-model plan) | **Drop** |
 | H | Tester or builder back in the main session | No measured saving | **Drop** |
 
 ## 4. Phases
