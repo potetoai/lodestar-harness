@@ -65,6 +65,7 @@ so) · **Optional** (owner's choice) · **Covered** (Lodestar has it; no work).
 | 16 | Architecture allows bad tests | Tests-first, `protect-tests.sh`, mutation testing, `rules/testing.md` | **Covered** |
 | 17 | Not thinking strategically | Architect role, `skills/explore-options.md`, plans | **Covered** |
 | 18 | Not thinking enough | Critic, `skills/investigate.md` two-failure stop | **Covered**; the effort side is item 1 |
+| 19 | (found in phase 0) Stop hook holds again with nothing changed | `verify-before-stop.sh` runs `make verify` on every stop | **Do** (Q4), phase 1b |
 
 ## 4. Phases
 
@@ -105,6 +106,20 @@ Done when: the numbers and a keep/drop decision per item are in the logs.
 Done when: links pass; one dry run on a throwaway copy of a real project's
 `project.md` fills a table the owner finds right. vn30 and App01 get it at
 their next maintenance, not from this repo.
+
+### Phase 1b — Stop hook repeat holds (item 19, Q4)
+
+- Tests first in `enforcement/test.sh`: a failed verify holds once; a second
+  stop with the same tree and the same failure is let through; any change to
+  the tree (tracked or untracked files) or a different failure holds again;
+  the locked-test check above it never relaxes.
+- `verify-before-stop.sh`: after a hold, keep a fingerprint of the tree and
+  the failure in `.git/lodestar-verify-held`; when a later stop matches it,
+  exit 0 with a one-line note. CI stays the gate.
+- Bump `enforcement/VERSION`.
+
+Done when: `bash enforcement/test.sh` and links pass; the phase 5 rerun shows
+Stop-hook forced turns back near 0.5% of turns.
 
 ### Phase 2 — Prototype route (item 10)
 
@@ -221,5 +236,6 @@ per phase: keep, change or revert, with the number. Then move this plan to
 | 2026-10-15 | Phase 3 check case added: lint blocked 52 times on one App01 file | A known friction case the `--friction` table should flag |
 | 2026-10-16 | Phase 3 check case moved to vn30 6c52f53b (14 lint blocks on one file) | The App01 "52" case is not in any transcript; the worst real lint case is in vn30 |
 | 2026-10-16 | Codex transcripts left out of `--friction` | Owner uses Codex only through Orca, rarely; add when a Codex mistake slips by |
+| 2026-10-16 | Item 19 and the phase 1b section restored | Commit 36ebe8d was pushed after PR #36 merged and never reached main; the phase 5 rerun needs its done-when bar |
 | 2026-10-15 | "Meaning" column in the owner's language; `rules/documentation.md` section 5 names it as the one exception | Owner, after the vn30 dry run showed the English term is a third name the owner does not use |
 | 2026-10-15 | Q4 yes: the Stop hook holds once per unchanged state (phase 1b, PR #38) | Repeat holds were 1.2% of cost, above the 1% bar; the first hold after any change stays, CI is the gate |
