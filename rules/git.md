@@ -243,22 +243,39 @@ Merge policy by workflow:
 - **SIMPLE** — after verification passes and only if there are no conflicts, the
   worker may merge its own PR automatically. A SIMPLE task that escalated to a
   higher workflow mid-execution loses this — it is no longer SIMPLE.
-- **BUILD_REVIEW / INDEPENDENT_COMPARE / COMPLEX** — open the PR and STOP. A human
-  merges after review. Never auto-merge these.
+- **BUILD_REVIEW / INDEPENDENT_COMPARE / COMPLEX** — the worker may merge its
+  own PR when the review passed: every reviewer (and critic) finding is fixed,
+  or rejected with a reason written in the PR. The owner's standing approval
+  (2026-10-16) replaces a merge word per PR; the gates below still hold.
 
 Never auto-merge when any of these hold, regardless of workflow — open the PR and
 wait for a human instead:
 
 - verification did not pass,
 - merge conflicts exist,
-- the change is security-sensitive (see `rules/security.md`),
-- the operation is destructive.
+- the change is security-sensitive (see `rules/security.md`); a PR that changes
+  `sensitive_paths`, a locked test or a safety file is also blocked by
+  `guard-install.sh` until the owner types "duyệt merge PR <n>"
+  (`rules/enforcement.md`, "Owner-only merge"). The hook knows only those
+  file lists: a security change elsewhere still needs the worker to stop and
+  ask,
+- the operation is destructive (deletes data, writes a real database, rewrites
+  history),
+- the change weakens a safety check: removes or relaxes a hook, a CI step, a
+  locked test, doctor, or a rule in this list,
+- the owner said to hold this PR, or the project forbids auto-merge (below).
+
+After an automatic merge, tell the owner in one line what was merged and which
+gates it passed. The owner stops automatic merges by saying so; record it in
+`.ai/project.md` as a project rule.
 
 Merge only when the CI wait itself exits 0: `if gh pr checks <n> --watch; then
 gh pr merge <n>; fi`. Never pipe the checks into `&& gh pr merge`
 (`gh pr checks | tail && gh pr merge`): the pipe returns the exit code of
 `tail`, so a red CI still merges. `gh pr view && gh pr merge` has the same
 flaw. The `guard-install.sh` hook blocks every ungated `gh pr merge`.
+Push in one command and merge in the next: the hook blocks a merge with a
+`git push` in the same command, since the PR would change after its check.
 Push every commit before the merge: a commit left only on the local branch
 is not part of the merge and is lost without a warning (PR #36). The hook
 also blocks a merge while the PR's branch has local commits not pushed.

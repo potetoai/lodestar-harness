@@ -568,6 +568,20 @@ rec "Sửa xong, trình lại để mình duyệt" >/dev/null; t "approval hook 
 rec "ok" >/dev/null; t "approval hook ignores 'ok'" [ ! -s "$p/.ai/approvals.log" ]
 rec "Approve" >/dev/null; t "approval hook records the English word 'Approve'" [ "$(wc -l < "$p/.ai/approvals.log")" = 1 ]
 rm "$p/.ai/approvals.log"
+# "duyệt merge PR <n>" records that PR's head commit, and approves no plan.
+mkdir -p "$tmp/ghoid"; printf '#!/bin/sh\n[ -n "$FAKE_OID" ] || exit 1\necho "$FAKE_OID"\n' > "$tmp/ghoid/gh"; chmod +x "$tmp/ghoid/gh"
+recm() { FAKE_OID=$2 PATH="$tmp/ghoid:$PATH" rec "$1"; }
+out=$(recm "duyệt merge PR 52" abc123); t "'duyệt merge PR 52' records the PR's head and no plan" bash -c '[ "$(cat "$2")" != "" ] && grep -qE " merge-pr 52 abc123$" "$2" && [ $(wc -l < "$2") = 1 ] && grep -q "PR #52" <<<"$1"' _ "$out" "$p/.ai/approvals.log"
+rm "$p/.ai/approvals.log"
+recm "approve merge #9 and #10" def456 >/dev/null; t "'approve merge #9 and #10' records both PRs" bash -c 'grep -q " merge-pr 9 def456$" "$1" && grep -q " merge-pr 10 def456$" "$1"' _ "$p/.ai/approvals.log"
+rm "$p/.ai/approvals.log"
+recm "duyệt merge PR 5, xem issue #12, nhưng không merge PR 6 vội" def456 >/dev/null; t "a merge approval records only the PR named right after 'merge'" bash -c 'grep -q " merge-pr 5 def456$" "$1" && [ $(wc -l < "$1") = 1 ]' _ "$p/.ai/approvals.log"
+rm "$p/.ai/approvals.log"
+out=$(recm "duyệt merge PR 52" ""); t "a merge approval gh cannot read records nothing and says so" bash -c '[ ! -s "$2" ] && grep -q "could not read PR #52" <<<"$1"' _ "$out" "$p/.ai/approvals.log"
+recm "chưa duyệt merge PR 52" abc123 >/dev/null; t "'chưa duyệt merge PR 52' records nothing" [ ! -s "$p/.ai/approvals.log" ]
+recm "merge PR 52" abc123 >/dev/null; t "'merge PR 52' without the approval word records nothing" [ ! -s "$p/.ai/approvals.log" ]
+recm "duyệt, merge xong thì làm tiếp" abc123 >/dev/null; t "'duyệt' with 'merge' but no PR number still approves the plan" grep -q "x.md" "$p/.ai/approvals.log"
+rm "$p/.ai/approvals.log"
 printf '# Plan
 
 ## Acceptance criteria
@@ -852,7 +866,17 @@ for c in ".venv/Scripts/python.exe -m pip install ruff" "source .venv/bin/activa
   gi "$c"; t "guard allows: $c" [ $? = 0 ]
 done
 p=$tmp/gp; mkdir -p "$p"; git -C "$p" init -q -b main
-gp() { CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/guard-install.sh" 2>/dev/null <<<"$(jq -n --arg c "$1" '{tool_input:{command:$c}}')"; }
+# Fake gh for merges: $FAKE_GH is "<n> <branch> <head> <fork>", then the PR's
+# files. `gh pr view` prints the first line, `gh api` the files; empty: fails.
+mkdir -p "$tmp/ghpr"
+cat > "$tmp/ghpr/gh" <<'EOF'
+#!/bin/sh
+[ -n "$FAKE_GH" ] || exit 1
+if [ "$1" = api ]; then printf '%b\n' "$FAKE_GH" | tail -n +2; else printf '%b\n' "$FAKE_GH" | head -n 1; fi
+EOF
+chmod +x "$tmp/ghpr/gh"
+ghok='7 fix/x 1111111 false\nREADME.md'
+gp() { FAKE_GH=$ghok PATH="$tmp/ghpr:$PATH" CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/guard-install.sh" 2>/dev/null <<<"$(jq -n --arg c "$1" '{tool_input:{command:$c}}')"; }
 for c in "git push origin main" "git push -u origin HEAD:main" "git push origin --delete master" "git push" "git push -u origin" \
          'git commit --no-verify -m "x"' 'git commit -nm "x"' "git add . && git push --no-verify origin fix/a"; do
   gp "$c"; t "guard blocks: $c" [ $? = 2 ]
@@ -880,30 +904,59 @@ for c in "if gh pr checks 52 --watch --interval 20; then gh pr merge 52 --merge 
   gp "$c"; t "guard allows: $c" [ $? = 0 ]
 done
 # Merge: a local commit never pushed would be left out of the merge (PR #36).
-m=$tmp/gm; mkdir -p "$m" "$tmp/fakegh"; git -C "$m" init -q -b main
-printf '#!/bin/sh\necho "${FAKE_HEAD:-}"\n' > "$tmp/fakegh/gh"; chmod +x "$tmp/fakegh/gh"
-gmerge() { FAKE_HEAD=$2 PATH="$tmp/fakegh:$PATH" CLAUDE_PROJECT_DIR=$m bash "$here/agents/claude/hooks/guard-install.sh" 2>/dev/null <<<"$(jq -n --arg c "$1" '{tool_input:{command:$c}}')"; }
+m=$tmp/gm; mkdir -p "$m"; git -C "$m" init -q -b main
+gmerge() { FAKE_GH=$2 PATH="$tmp/ghpr:$PATH" CLAUDE_PROJECT_DIR=$m bash "$here/agents/claude/hooks/guard-install.sh" 2>/dev/null <<<"$(jq -n --arg c "$1" '{tool_input:{command:$c}}')"; }
 git -C "$m" checkout -q -b fix/m; git -C "$m" -c user.name=t -c user.email=t@t commit -q --allow-empty -m one
 git -C "$m" update-ref refs/remotes/origin/fix/m HEAD
 merge7="if gh pr checks 7 --watch; then gh pr merge 7 --merge; fi"
-gmerge "$merge7" fix/m; t "guard allows a merge when the branch is fully pushed" [ $? = 0 ]
+pr7='7 fix/m aaaaaaa false\nsrc/app.py'
+gmerge "$merge7" "$pr7"; t "guard allows a merge when the branch is fully pushed" [ $? = 0 ]
 git -C "$m" -c user.name=t -c user.email=t@t commit -q --allow-empty -m two
-gmerge "$merge7" fix/m; t "guard blocks a merge while the PR's branch has an unpushed commit" [ $? = 2 ]
-gmerge 'gh pr checks 7 --watch; if ($LASTEXITCODE -eq 0) { gh pr merge 7 --merge }' fix/m; t "guard blocks the PowerShell merge with an unpushed commit" [ $? = 2 ]
-gmerge "if gh pr checks --watch; then gh pr merge --merge; fi" ""; t "guard blocks a merge of the current branch with an unpushed commit" [ $? = 2 ]
-gmerge "if gh pr checks 7 --watch; then gh pr merge --squash -d 7; fi" fix/m; t "guard blocks the unpushed merge with flags before the number" [ $? = 2 ]
-gmerge "if gh pr checks 7 --watch; then gh pr merge -b x fix/m; fi" fix/m; t "guard blocks the unpushed merge named by branch" [ $? = 2 ]
-gmerge "git push && $merge7" fix/m; t "guard allows a merge that pushes first in the same command" [ $? = 0 ]
-gmerge "$merge7; git push" fix/m; t "guard blocks a merge that pushes only after it" [ $? = 2 ]
-gmerge "if gh pr checks 7 -R o/r --watch; then gh pr merge 7 -R o/r; fi" fix/m; t "guard allows a merge in another repo (-R)" [ $? = 0 ]
+gmerge "$merge7" "$pr7"; t "guard blocks a merge while the PR's branch has an unpushed commit" [ $? = 2 ]
+gmerge 'gh pr checks 7 --watch; if ($LASTEXITCODE -eq 0) { gh pr merge 7 --merge }' "$pr7"; t "guard blocks the PowerShell merge with an unpushed commit" [ $? = 2 ]
+gmerge "if gh pr checks --watch; then gh pr merge --merge; fi" "$pr7"; t "guard blocks a merge of the current branch with an unpushed commit" [ $? = 2 ]
+gmerge "if gh pr checks 7 --watch; then gh pr merge --squash -d 7; fi" "$pr7"; t "guard blocks the unpushed merge with flags before the number" [ $? = 2 ]
+gmerge "if gh pr checks 7 --watch; then gh pr merge -b x fix/m; fi" "$pr7"; t "guard blocks the unpushed merge named by branch" [ $? = 2 ]
+gmerge "git push && $merge7" "$pr7"; t "guard blocks a merge with a push before it in the same command" [ $? = 2 ]
+gmerge "$merge7; git push" "$pr7"; t "guard blocks a merge that pushes only after it" [ $? = 2 ]
+gmerge "$merge7" '7 fix/m aaaaaaa true\nsrc/app.py'; t "guard skips the unpushed check for a fork PR" [ $? = 0 ]
 git -C "$m" checkout -q -b side
-gmerge "$merge7" fix/m; t "guard blocks the unpushed PR branch when merging from another branch (PR #36)" [ $? = 2 ]
-gmerge "if gh pr checks --watch; then gh pr merge --merge; fi" ""; t "guard allows merging the current branch when it has no origin copy" [ $? = 0 ]
+gmerge "$merge7" "$pr7"; t "guard blocks the unpushed PR branch when merging from another branch (PR #36)" [ $? = 2 ]
 git -C "$m" checkout -q fix/m
-gmerge "$merge7" ""; t "guard allows a merge when gh cannot name the branch" [ $? = 0 ]
-gmerge "$merge7" fix/other; t "guard allows a merge of a branch with no local copy" [ $? = 0 ]
+gmerge "$merge7" ""; t "guard blocks a merge when gh cannot read the PR" [ $? = 2 ]
+gmerge "$merge7" '7 fix/m aaaaaaa false'; t "guard blocks a merge when gh cannot list the PR's files" [ $? = 2 ]
+gmerge "if gh pr checks 7 -R o/r --watch; then gh pr merge 7 -R o/r; fi" "$pr7"; t "guard blocks a merge in another repo (-R)" [ $? = 2 ]
+gmerge "if GH_REPO=o/r gh pr checks 7 --watch; then GH_REPO=o/r gh pr merge 7; fi" "$pr7"; t "guard blocks a merge in another repo (GH_REPO)" [ $? = 2 ]
+for c in "gh api -X 'PUT' repos/o/r/pulls/7/merge" 'gh api --method "PUT" repos/o/r/pulls/7/merge' \
+         "gh api graphql -f query='mutation { mergePullRequest(input: {pullRequestId: \"x\"}) { clientMutationId } }'" \
+         "gh api graphql -f query='mutation { enablePullRequestAutoMerge(input: {pullRequestId: \"x\"}) { clientMutationId } }'"; do
+  gmerge "$c" "$pr7"; t "guard blocks: $c" [ $? = 2 ]
+done
+gmerge "$merge7" '7 fix/other aaaaaaa false\nsrc/app.py'; t "guard allows a merge of a branch with no local copy" [ $? = 0 ]
 git -C "$m" update-ref refs/remotes/origin/fix/m HEAD
-gmerge "$merge7" fix/m; t "guard allows the merge once the commit is pushed" [ $? = 0 ]
+gmerge "$merge7" "$pr7"; t "guard allows the merge once the commit is pushed" [ $? = 0 ]
+# Owner-only merge: sensitive code, locked tests and safety files need the
+# owner's "duyệt merge PR <n>" for the PR's current head.
+mkdir -p "$m/.ai"; printf 'name: x\nsensitive_paths:\n  - "src/auth/"\n  - "*.sql"\n  - ./app/pay  # money\n  - Keys\nowner_language: vi\n' > "$m/.ai/project.md"
+printf '# locked\ntests/test_pay.py\n' > "$m/.ai/test-lock"
+for f in src/auth/login.py db/init.sql tests/test_pay.py .github/workflows/ci.yml .claude/hooks/guard-install.sh \
+         .codex/hooks.json .ai/project.md .ai/test-lock enforcement/test.sh app/pay/card.py app/pay keys/prod.pem SRC/Auth/x.py; do
+  gmerge "$merge7" "7 fix/m aaaaaaa false\nREADME.md\n$f"; t "guard blocks an unapproved merge that changes $f" [ $? = 2 ]
+done
+gmerge "$merge7" '7 fix/m aaaaaaa false\nsrc/authors.py\ndocs/sql.md\ntests/test_other.py\napp/payroll.py'; t "guard allows a merge of files outside the owner-only list" [ $? = 0 ]
+gmerge "$merge7" '7 fix/m aaaaaaa false\ndocs/ci.yml\n.github/workflows/ci.yml'; t "guard blocks a rename away from a safety file (old path listed)" [ $? = 2 ]
+auth7='7 fix/m aaaaaaa false\nsrc/auth/login.py'
+echo "2026-10-16 10:00 merge-pr 7 bbbbbbb" > "$m/.ai/approvals.log"
+gmerge "$merge7" "$auth7"; t "guard blocks when the approval is for another head (new push)" [ $? = 2 ]
+echo "2026-10-16 10:00 merge-pr 8 aaaaaaa" > "$m/.ai/approvals.log"
+gmerge "$merge7" "$auth7"; t "guard blocks when the approval is for another PR" [ $? = 2 ]
+printf '2026-10-16 10:00 merge-pr 7 aaaaaaa\r\n' > "$m/.ai/approvals.log"
+gmerge "$merge7" "$auth7"; t "guard blocks an approved sensitive merge without --match-head-commit" [ $? = 2 ]
+gmerge "if gh pr checks 7 --watch; then gh pr merge 7 --auto --match-head-commit aaaaaaa; fi" "$auth7"; t "guard blocks an approved sensitive merge with --auto" [ $? = 2 ]
+gmerge "if gh pr checks 7 --watch; then gh pr merge 7 --merge --match-head-commit bbbbbbb; fi" "$auth7"; t "guard blocks an approved sensitive merge pinned to another head" [ $? = 2 ]
+gmerge "if gh pr checks 7 --watch; then gh pr merge 7 --merge --match-head-commit aaaaaaa; fi" "$auth7"; t "guard allows a sensitive merge the owner approved, pinned to that head" [ $? = 0 ]
+gmerge "if gh pr checks 7 --watch; then gh pr merge 7 --match-head-commit=aaaaaaa; fi" "$auth7"; t "guard allows --match-head-commit=<head>" [ $? = 0 ]
+rm -rf "$m/.ai"
 git -C "$p" checkout -q -b fix/a; gp "git push -u origin"; t "guard allows a bare push from a feature branch" [ $? = 0 ]
 git -C "$p" symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/develop
 gp "git push origin develop"; t "guard blocks a push to the remote's default branch (develop)" [ $? = 2 ]

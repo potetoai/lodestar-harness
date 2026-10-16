@@ -85,6 +85,10 @@ Stop early when nothing is worth a PR.
 6. **Golden principles.** Scan for violations of
    `rules/golden-principles.md` that the checks do not catch yet. Fix small
    ones; record large ones in `tech-debt.md`.
+   Check that `sensitive_paths` in `.ai/project.md` still covers the code for
+   login, permissions, secrets, money and data deletes: the agent merges its
+   own PRs, and only those paths make a merge wait for the owner
+   (`rules/git.md`, merge policy). Propose missing paths to the owner.
 7. **Close.** Write today's date to `.ai/last-maintenance` in the last PR. Report
    to the owner: PRs opened, debt paid, baseline size before and after,
    rules added, what is left.
