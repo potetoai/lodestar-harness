@@ -12,7 +12,8 @@
 #   own exit code: `if gh pr checks <n> --watch; then gh pr merge <n>; fi`
 #   (PowerShell: `gh pr checks <n> --watch; if ($LASTEXITCODE -eq 0) {...}`).
 #   `gh pr view && gh pr merge` or `gh pr checks | tail && gh pr merge`
-#   exit 0 on a red CI, so they merge anyway.
+#   exit 0 on a red CI, so they merge anyway. A merge is also blocked while
+#   the PR's branch has local commits that were never pushed.
 # - a prototype branch (proto/*) stays local: blocks pushing or renaming one,
 #   and any push run in its checkout or worktree (or --all while one exists).
 # - a Tests-First commit must carry an owner-approved plan. Blocks
@@ -55,6 +56,51 @@ if [ -z "$why" ]; then
     fix='Use exactly: if gh pr checks <n> --watch; then gh pr merge <n> --merge; fi
 (PowerShell: gh pr checks <n> --watch; if ($LASTEXITCODE -eq 0) { gh pr merge <n> --merge })
 If "gh pr merge" is only text in a commit message or a file, write that text with the Write tool.'
+  fi
+fi
+
+# Merge: a commit on the PR's branch that was never pushed is left out of the
+# merge without a warning (PR #36 lost one this way). Compares the local branch
+# with its origin copy; no origin copy, another repo (-R), a fork PR, or gh
+# cannot name the branch: allowed. A push before the merge in the same command
+# is trusted (the hook runs before it).
+pre=$(sed -E 's/pr[[:space:]]+merge.*//' <<<"$low")
+if [ -z "$why" ] && grep -qE '(^|[^[:alnum:]_-])gh(\.exe)?[[:space:]]+([^;|&]*[[:space:]])?pr[[:space:]]+merge([^[:alnum:]_-]|$)' <<<"$low" &&
+   ! grep -qE '(^|[[:space:]])git[[:space:]]+([^;|&]*[[:space:]])?push([[:space:]]|$)' <<<"$pre"; then
+  here=${cwd:-${CLAUDE_PROJECT_DIR:-.}}
+  if [ -n "$(git -C "$here" for-each-ref --count=1 refs/remotes/origin/ 2>/dev/null)" ]; then
+    to=""; command -v timeout >/dev/null && to="timeout 8"
+    heads=""
+    # Each merge: its selector (number, branch or URL) is the first argument
+    # that is not a flag or a flag's value; none means the current branch.
+    while IFS= read -r m; do
+      grep -qE '(^|[[:space:]])(-R|--repo)([[:space:]=]|$)' <<<"$m" && continue
+      read -ra toks <<<"$(sed -E 's/.*[[:space:]][pP][rR][[:space:]]+[mM][eE][rR][gG][eE]//' <<<"$m")"
+      sel=""; skip=0
+      for tk in "${toks[@]}"; do
+        [ $skip = 1 ] && { skip=0; continue; }
+        case $tk in
+          -b|--body|-t|--subject|-F|--body-file|-A|--author-email|--match-head-commit) skip=1 ;;
+          -*) ;;
+          *) sel=${tk//[\"\']/}; break ;;
+        esac
+      done
+      if [ -n "$sel" ]; then
+        heads+=$(cd "$here" 2>/dev/null && $to gh pr view "$sel" --json headRefName,isCrossRepository \
+          -q 'if .isCrossRepository then "" else .headRefName end' 2>/dev/null | tr -d '\r')$'\n'
+      else
+        heads+=$(git -C "$here" symbolic-ref --short -q HEAD 2>/dev/null)$'\n'
+      fi
+    done < <(tr '\n' ';' <<<"$cmd" | grep -oiE 'gh(\.exe)?[[:space:]]+([^;|&}]*[[:space:]])?pr[[:space:]]+merge([[:space:]][^;|&}]*)?')
+    while IFS= read -r h; do
+      [ -n "$h" ] || continue
+      left=$(git -C "$here" rev-list --count "refs/remotes/origin/$h..refs/heads/$h" 2>/dev/null)
+      if [ "${left:-0}" -gt 0 ]; then
+        why="branch $h has $left local commit(s) that were never pushed; the merge would leave them out."
+        fix="Push the branch first (git push), then merge behind the CI wait as usual."
+        break
+      fi
+    done <<<"$heads"
   fi
 fi
 
