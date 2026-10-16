@@ -5,6 +5,10 @@
 cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
 export NO_COLOR=1 FORCE_COLOR=0  # plain text for the agent
 
+# A prototype branch (proto/*) is thrown away, never pushed (guard-install
+# blocks it) or merged, so its work is not verified (workflows/prototype.md).
+case $(git symbolic-ref --short -q HEAD 2>/dev/null) in proto/*) exit 0 ;; esac
+
 # Prevent an endless loop: if the agent was already sent back once, let it
 # stop. CI is the final gate.
 [ "$(jq -j '.stop_hook_active // false')" = "true" ] && exit 0

@@ -13,13 +13,20 @@
 #   (PowerShell: `gh pr checks <n> --watch; if ($LASTEXITCODE -eq 0) {...}`).
 #   `gh pr view && gh pr merge` or `gh pr checks | tail && gh pr merge`
 #   exit 0 on a red CI, so they merge anyway.
+# - a prototype branch (proto/*) stays local: blocks pushing or renaming one,
+#   and any push run in its checkout or worktree (or --all while one exists).
 # - a Tests-First commit must carry an owner-approved plan. Blocks
 #   `git commit` with a "Tests-First:" message when no changed plan has
 #   approved criteria, or when the plan or .ai/approvals.log would be left
 #   out of the commit (CI would fail the PR; this catches it first).
 [ "$LODESTAR_SKIP_HOOKS" = "1" ] && exit 0
 
-cmd=$(jq -r '.tool_input.command // empty' | tr -d '\r')
+input=$(cat)
+cmd=$(jq -r '.tool_input.command // empty' <<<"$input" | tr -d '\r')
+# The session folder: a push is judged from where it runs (a prototype lives
+# in its own worktree). Falls back to the project folder.
+bs='\'   # Windows paths: backslashes become slashes
+cwd=$(jq -r '.cwd // empty' <<<"$input"); cwd=${cwd//"$bs"//}
 [ -n "$cmd" ] || exit 0
 low=${cmd,,}
 
@@ -53,13 +60,27 @@ fi
 
 # Git: look at each command of a chain (a && b; c | d) on its own.
 if [ -z "$why" ]; then
-  branch=$(git -C "${CLAUDE_PROJECT_DIR:-.}" symbolic-ref --short HEAD 2>/dev/null)
+  dir=${cwd:-${CLAUDE_PROJECT_DIR:-.}}
+  # dir_of PATH: a folder the command names (cd X, git -C X), resolved against $dir.
+  dir_of() { local d=${1//[\"\']/}; d=${d//"$bs"//}; [[ $d == /* || $d =~ ^[A-Za-z]: ]] && echo "$d" || echo "$dir/$d"; }
   # Protected: main, master, and the remote's default branch (develop, trunk...).
   default=$(git -C "${CLAUDE_PROJECT_DIR:-.}" symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null)
   default=${default#origin/}; default=${default,,}; default=${default//./\.}
   prot="main|master${default:+|$default}"
-  while IFS= read -r seg; do
+  while IFS= read -r raw; do
+    seg=${raw,,}
+    if [[ $raw =~ ^[[:space:]]*cd[[:space:]]+([^[:space:]]+)[[:space:]]*$ ]]; then dir=$(dir_of "${BASH_REMATCH[1]}"); continue; fi
     grep -qE '(^|[[:space:]])git([[:space:]]|$)' <<<"$seg" || continue
+    at=$dir
+    [[ $raw =~ (^|[[:space:]])git[[:space:]]+-C[[:space:]]+([^[:space:]]+) ]] && at=$(dir_of "${BASH_REMATCH[2]}")
+    branch=$(git -C "$at" symbolic-ref --short -q HEAD 2>/dev/null)
+    # A prototype is never renamed into real work, or real work into one.
+    if grep -qE '[[:space:]]branch[[:space:]]' <<<"$seg" && grep -qE '(^|[[:space:]])(-[a-z]*[mc][a-z]*|--move|--copy)([[:space:]]|$)' <<<"$seg" &&
+       grep -qE '(^|[[:space:]])(refs/heads/)?proto/' <<<"$seg"; then
+      why="renaming or copying a branch to or from proto/* mixes a throwaway prototype with real work."
+      fix="Keep the prototype on its proto/* branch and delete it when done; build the real change on a new branch from main (workflows/prototype.md)."
+      break
+    fi
     if grep -qE -- '(^|[[:space:]])--no-verify([[:space:]=]|$)' <<<"$seg" ||
        grep -qE '[[:space:]]commit([[:space:]]+[^"'"'"']*)?[[:space:]]-[a-z]*n[a-z]*([[:space:]]|$)' <<<"$seg"; then
       why="--no-verify (or commit -n) skips the project's git hooks."
@@ -67,6 +88,15 @@ if [ -z "$why" ]; then
       break
     fi
     grep -qE '[[:space:]]push([[:space:]]|$)' <<<"$seg" || continue
+    # A prototype branch never leaves the machine (workflows/prototype.md):
+    # no push of a proto/* branch, and no push at all while on one.
+    if grep -qE '[[:space:]:+"'"'"'=](refs/heads/)?proto/' <<<"$seg" || [[ "${branch,,}" == proto/* ]] ||
+       { grep -qE -- '(^|[[:space:]])--(all|mirror)([[:space:]=]|$)' <<<"$seg" &&
+         [ -n "$(git -C "$at" for-each-ref --count=1 refs/heads/proto/ 2>/dev/null)" ]; }; then
+      why="a prototype branch (proto/*) is thrown away, never pushed or merged."
+      fix="Write down what the prototype showed, then build the real change on a new branch from main (workflows/prototype.md)."
+      break
+    fi
     if grep -qE "[[:space:]:+](refs/heads/)?($prot)([[:space:]]|\$)" <<<"$seg"; then
       why="git push to a protected branch ($prot) skips the PR and its CI."
     else
@@ -75,7 +105,7 @@ if [ -z "$why" ]; then
       [ "$args" -le 1 ] && [[ "${branch,,}" =~ ^($prot)$ ]] && why="git push from a protected branch ($prot) skips the PR and its CI."
     fi
     [ -n "$why" ] && { fix="Create a branch, push it, open a PR, and merge when CI is green."; break; }
-  done < <(sed -E 's/(&&|\|\||[;|])/\n/g' <<<"$low")
+  done < <(sed -E 's/(&&|\|\||[;|])/\n/g' <<<"$cmd")
 fi
 
 # Tests-First commit: the plan and approvals.log must be in it, approved.

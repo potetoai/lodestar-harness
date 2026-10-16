@@ -47,7 +47,7 @@ context and puts what the worker needs into the brief.
 |------|---------|
 | `router/ROUTER.md` | Master Router: task → workflow, roles, capabilities, verification. |
 | `router/ORCA-INTEGRATION.md` | How Router decisions are executed: Orca Tasks/Dispatches/Workers, or Claude Code subagents. |
-| `workflows/` | Execution strategies: `simple`, `build-review`, `independent-compare`, `complex`; plus `onboarding`, the mandatory first task of every project, and `maintenance`, run every 14 days. |
+| `workflows/` | Execution strategies: `simple`, `build-review`, `independent-compare`, `complex`, `prototype` (a throwaway sketch); plus `onboarding`, the mandatory first task of every project, and `maintenance`, run every 14 days. |
 | `enforcement/` | Machine checks every project must pass: hooks, CI, `bootstrap.sh`, `doctor.sh`. Rules: `rules/enforcement.md`. |
 | `agents/` | Logical role definitions: architect, builder, frontend, backend, database, critic, tester, reviewer, qa. |
 | `rules/` | Global engineering policy. Index: `rules/README.md`. |

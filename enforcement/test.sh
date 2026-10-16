@@ -149,6 +149,11 @@ holdq() { N=$RANDOM MSG=x CLAUDE_PROJECT_DIR=$q/sub bash "$here/agents/claude/ho
 holdq; holdq; t "stop hook in a subfolder project lets go when nothing changed" [ $? = 0 ]
 echo b > "$q/sub/code.txt"
 holdq; t "stop hook in a subfolder project holds after a tracked edit" [ $? = 2 ]
+# A prototype branch (proto/*) is thrown away, never merged: no verify there.
+git -C "$p" checkout -q -b proto/try
+hold "test_c failed"; t "stop hook lets a prototype branch stop while verify fails" [ $? = 0 ]
+git -C "$p" checkout -q -
+hold "test_c failed"; t "stop hook holds that failure again off the prototype branch" [ $? = 2 ]
 
 # 7. Global reminder hook: speaks only in projects that are not ready; never blocks.
 g=$here/agents/claude/global/check-readiness.sh
@@ -878,6 +883,33 @@ git -C "$p" checkout -q -b fix/a; gp "git push -u origin"; t "guard allows a bar
 git -C "$p" symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/develop
 gp "git push origin develop"; t "guard blocks a push to the remote's default branch (develop)" [ $? = 2 ]
 gp "git push origin develop-docs"; t "guard allows a branch that only starts with the default name" [ $? = 0 ]
+# Prototype branches (proto/*) never leave the machine; any push from one is blocked.
+for c in "git push -u origin proto/try-ui" "git push origin HEAD:proto/x" "git push origin HEAD:refs/heads/proto/x"; do
+  gp "$c"; t "guard blocks: $c" [ $? = 2 ]
+done
+gp "git push origin fix/proto-notes"; t "guard allows a branch that only mentions proto" [ $? = 0 ]
+git -C "$p" checkout -q -b proto/try
+for c in "git push" "git push -u origin" "git push origin HEAD:fix/a" "git push origin fix/a"; do
+  gp "$c"; t "guard blocks on a prototype branch: $c" [ $? = 2 ]
+done
+gp "git status"; t "guard allows other git commands on a prototype branch" [ $? = 0 ]
+# Until now the repo had no commit; give fix/a one and make proto/try real.
+git -C "$p" symbolic-ref HEAD refs/heads/fix/a
+git -C "$p" -c user.name=t -c user.email=t@t commit -q --allow-empty -m init; git -C "$p" branch proto/try
+for c in 'git push origin "proto/x"' "git push origin 'proto/x'" "git push origin +proto/x" "git push origin Proto/X"          "git status && git push origin proto/x" "git push --all origin" "git push --mirror origin"          "git branch -m proto/try fix/ship" "git branch -M fix/a proto/hide" "git branch --move proto/try main2"; do
+  gp "$c"; t "guard blocks while a prototype branch exists: $c" [ $? = 2 ]
+done
+gp "git branch -d proto/try"; t "guard allows deleting a prototype branch" [ $? = 0 ]
+# The prototype lives in its own worktree: the push is judged from where it runs.
+w=$tmp/gp-proto; git -C "$p" worktree add -q "$w" -b proto/wt
+gpc() { CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/guard-install.sh" 2>/dev/null <<<"$(jq -n --arg c "$1" --arg d "$2" '{cwd:$d, tool_input:{command:$c}}')"; }
+gpc "git push -u origin" "$w"; t "guard blocks a bare push in a prototype worktree (cwd)" [ $? = 2 ]
+for c in "git -C $w push" "cd $w && git push -u origin" "cd $w; git push origin HEAD:fix/b"; do
+  gp "$c"; t "guard blocks a push run in a prototype worktree: $c" [ $? = 2 ]
+done
+gpc "git push -u origin" "$p"; t "guard allows a bare push from the main checkout on fix/a" [ $? = 0 ]
+git -C "$p" worktree remove --force "$w"; git -C "$p" branch -q -D proto/try proto/wt
+gp "git push --all origin"; t "guard allows --all once no prototype branch exists" [ $? = 0 ]
 # C1: a private repo on GitHub Free gets the real reason, not "set it on GitHub".
 mkdir -p "$tmp/fakegh"; printf '#!/usr/bin/env bash\necho "gh: Upgrade to GitHub Pro or make this repository public to enable this feature. (HTTP 403)" >&2\nexit 1\n' > "$tmp/fakegh/gh"; chmod +x "$tmp/fakegh/gh"
 out=$(PATH="$tmp/fakegh:$PATH" bash "$here/agents/claude/hooks/doctor.sh" "$tmp/maint" 2>&1)
@@ -997,6 +1029,11 @@ cx Stop verify-before-stop '{"stop_hook_active":false}'; t "codex: stop hook blo
 cx Stop verify-before-stop '{"stop_hook_active":true}'; t "codex: stop hook lets go on the second attempt" [ $? = 0 ]
 rm "$p/fail"
 cx Stop verify-before-stop '{"stop_hook_active":false}'; t "codex: stop hook passes when verify passes" [ $? = 0 ]
+cxb=$(git -C "$p" symbolic-ref HEAD); git -C "$p" symbolic-ref HEAD refs/heads/proto/try; touch "$p/fail"
+cx PreToolUse guard-install '{"tool_name":"Bash","tool_input":{"command":"git push -u origin"}}'
+t "codex: install guard blocks a push from a prototype branch" [ $? = 2 ]
+cx Stop verify-before-stop '{"stop_hook_active":false}'; t "codex: stop hook lets a prototype branch stop" [ $? = 0 ]
+git -C "$p" symbolic-ref HEAD "$cxb"; rm "$p/fail"
 # Without jq the hooks would let everything through: the adapter blocks and
 # says why, but still lets a Stop end on the second attempt.
 fb=$tmp/nojq; mkdir -p "$fb"
