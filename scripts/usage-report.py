@@ -7,6 +7,8 @@ token-saving change can be checked against numbers (plans/active/token-efficienc
   python scripts/usage-report.py --since 2026-09-23 --until 2026-10-02 \
       --match 'my-project|other-project'
   python scripts/usage-report.py --sessions    # one row per session too
+  python scripts/usage-report.py --friction --since 2026-10-13   # where agents struggled
+  python scripts/usage-report.py --excerpt <transcript> 205-329  # read one flagged range
 """
 import argparse
 import bisect
@@ -201,6 +203,157 @@ def restart_saving(sessions, threshold, restart=90000):
     return (1 - new / base) * 100 if base else 0.0, restarts
 
 
+# Friction (workflows/maintenance.md, step 2): where a session struggled.
+# The context nudge is a reminder, not a block, so it does not count.
+INTERRUPT = re.compile(r"\[Request interrupted by user|The user doesn't want to proceed")
+HOOK_BLOCK = re.compile(r"hook error|^Blocked|Stop hook feedback|denied by", re.M)
+NOT_FRICTION = re.compile(r"context-nudge")
+GAP = 40  # events closer than this many transcript lines form one range
+LEAD = 30  # lines read before a range, to see what led to it
+
+
+def friction_scan(path):
+    """One transcript -> friction events as (line, kind). Kinds: error (a tool
+    failed), block (a hook or the permission check stopped it), repeat (the
+    same call failed again right after failing), interrupt (the owner)."""
+    events, sig, order, failed = [], {}, [], {}
+    last_interrupt = -9
+    with open(path, encoding="utf-8", errors="ignore") as fh:
+        for n, line in enumerate(fh, 1):
+            try:
+                e = json.loads(line)
+            except ValueError:
+                continue
+            if not isinstance(e, dict):
+                continue
+            a = e.get("attachment")
+            if isinstance(a, dict) and a.get("type") == "hook_blocking_error":
+                # One failed call counts once, whether the hook, the tool
+                # result or both report it.
+                if not NOT_FRICTION.search(str(a.get("blockingError"))) and a.get("toolUseID") not in failed:
+                    events.append((n, "block"))
+                    failed[a.get("toolUseID")] = n
+                continue
+            m = e.get("message")
+            m = m if isinstance(m, dict) else {}
+            content = m.get("content")
+            if e.get("type") != "user" and e.get("type") != "assistant":
+                continue
+            items = [{"type": "text", "text": content}] if isinstance(content, str) else content or []
+            for c in items:
+                if not isinstance(c, dict):
+                    continue
+                if c.get("type") == "tool_use":
+                    inp = c.get("input") or {}
+                    sig[c["id"]] = (c.get("name"), str(inp.get("command") or inp.get("file_path")
+                                                       or json.dumps(inp, sort_keys=True))[:300])
+                    order.append(c["id"])
+                elif c.get("type") == "text" and e.get("type") == "user":
+                    t = c.get("text", "")
+                    # A rejected tool call also writes an interrupt line; count one.
+                    if INTERRUPT.search(t) and n - last_interrupt > 2:
+                        events.append((n, "interrupt"))
+                        last_interrupt = n
+                    elif "Stop hook feedback" in t:
+                        events.append((n, "block"))
+                elif c.get("type") == "tool_result" and c.get("is_error"):
+                    r = c.get("content")
+                    t = r if isinstance(r, str) else json.dumps(r)
+                    kind = "interrupt" if INTERRUPT.search(t) else "block" if HOOK_BLOCK.search(t) else "error"
+                    if kind == "interrupt":
+                        events.append((n, kind))
+                        last_interrupt = n
+                    elif c.get("tool_use_id") not in failed:
+                        events.append((n, kind))
+                        failed[c.get("tool_use_id")] = n
+    last = None  # the last failed call; a success of the same call clears it
+    for i in order:
+        if i in failed:
+            if last is not None and sig[i] == sig[last]:
+                events.append((failed[i], "repeat"))
+            last = i
+        elif last is not None and sig[i] == sig[last]:
+            last = None
+    return sorted(events)
+
+
+def friction_ranges(events):
+    """Group events into transcript line ranges, most events first."""
+    groups = []
+    for n, kind in events:
+        if groups and n - groups[-1][1] <= GAP:
+            groups[-1][1] = n
+            groups[-1][2].append(kind)
+        else:
+            groups.append([n, n, [kind]])
+    return sorted(groups, key=lambda g: -len(g[2]))
+
+
+def friction_report(files, top=5):
+    """Top sessions by friction score (an interrupt costs the owner, so it
+    counts 3), each with its densest line range: five excerpts at most. The
+    agent reads a range with --excerpt, never the whole transcript."""
+    rows = []
+    for name, path in files:
+        ev = friction_scan(path)
+        if ev:
+            k = [kind for _, kind in ev]
+            score = len(k) + 2 * k.count("interrupt")
+            rows.append((score, name, path, k, friction_ranges(ev)))
+    rows.sort(key=lambda r: -r[0])
+    print(f"Friction: {len(rows)} of {len(files)} transcripts have events; top {min(top, len(rows))}"
+          " (score = events, an owner interrupt counts 3)")
+    for score, name, path, k, groups in rows[:top]:
+        counts = ", ".join(f"{x} {k.count(x)}" for x in ("error", "block", "repeat", "interrupt") if x in k)
+        print(f"  {score:4}  {name}  ({counts})")
+        print(f"        {path}")
+        a, b, kinds = groups[0]
+        a = max(1, a - LEAD)
+        more = f"; {len(groups) - 1} smaller ranges" if len(groups) > 1 else ""
+        print(f"        read: --excerpt {path} {a}-{b}  ({len(kinds)} events{more})")
+
+
+def excerpt(path, span, width=200):
+    """One short line per transcript entry in a line range (`A-B`), so a
+    flagged range can be read without its full tool output."""
+    a, _, b = span.partition("-")
+    a, b = int(a), int(b or a)
+    with open(path, encoding="utf-8", errors="ignore") as fh:
+        for n, line in enumerate(fh, 1):
+            if n > b:
+                break
+            if n < a:
+                continue
+            try:
+                e = json.loads(line)
+            except ValueError:
+                continue
+            if not isinstance(e, dict):
+                continue
+            at = e.get("attachment")
+            if isinstance(at, dict) and at.get("type") == "hook_blocking_error":
+                print(f"{n} hook-block: {str(at.get('blockingError'))[:width]}")
+                continue
+            if e.get("type") not in ("user", "assistant"):
+                continue
+            m = e.get("message")
+            content = m.get("content") if isinstance(m, dict) else None
+            for c in [{"type": "text", "text": content}] if isinstance(content, str) else content or []:
+                if not isinstance(c, dict):
+                    continue
+                if c.get("type") == "text":
+                    t = c.get("text", "")
+                elif c.get("type") == "tool_use":
+                    inp = c.get("input") or {}
+                    t = f"{c.get('name')}: {inp.get('command') or inp.get('file_path') or json.dumps(inp)}"
+                elif c.get("type") == "tool_result":
+                    r = c.get("content")
+                    t = ("error: " if c.get("is_error") else "ok: ") + (r if isinstance(r, str) else json.dumps(r))
+                else:
+                    continue
+                print(f"{n} {e['type']}: {' '.join(t.split())[:width]}")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--root", default=os.path.expanduser("~/.claude/projects"))
@@ -211,7 +364,14 @@ def main():
     ap.add_argument("--long", type=int, default=150000, help="long-context turn threshold")
     ap.add_argument("--nudge", type=int, default=200000, help="restart threshold to simulate")
     ap.add_argument("--sessions", action="store_true", help="print one row per session")
+    ap.add_argument("--friction", action="store_true",
+                    help="top 5 sessions by tool errors, hook blocks, repeats and interrupts")
+    ap.add_argument("--excerpt", nargs=2, metavar=("FILE", "A-B"),
+                    help="print a flagged transcript range, one short line per entry")
     a = ap.parse_args()
+    if a.excerpt:
+        excerpt(*a.excerpt)
+        return
 
     sessions = []
     for d in sorted(os.listdir(a.root)):
@@ -228,9 +388,16 @@ def main():
             s["sub_cost"] = sum(c for _, c in s["subs"])
             s["sub_scans"] = subs
             s["name"] = f"{d[:28]} {os.path.basename(f)[:8]}"
+            s["path"] = f
+            s["sub_paths"] = glob.glob(os.path.join(subdir, "*.jsonl"))
             sessions.append(s)
     if not sessions:
         print("No sessions match.")
+        return
+    if a.friction:
+        friction_report([(s["name"], s["path"]) for s in sessions]
+                        + [(f"{s['name']} sub {os.path.basename(p)[:14]}", p)
+                           for s in sessions for p in s["sub_paths"]])
         return
 
     total = long_c = base_c = out_c = sub_c = pol_c = 0.0
