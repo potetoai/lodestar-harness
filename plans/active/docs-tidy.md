@@ -109,6 +109,7 @@ for any miss traced to a moved rule. None: move this plan to
 |---|---|---|
 | 2026-10-16 | - | Plan written from the harness review (items 8 and 9); PR #44 merged the fixes for items 1-7 |
 | 2026-10-16 | 1 | Four rated idea plans moved to `plans/completed/ideas/`; paths updated in `AGENTS.md`, `token-efficiency.md` (line 10; its 2026-10-02 decision rows kept as history) and `subagent-cost.md` (path only); `plans/ideas/` is now empty. Links pass |
+| 2026-10-16 | 1 | PR #45 merged (0dba3f4) on green CI; `plans/ideas/` kept in git with a README |
 
 ## 7. Decision log
 
