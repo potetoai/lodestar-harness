@@ -259,6 +259,9 @@ gh pr merge <n>; fi`. Never pipe the checks into `&& gh pr merge`
 (`gh pr checks | tail && gh pr merge`): the pipe returns the exit code of
 `tail`, so a red CI still merges. `gh pr view && gh pr merge` has the same
 flaw. The `guard-install.sh` hook blocks every ungated `gh pr merge`.
+Push every commit before the merge: a commit left only on the local branch
+is not part of the merge and is lost without a warning (PR #36). The hook
+also blocks a merge while the PR's branch has local commits not pushed.
 
 A project may forbid auto-merge entirely in its `.ai/project.md` (for example when
 the "done" check is run by a human, not CI). The project rule wins.

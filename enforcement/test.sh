@@ -879,6 +879,31 @@ for c in "if gh pr checks 52 --watch --interval 20; then gh pr merge 52 --merge 
          'git commit -m "merge only on green CI"' "gh pr view 52" "gh api repos/o/r/pulls/5"; do
   gp "$c"; t "guard allows: $c" [ $? = 0 ]
 done
+# Merge: a local commit never pushed would be left out of the merge (PR #36).
+m=$tmp/gm; mkdir -p "$m" "$tmp/fakegh"; git -C "$m" init -q -b main
+printf '#!/bin/sh\necho "${FAKE_HEAD:-}"\n' > "$tmp/fakegh/gh"; chmod +x "$tmp/fakegh/gh"
+gmerge() { FAKE_HEAD=$2 PATH="$tmp/fakegh:$PATH" CLAUDE_PROJECT_DIR=$m bash "$here/agents/claude/hooks/guard-install.sh" 2>/dev/null <<<"$(jq -n --arg c "$1" '{tool_input:{command:$c}}')"; }
+git -C "$m" checkout -q -b fix/m; git -C "$m" -c user.name=t -c user.email=t@t commit -q --allow-empty -m one
+git -C "$m" update-ref refs/remotes/origin/fix/m HEAD
+merge7="if gh pr checks 7 --watch; then gh pr merge 7 --merge; fi"
+gmerge "$merge7" fix/m; t "guard allows a merge when the branch is fully pushed" [ $? = 0 ]
+git -C "$m" -c user.name=t -c user.email=t@t commit -q --allow-empty -m two
+gmerge "$merge7" fix/m; t "guard blocks a merge while the PR's branch has an unpushed commit" [ $? = 2 ]
+gmerge 'gh pr checks 7 --watch; if ($LASTEXITCODE -eq 0) { gh pr merge 7 --merge }' fix/m; t "guard blocks the PowerShell merge with an unpushed commit" [ $? = 2 ]
+gmerge "if gh pr checks --watch; then gh pr merge --merge; fi" ""; t "guard blocks a merge of the current branch with an unpushed commit" [ $? = 2 ]
+gmerge "if gh pr checks 7 --watch; then gh pr merge --squash -d 7; fi" fix/m; t "guard blocks the unpushed merge with flags before the number" [ $? = 2 ]
+gmerge "if gh pr checks 7 --watch; then gh pr merge -b x fix/m; fi" fix/m; t "guard blocks the unpushed merge named by branch" [ $? = 2 ]
+gmerge "git push && $merge7" fix/m; t "guard allows a merge that pushes first in the same command" [ $? = 0 ]
+gmerge "$merge7; git push" fix/m; t "guard blocks a merge that pushes only after it" [ $? = 2 ]
+gmerge "if gh pr checks 7 -R o/r --watch; then gh pr merge 7 -R o/r; fi" fix/m; t "guard allows a merge in another repo (-R)" [ $? = 0 ]
+git -C "$m" checkout -q -b side
+gmerge "$merge7" fix/m; t "guard blocks the unpushed PR branch when merging from another branch (PR #36)" [ $? = 2 ]
+gmerge "if gh pr checks --watch; then gh pr merge --merge; fi" ""; t "guard allows merging the current branch when it has no origin copy" [ $? = 0 ]
+git -C "$m" checkout -q fix/m
+gmerge "$merge7" ""; t "guard allows a merge when gh cannot name the branch" [ $? = 0 ]
+gmerge "$merge7" fix/other; t "guard allows a merge of a branch with no local copy" [ $? = 0 ]
+git -C "$m" update-ref refs/remotes/origin/fix/m HEAD
+gmerge "$merge7" fix/m; t "guard allows the merge once the commit is pushed" [ $? = 0 ]
 git -C "$p" checkout -q -b fix/a; gp "git push -u origin"; t "guard allows a bare push from a feature branch" [ $? = 0 ]
 git -C "$p" symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/develop
 gp "git push origin develop"; t "guard blocks a push to the remote's default branch (develop)" [ $? = 2 ]
