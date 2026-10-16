@@ -304,73 +304,17 @@ Do not permanently map a capability to an agent or model.
 
 ---
 
-## Deep-Investigation Capability
+## The Two Capabilities
 
-Source: `skills/investigate.md` (root cause before a fix) and `skills/explore-options.md` (goal and approach before building).
+- **Deep-Investigation**: engineering reasoning is the hard part (unclear
+  root cause, unfamiliar code, architecture decision, risky refactor).
+- **Product / QA / Release**: product, UI, browser or delivery validation is
+  the hard part.
 
-Use when engineering reasoning is the hard part:
-
-- Unfamiliar or poorly understood codebase
-- Difficult debugging / unclear root cause
-- Root-cause and dependency analysis
-- Architecture investigation or decision
-- Large or risky refactoring / blast-radius analysis
-- Complex implementation needing deeper planning
-- High-risk verification
-
-Do not use it for simple tasks where normal agent reasoning is enough.
-
----
-
-## Product / QA / Release Capability
-
-Source: a browser automation tool when the runtime has one (for example a Playwright MCP server); otherwise the project's end-to-end tests.
-
-Use when product, UI, browser, or delivery validation is the hard part:
-
-- Significant UI/UX changes
-- Browser interaction / end-to-end user flows
-- Product behavior and visual validation
-- Browser QA and accessibility validation
-- Release / ship validation
-Do not use it for backend-only or trivial changes where browser/product validation adds nothing.
-
----
-
-## Using Both
-
-Use both only when a task has significant engineering AND product/UI dimensions:
-
-```text
-Complex feature
-  -> Deep-Investigation -> implementation
-  -> Product/QA/Release -> final verification
-```
-
-Do not activate both automatically. Only use both when both materially improve reliability.
-
----
-
-## Capability Selection
-
-The Router chooses, in order of preference:
-
-1. The smallest reliable workflow.
-2. The minimum required agent roles.
-3. The minimum capabilities necessary. Prefer none when normal agent capability suffices.
-4. The appropriate verification level.
-
-Report selected capabilities as:
-
-```text
-Specialized Capabilities:
-- <capability or None>
-
-Reason:
-- <why it is necessary>
-```
-
-See `skills/capabilities.md` for each capability's source and triggers.
+Sources, full triggers, when not to use each, and the selection order live
+in one place: `skills/capabilities.md`. Use both only when both dimensions
+are significant (Routing Rule 7). The decision lists them under
+"Specialized Capabilities" (Output Format), with the reason.
 
 ---
 
@@ -474,53 +418,10 @@ Never report a task as complete without verification.
 
 # Routing Decision
 
-Return a structured routing decision containing:
-
-- workflow
-- complexity
-- scope
-- risk
-- architecture_impact
-- uncertainty
-- agents
-- specialized_capabilities
-- verification
-
-Example:
-
-{
-
-  "workflow": "BUILD_REVIEW",
-
-  "complexity": "medium",
-
-  "scope": ["frontend"],
-
-  "risk": "medium",
-
-  "architecture_impact": "low",
-
-  "uncertainty": "low",
-
-  "agents": [
-
-    "builder",
-
-    "reviewer"
-
-  ],
-
-  "specialized_capabilities": [],
-
-  "verification": [
-
-    "unit_tests",
-
-    "changed_file_review"
-
-  ]
-
-}
+The routing decision states: workflow, complexity, scope, risk,
+architecture impact, uncertainty, agents, specialized capabilities and
+verification. Its one format is in Output Format below; other files link
+there instead of keeping their own copy.
 
 ---
 

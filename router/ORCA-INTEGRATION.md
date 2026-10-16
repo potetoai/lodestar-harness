@@ -323,6 +323,30 @@ Orca's orchestration guide recommends parallel waves for independent work and de
 
 ---
 
+## PROTOTYPE
+
+Use when the owner wants to see or try an idea before deciding
+(`router/ROUTER.md`, section 5 and Routing Rule 17).
+
+Execution:
+
+```text
+Router
+  ↓
+Prototype Workflow (workflows/prototype.md)
+  ↓
+One Worker on a local proto/<name> branch
+  ↓
+Demo + findings
+  ↓
+Worktree and branch deleted
+```
+
+No review, no tests, nothing merged. The findings start a new task with its
+own routing decision.
+
+---
+
 # 6. Agent Role Mapping
 
 Agent roles are logical responsibilities.
@@ -372,29 +396,9 @@ Orca's own orchestration example demonstrates workers being started with differe
 
 # 7. Capability Selection
 
-Specialized capabilities are optional: methods in `skills/` or tools the agent runtime provides. See `skills/capabilities.md`.
-
-Available capabilities:
-
-```text
-Deep-Investigation   (skills/investigate.md, skills/explore-options.md)
-Product/QA/Release   (browser automation tool, e.g. Playwright MCP)
-```
-
-Capabilities do not replace agent roles.
-
-Examples:
-
-```text
-Architect + Deep-Investigation
-Builder + Deep-Investigation
-Frontend + Product/QA/Release
-QA + Product/QA/Release
-```
-
-Do not automatically use a capability for every task.
-
-The Router should choose a capability only when it materially improves reliability.
+Specialized capabilities are optional, do not replace agent roles, and are
+chosen only when they materially improve reliability. The capabilities, their
+sources and triggers: `skills/capabilities.md`.
 
 ---
 
@@ -705,39 +709,9 @@ Orca supports folder workspaces and does not require Git/worktrees for every tas
 
 # 17. Router Output Contract
 
-Before execution, the Router should produce:
-
-```text
-Workflow:
-[Simple / Build Review / Independent Compare / Complex]
-
-Complexity:
-[Low / Medium / High]
-
-Scope:
-[Description]
-
-Risk:
-[Low / Medium / High]
-
-Architecture Impact:
-[None / Low / Medium / High]
-
-Uncertainty:
-[Low / Medium / High]
-
-Agents:
-[Selected roles]
-
-Skills:
-[Selected skills or None]
-
-Verification:
-[Required verification]
-
-Reason:
-[Why this workflow was selected]
-```
+Before execution, the Router writes the route line and the routing decision
+in the one format of `router/ROUTER.md` (Output Format and Routing Approval
+Gate). It does not keep a second format here.
 
 The Router then converts this decision into Orca Task specifications.
 
@@ -749,57 +723,64 @@ User:
 
 > Add a new password reset feature.
 
+Password reset is authentication, so it is security-sensitive
+(`rules/security.md`): risk is at least high, the task runs in tests-first
+mode and needs a security review (`router/ROUTER.md`, Routing Rules 13 and 16).
+
 Router:
 
 ```text
+Lodestar route: BUILD_REVIEW risk=high
+
+Readiness:
+ready
+
 Workflow:
-BUILD_REVIEW
+BUILD_REVIEW (tests-first)
 
 Complexity:
-Medium
+medium
 
 Scope:
 Authentication feature
 
 Risk:
-Medium
+high
 
 Architecture Impact:
-Medium
+medium
 
 Uncertainty:
-Low
+low
 
 Agents:
-Builder
-Reviewer
-Tester
+critic, tester, builder, reviewer
 
-Skills:
-None
+Specialized Capabilities:
+none
 
 Verification:
-Focused tests + integration tests + type check
+focused tests, integration tests, type check, security_review
 
 Reason:
-Meaningful authentication change with moderate regression risk.
-Independent review improves reliability.
+Authentication change; tests-first because it is security-sensitive.
 ```
 
-Orca then manages:
+High risk, so the Router stops for the owner's approval of the route
+(Routing Approval Gate), then of the criteria. Orca then manages:
 
 ```text
-Task
+Criteria
+  ↓
+Critic Dispatch
+  ↓
+Owner approval
+  ↓
+Tester Dispatch (failing tests, locked)
   ↓
 Builder Dispatch
   ↓
-Implementation
-  ↓
-Tests
-  ↓
-Reviewer Dispatch
-  ↓
-Review
+Reviewer Dispatch (incl. security review)
   ↓
 Fix Dispatch
   ↓

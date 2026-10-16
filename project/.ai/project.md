@@ -171,39 +171,15 @@ Global coding rules are defined in:
 
 ## 6. Testing
 
-### Unit Tests
+### Test Frameworks
 
-[Test framework and command]
-
-### Integration Tests
-
-[Test framework and command]
-
-### E2E Tests
-
-[Test framework and command]
-
-### Full Test
-
-[Full test command]
-
-### Lint
-
-[Lint command]
-
-### Type Check
-
-[Type-check command]
-
-### Build
-
-[Build command]
+[Unit / integration / E2E frameworks, and where the tests live]
 
 ### Test Requirements
 
 [Project-specific testing requirements]
 
-Global testing rules are defined in:
+Commands for each level are in section 7. Global testing rules are defined in:
 
 `<lodestar-home>\rules\testing.md`
 
@@ -211,77 +187,23 @@ Global testing rules are defined in:
 
 ## 7. Development Commands
 
-### Install
+Point to the `make` targets (`rules/enforcement.md`, section 1:
+`setup`, `lint`, `test`, `verify`, ...) instead of copying commands. List here only what
+`make` does not cover.
 
-```text
-
-[command]
-
-```
-
-### Development
-
-```text
-
-[command]
-
-```
-
-### Build
-
-```text
-
-[command]
-
-```
-
-### Test
-
-```text
-
-[command]
-
-```
-
-### Lint
-
-```text
-
-[command]
-
-```
-
-### Type Check
-
-```text
-
-[command]
-
-```
-
-### Deploy / Release
-
-```text
-
-[command]
-
-```
-
-### Rollback
-
-```text
-
-[command]
-
-```
-
-### Other
-
-```text
-
-[command]
-
-```
+| Purpose | Command |
+|---|---|
+| Install | `make setup` |
+| Lint | `make lint` |
+| Type check | `make typecheck` (where the language has one) |
+| Tests | `make test` |
+| Full verification | `make verify` |
+| Development server | [command] |
+| Build | [command] |
+| E2E tests | [command] |
+| Deploy / Release | [command] |
+| Rollback | [command] |
+| Other | [command] |
 
 ---
 
