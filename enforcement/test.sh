@@ -227,6 +227,24 @@ nudge 2>/dev/null; t "context nudge speaks again at the next step" [ $? = 2 ]
 nudge "$tmp/missing.jsonl" 2>/dev/null; t "context nudge silent without a transcript" [ $? = 0 ]
 used 900000
 LODESTAR_SKIP_HOOKS=1 nudge 2>/dev/null; t "context nudge off with LODESTAR_SKIP_HOOKS" [ $? = 0 ]
+# Inside a subagent: transcript_path is the parent's; the subagent's own file counts.
+subnudge() { LODESTAR_STATE_DIR=$tmp/nudge-state bash "$here/agents/claude/global/context-nudge.sh" \
+  <<<"{\"transcript_path\":\"$(native "$tr")\",\"session_id\":\"s1\",\"agent_id\":\"$1\"}"; }
+mkdir -p "${tr%.jsonl}/subagents"; str=${tr%.jsonl}/subagents/agent-a1.jsonl
+jq -nc '{type:"assistant",message:{usage:{input_tokens:5,cache_read_input_tokens:40000,cache_creation_input_tokens:1000}}}' > "$str"
+out=$(subnudge a1 2>&1); rc=$?
+t "context nudge in a subagent ignores the parent's context" bash -c '[ $1 = 0 ] && [ -z "$2" ]' _ "$rc" "$out"
+jq -nc '{type:"assistant",message:{usage:{input_tokens:5,cache_read_input_tokens:310000,cache_creation_input_tokens:1000}}}' >> "$str"
+out=$(subnudge a1 2>&1); rc=$?
+t "context nudge in a subagent speaks on its own context, asks for a report, not /clear" bash -c '[ $1 = 2 ] && grep -q "subagent is now about 311k" <<<"$2" && grep -q "Report now" <<<"$2" && ! grep -q "type /clear" <<<"$2"' _ "$rc" "$out"
+subnudge a1 2>/dev/null; t "context nudge in a subagent speaks once per step" [ $? = 0 ]
+subnudge a2 2>/dev/null; t "context nudge silent for a subagent without a transcript" [ $? = 0 ]
+used 1010000
+nudge 2>/dev/null; t "context nudge: a subagent's claim leaves the parent's steps alone" [ $? = 2 ]
+used 1110000
+LODESTAR_STATE_DIR=$tmp/nudge-state bash "$here/agents/claude/global/context-nudge.sh" \
+  <<<"{\"tool_input\":{\"agent_id\":\"a1\"},\"transcript_path\":\"$(native "$tr")\",\"session_id\":\"s1\"}" 2>/dev/null
+t "context nudge: an agent_id inside tool_input is not a subagent" [ $? = 2 ]
 
 # 8. Several parts: root Makefile runs targets in each part, routes lint-file.
 p=$tmp/multi; mkdir -p "$p"
