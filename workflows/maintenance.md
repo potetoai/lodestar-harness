@@ -61,7 +61,15 @@ Stop early when nothing is worth a PR.
    for agent mistakes that never reached `.ai/feedback-log.md`: commits that
    fix or revert code added shortly before (`git log --since`), and PRs the
    owner closed unmerged or asked to change (`gh pr list --state all`,
-   `gh pr view --comments`). Add a row for each, in your own words, with a tag.
+   `gh pr view --comments`). Then run `python <lodestar-harness>/scripts/usage-report.py
+   --friction --since <that date> --match '<folder>$'` (`<folder>` is this
+   project's folder under `~/.claude/projects`: its path with every character
+   other than letters, digits and `-` turned into `-`). It lists the top 5
+   sessions by tool errors, hook blocks, repeated failures and owner
+   interrupts, each with one `--excerpt` command. Run those commands only, never read a whole transcript: at most
+   5 excerpts per run. Add a row for each mistake, in your own words, with a
+   tag. Skip what was not a mistake (a hook working as meant, a test run).
+   Claude transcripts only; Codex transcripts are not read yet.
 3. **Repeated mistakes (D2).** In `.ai/feedback-log.md`, find tags seen two or
    more times that are not `enforced`. Turn each into a machine rule
    (`rules/enforcement.md`, sections 7–8), with a fixture that proves it
