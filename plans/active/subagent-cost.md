@@ -175,6 +175,7 @@ the rule that shortened the run.
 | 2026-10-12 | 1 | Diff limit in the reviewer's brief lowered from about 400 to about 100 lines. Phase 3 (replay checks, call budget, reviewer model test) removed from the plan on the owner's word; there is no phase 3 |
 | 2026-10-12 | 1 | PR #23 merged (9bc8a18). Open: the table after the next 10 critic and reviewer runs |
 | 2026-10-12 | 2 | Rule written: "Re-run after a criteria change" in `agents/critic.md` (what a narrowed run still checks, when a full run is required, the line under `## Criteria review`). Text added only |
+| 2026-10-16 | — | `--since 2026-10-09`: tester 25 runs, 47.7% of subagent cost, median 826k, peak up to 383k. The top 3 runs (36% of tester cost) read: tests only, no production edits; cost is context re-sent. Causes: (a) the lint hook blocked half-done edits (13 blocks in one run, unused names); (b) the context nudge measures the parent session, not the subagent (nudges said 200k at a subagent's own 36k-61k; runs past 300k got none). (a) fixed: an "Editing" line in `agents/tester.md` and `agents/builder.md`. `--excerpt` crashed on a cp1252 console; fixed. (b) is open, owner said later |
 
 ## 8. Decision log
 
@@ -182,6 +183,7 @@ the rule that shortened the run.
 |---|---|---|
 | 2026-10-12 | Aim at calls per run, not at the start cost | The first call is 13% of subagent cost; input on later calls is 80% |
 | 2026-10-12 | Critic and reviewer only; tester and builder left as they are | 61% of subagent cost against 39%, and no sign of waste in the 8 tester and builder runs |
+| 2026-10-16 | Tester and builder get an editing line; the subagent nudge waits (owner) | New data: tester 47.7% of subagent cost with waste seen (lint blocks on half-done edits). The nudge fix needs a hook change and a check that hooks can tell which subagent runs |
 | 2026-10-12 | The critic keeps its own fresh subagent and its model | It guards what a non-coder owner signs |
 | 2026-10-12 | Risk rating of the narrowed critic re-run (Q2). Chance of a miss: low to medium; impact: high, the owner signs the criteria. Against today: lower, not higher | All 6 re-runs in the data were narrowed already, by the dispatcher's own choice and with no limit. The rule adds the contradiction check, the full-run cases and a line the owner sees. Not known: what a full run would have added |
 | 2026-10-12 | The call budget moves from Do to Test | It is the one phase 1 idea that can make a run read less; it merges only after the replay |

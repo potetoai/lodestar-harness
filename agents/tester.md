@@ -44,6 +44,12 @@ In high-risk tasks the tester works **before** the builder
   affected tests and commit a new `Tests-First:` round the same way.
 - Do not write the implementation.
 
+## Editing
+
+A hook lints each file after every edit, so a half-done file fails (an
+import added before the code that uses it). Write a new test file in one
+Write; in an existing file, add a name in the same Edit as its first use.
+
 ## Before Reporting
 
 Stop every background process you started (dev server, test browser, watcher) before you report the task done, and say in the report that you did.

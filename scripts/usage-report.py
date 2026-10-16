@@ -16,6 +16,7 @@ import glob
 import json
 import os
 import re
+import sys
 
 # Price weights relative to one base input token.
 W_IN, W_CW, W_CR, W_OUT = 1.0, 1.25, 0.1, 5.0
@@ -355,6 +356,8 @@ def excerpt(path, span, width=200):
 
 
 def main():
+    # A Windows console is cp1252; transcripts hold any character.
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--root", default=os.path.expanduser("~/.claude/projects"))
     ap.add_argument("--match", default="", help="regex on project folder names")
