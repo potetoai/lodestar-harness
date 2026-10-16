@@ -13,7 +13,9 @@
 #   (PowerShell: `gh pr checks <n> --watch; if ($LASTEXITCODE -eq 0) {...}`).
 #   `gh pr view && gh pr merge` or `gh pr checks | tail && gh pr merge`
 #   exit 0 on a red CI, so they merge anyway. A merge is also blocked while
-#   the PR's branch has local commits that were never pushed.
+#   the PR's branch has local commits that were never pushed, and a PR that
+#   changes sensitive code or a safety file needs the owner's typed
+#   "duyệt merge PR <n>" (approval-record.sh records it).
 # - a prototype branch (proto/*) stays local: blocks pushing or renaming one,
 #   and any push run in its checkout or worktree (or --all while one exists).
 # - a Tests-First commit must carry an owner-approved plan. Blocks
@@ -42,9 +44,10 @@ fi
 
 # Merge: drop each gated merge; any merge left is ungated. Matches gh under
 # any spelling (gh.exe, /usr/bin/gh, VAR=x gh, gh -R o/r, inside bash -c,
-# eval, backticks, an else branch) and `gh api .../pulls/<n>/merge -X PUT`.
+# eval, backticks, an else branch, quoted) and `gh api .../pulls/<n>/merge
+# -X PUT`. A GraphQL merge (mergePullRequest, auto-merge) is blocked too.
 if [ -z "$why" ]; then
-  flat=$(tr '\n' ';' <<<"$low" | sed -E 's/[0-9]?>&[0-9]//g')
+  flat=$(tr '\n' ';' <<<"$low" | tr -d "\"'" | sed -E 's/[0-9]?>&[0-9]//g')
   wait='gh[[:space:]]+pr[[:space:]]+checks[^;|&]*[[:space:]]--watch[^;|&]*;[[:space:]]*'
   merge='gh[[:space:]]+pr[[:space:]]+merge[^;|&}]*'
   ps='if[[:space:]]*\([[:space:]]*(\$lastexitcode[[:space:]]+-eq[[:space:]]+0|\$\?)[[:space:]]*\)[[:space:]]*\{[[:space:]]*'
@@ -56,52 +59,106 @@ if [ -z "$why" ]; then
     fix='Use exactly: if gh pr checks <n> --watch; then gh pr merge <n> --merge; fi
 (PowerShell: gh pr checks <n> --watch; if ($LASTEXITCODE -eq 0) { gh pr merge <n> --merge })
 If "gh pr merge" is only text in a commit message or a file, write that text with the Write tool.'
+  elif grep -qE '(^|[^[:alnum:]_-])gh(\.exe)?[[:space:]]' <<<"$flat" && grep -qE 'mergepullrequest|enablepullrequestautomerge' <<<"$flat"; then
+    why="merging through the GraphQL API skips the CI wait and the merge checks."
+    fix='Use exactly: if gh pr checks <n> --watch; then gh pr merge <n> --merge; fi'
   fi
 fi
 
-# Merge: a commit on the PR's branch that was never pushed is left out of the
-# merge without a warning (PR #36 lost one this way). Compares the local branch
-# with its origin copy; no origin copy, another repo (-R), a fork PR, or gh
-# cannot name the branch: allowed. A push before the merge in the same command
-# is trusted (the hook runs before it).
-pre=$(sed -E 's/pr[[:space:]]+merge.*//' <<<"$low")
-if [ -z "$why" ] && grep -qE '(^|[^[:alnum:]_-])gh(\.exe)?[[:space:]]+([^;|&]*[[:space:]])?pr[[:space:]]+merge([^[:alnum:]_-]|$)' <<<"$low" &&
-   ! grep -qE '(^|[[:space:]])git[[:space:]]+([^;|&]*[[:space:]])?push([[:space:]]|$)' <<<"$pre"; then
+# Merge: two checks for each merged PR. gh cannot read the PR, another repo
+# (-R, --repo, GH_REPO), or a push in the same command (the PR would change
+# after this check): blocked.
+# 1. A commit on the PR's branch that was never pushed is left out of the
+#    merge without a warning (PR #36 lost one this way). Compares the local
+#    branch with its origin copy; none, or a fork PR: skipped.
+# 2. Owner-only merge (rules/git.md): a PR that changes (or renames away) a
+#    file in sensitive_paths, a locked test, or a safety file (hooks, CI,
+#    project rules) merges only after the owner typed "duyệt merge PR <n>"
+#    (.ai/approvals.log, written by approval-record.sh), with
+#    --match-head-commit <that head>, so GitHub refuses a newer head. No
+#    --auto: GitHub would merge later, after this check.
+# Known limit: a merge hidden in a script (bash x.sh) is not seen; CI and the
+# owner's review of PRs stay the backstop.
+if [ -z "$why" ] && grep -qE '(^|[^[:alnum:]_-])gh(\.exe)?[[:space:]]+([^;|&]*[[:space:]])?pr[[:space:]]+merge([^[:alnum:]_-]|$)' <<<"$low"; then
   here=${cwd:-${CLAUDE_PROJECT_DIR:-.}}
-  if [ -n "$(git -C "$here" for-each-ref --count=1 refs/remotes/origin/ 2>/dev/null)" ]; then
-    to=""; command -v timeout >/dev/null && to="timeout 8"
-    heads=""
-    # Each merge: its selector (number, branch or URL) is the first argument
-    # that is not a flag or a flag's value; none means the current branch.
-    while IFS= read -r m; do
-      grep -qE '(^|[[:space:]])(-R|--repo)([[:space:]=]|$)' <<<"$m" && continue
-      read -ra toks <<<"$(sed -E 's/.*[[:space:]][pP][rR][[:space:]]+[mM][eE][rR][gG][eE]//' <<<"$m")"
-      sel=""; skip=0
-      for tk in "${toks[@]}"; do
-        [ $skip = 1 ] && { skip=0; continue; }
-        case $tk in
-          -b|--body|-t|--subject|-F|--body-file|-A|--author-email|--match-head-commit) skip=1 ;;
-          -*) ;;
-          *) sel=${tk//[\"\']/}; break ;;
-        esac
-      done
-      if [ -n "$sel" ]; then
-        heads+=$(cd "$here" 2>/dev/null && $to gh pr view "$sel" --json headRefName,isCrossRepository \
-          -q 'if .isCrossRepository then "" else .headRefName end' 2>/dev/null | tr -d '\r')$'\n'
-      else
-        heads+=$(git -C "$here" symbolic-ref --short -q HEAD 2>/dev/null)$'\n'
-      fi
-    done < <(tr '\n' ';' <<<"$cmd" | grep -oiE 'gh(\.exe)?[[:space:]]+([^;|&}]*[[:space:]])?pr[[:space:]]+merge([[:space:]][^;|&}]*)?')
-    while IFS= read -r h; do
-      [ -n "$h" ] || continue
-      left=$(git -C "$here" rev-list --count "refs/remotes/origin/$h..refs/heads/$h" 2>/dev/null)
-      if [ "${left:-0}" -gt 0 ]; then
-        why="branch $h has $left local commit(s) that were never pushed; the merge would leave them out."
-        fix="Push the branch first (git push), then merge behind the CI wait as usual."
-        break
-      fi
-    done <<<"$heads"
+  proj=${CLAUDE_PROJECT_DIR:-$here}
+  to=""; command -v timeout >/dev/null && to="timeout 15"
+  if grep -qE '(^|[[:space:]])git[[:space:]]+([^;|&]*[[:space:]])?push([[:space:]]|$)' <<<"$low"; then
+    why="a push in the same command as the merge changes the PR after this check."
+    fix="Push in one command, then merge in the next: if gh pr checks <n> --watch; then gh pr merge <n> --merge; fi"
+  elif grep -qE '(^|[^[:alnum:]_])gh_repo=' <<<"$low"; then
+    why="a merge with GH_REPO set (another repo) cannot be checked from here."
+    fix="Ask the owner to merge it on GitHub."
   fi
+  # Owner-only files: the safety files, then the project's sensitive_paths and
+  # locked tests, lower case, without ./ and comments. A pattern with no glob
+  # also covers the folder of that name.
+  pats=$({ printf '%s\n' .claude/ .codex/ .github/ enforcement/ .ai/project.md .ai/enforcement.json .ai/test-lock
+    [ -f "$proj/.ai/project.md" ] && sed -n '/^sensitive_paths:/,/^[^[:space:]-]/p' "$proj/.ai/project.md" | sed -n 's/^[[:space:]]*-[[:space:]]*//p'
+    [ -f "$proj/.ai/test-lock" ] && sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' "$proj/.ai/test-lock"
+  } | tr -d "\"'\r" | sed -E 's/[[:space:]]+#.*//; s/[[:space:]]+$//; s#^\./##' | tr '[:upper:]' '[:lower:]')
+  # Each merge: its selector (number, branch or URL) is the first argument
+  # that is not a flag or a flag's value; none means the current branch.
+  while [ -z "$why" ] && IFS= read -r m; do
+    if grep -qE '(^|[[:space:]])(-R|--repo)([[:space:]=]|$)' <<<"$m"; then
+      why="a merge in another repo (-R) cannot be checked from here."
+      fix="Ask the owner to merge it on GitHub."; break
+    fi
+    read -ra toks <<<"$(sed -E 's/.*[[:space:]][pP][rR][[:space:]]+[mM][eE][rR][gG][eE]//' <<<"$m")"
+    sel=""; skip=0; match=""; auto=0; prev=""
+    for tk in "${toks[@]}"; do
+      tk=${tk//[\"\']/}
+      if [ $skip = 1 ]; then skip=0; [ "$prev" = --match-head-commit ] && match=$tk; continue; fi
+      case $tk in
+        -b|--body|-t|--subject|-F|--body-file|-A|--author-email|--match-head-commit) skip=1; prev=$tk ;;
+        --match-head-commit=*) match=${tk#*=} ;;
+        --auto) auto=1 ;;
+        -*) ;;
+        *) [ -z "$sel" ] && sel=$tk ;;
+      esac
+    done
+    info=$(cd "$here" 2>/dev/null && $to gh pr view ${sel:+"$sel"} --json number,headRefName,headRefOid,isCrossRepository \
+      -q '"\(.number) \(.headRefName) \(.headRefOid) \(.isCrossRepository)"' 2>/dev/null | tr -d '\r')
+    read -r num h oid cross <<<"$info"
+    # Every file, past gh pr view's 100, with a rename's old path too.
+    files=""
+    [ -n "$oid" ] && files=$(cd "$here" 2>/dev/null && $to gh api --paginate "repos/{owner}/{repo}/pulls/$num/files" \
+      --jq '.[] | .filename, (.previous_filename // empty)' 2>/dev/null | tr -d '\r')
+    if [ -z "$oid" ] || [ -z "$files" ]; then
+      why="gh could not read the PR or its files, so the merge cannot be checked."
+      fix="Check that gh works (gh auth status) and retry, or ask the owner to merge it."; break
+    fi
+    left=0
+    [ "$cross" != true ] && left=$(git -C "$here" rev-list --count "refs/remotes/origin/$h..refs/heads/$h" 2>/dev/null)
+    if [ "${left:-0}" -gt 0 ]; then
+      why="branch $h has $left local commit(s) that were never pushed; the merge would leave them out."
+      fix="Push the branch first (git push), then merge behind the CI wait as usual."; break
+    fi
+    hit=""
+    while IFS= read -r f; do
+      [ -n "$f" ] || continue
+      lf=${f,,}
+      while IFS= read -r pat; do
+        [ -n "$pat" ] || continue
+        case $pat in
+          */) [[ $lf == "$pat"* ]] && hit=$f ;;
+          *[*?[]*) [[ $lf == $pat ]] && hit=$f ;;
+          *) [[ $lf == "$pat" || $lf == "$pat"/* ]] && hit=$f ;;
+        esac
+        [ -n "$hit" ] && break
+      done <<<"$pats"
+      [ -n "$hit" ] && break
+    done <<<"$files"
+    [ -n "$hit" ] || continue
+    if ! tr -d '\r' < "$proj/.ai/approvals.log" 2>/dev/null | grep -qE "[[:space:]]merge-pr[[:space:]]+$num[[:space:]]+$oid\$"; then
+      why="PR #$num changes $hit (sensitive code or a safety file), so only the owner approves its merge."
+      fix="Tell the owner what the PR changes and how it was checked, then ask them to type \"duyệt merge PR $num\" (or \"approve merge PR $num\"). A new push needs a new approval."; break
+    fi
+    if [ $auto = 1 ] || [ "${match,,}" != "${oid,,}" ]; then
+      why="PR #$num is approved by the owner at $oid only; without --match-head-commit (or with --auto) GitHub could merge a newer head."
+      fix="Merge with: if gh pr checks $num --watch; then gh pr merge $num --merge --match-head-commit $oid; fi"; break
+    fi
+  done < <(tr '\n' ';' <<<"$cmd" | grep -oiE 'gh(\.exe)?[[:space:]]+([^;|&}]*[[:space:]])?pr[[:space:]]+merge([[:space:]][^;|&}]*)?')
 fi
 
 # Git: look at each command of a chain (a && b; c | d) on its own.
