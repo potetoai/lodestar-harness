@@ -183,7 +183,8 @@ per phase: keep, change or revert, with the number. Then move this plan to
   last hold? The first hold after any change stays, and CI stays the gate.
   Idea 10 of `plans/completed/token-efficiency.md` was dropped on 2026-10-12
   at 0.5% of turns; phase 0 measured 1.2% of cost. A yes adds this one
-  exception to "Not in scope". Recommended: yes, tests first.
+  exception to "Not in scope". Recommended: yes, tests first. **Answered
+  2026-10-15: yes**, done as phase 1b (PR #38, template 2.3.8).
 
 ## 6. Not in scope
 
@@ -192,6 +193,8 @@ per phase: keep, change or revert, with the number. Then move this plan to
 - Any orchestration; the runtime dispatches.
 - Changing subagent models or briefs while `subagent-cost.md` is measuring.
 - Relaxing any hook, test lock or approval gate outside `proto/*` (phase 2).
+  The one exception is Q4: the Stop hook lets an unchanged failure stop
+  (phase 1b).
 
 ## 7. Progress log
 
@@ -219,3 +222,4 @@ per phase: keep, change or revert, with the number. Then move this plan to
 | 2026-10-16 | Phase 3 check case moved to vn30 6c52f53b (14 lint blocks on one file) | The App01 "52" case is not in any transcript; the worst real lint case is in vn30 |
 | 2026-10-16 | Codex transcripts left out of `--friction` | Owner uses Codex only through Orca, rarely; add when a Codex mistake slips by |
 | 2026-10-15 | "Meaning" column in the owner's language; `rules/documentation.md` section 5 names it as the one exception | Owner, after the vn30 dry run showed the English term is a third name the owner does not use |
+| 2026-10-15 | Q4 yes: the Stop hook holds once per unchanged state (phase 1b, PR #38) | Repeat holds were 1.2% of cost, above the 1% bar; the first hold after any change stays, CI is the gate |
