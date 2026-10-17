@@ -165,10 +165,18 @@ Every rule:
 - **`lodestar-` tag:** a mistake caused by Lodestar-harness itself (missing
   workflow step, wrong template or hook) gets a tag starting with `lodestar-`
   (`orca-` before 2.0.0), status `reported`. It is fixed in lodestar-harness,
-  so `doctor.sh` (D2) ignores it. When the owner asks to review the mistake
-  logs of the projects, run
+  so `doctor.sh` (D2) ignores it. The agent also logs one when it finds the
+  fault itself (a hook blocks wrongly, doctor reports wrongly, a template
+  contradicts itself), even if the owner said nothing. When the owner asks to
+  review the mistake logs of the projects, run
   `grep -HE '\| (lodestar|orca)-' <project>/.ai/feedback-log.md` for each
   project and fix the causes here.
+- **Bug inbox (this machine):** the global hook `check-readiness.sh` adds each
+  project that has a feedback log to `~/.lodestar/projects.txt` and reminds
+  its session to log Lodestar faults. In lodestar-harness, at session start,
+  it lists `reported` `lodestar-`/`orca-` rows of those projects that are not
+  in `~/.lodestar/seen.txt`. After fixing one (or deciding it is not a
+  Lodestar bug), add its `project|date|tag` line to `seen.txt`.
 - **Sweep:** maintenance looks through git and PR history for mistakes the hook
   missed (fix commits on fresh code, reverts, PRs with requested changes).
 - **Second time = machine rule.** When a tag appears a second time, the
