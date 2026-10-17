@@ -979,6 +979,18 @@ for c in "if gh pr checks 52 --watch --interval 20; then gh pr merge 52 --merge 
          'git commit -m "merge only on green CI"' "gh pr view 52" "gh api repos/o/r/pulls/5"; do
   gp "$c"; t "guard allows: $c" [ $? = 0 ]
 done
+# A merge inside a script the command runs is blocked, even behind a CI wait.
+mkdir -p "$p/scripts" "$p/enforcement"
+printf 'if gh pr checks 5 --watch; then\n  gh pr merge 5 --merge\nfi\n' > "$p/scripts/ship.sh"
+printf 'subprocess.run(["gh", "pr", "merge", "5"])\n' > "$p/ship.py"
+printf 'gh pr view 5\n' > "$p/scripts/look.sh"; printf 'gh pr merge 5\n' > "$p/enforcement/t.sh"
+printf '#!/usr/bin/env bash\n# Managed by lodestar-harness.\ngh pr merge 5\n' > "$p/scripts/managed.sh"
+for c in "bash scripts/ship.sh" "./scripts/ship.sh" "sh '$p/scripts/ship.sh'" "python ship.py" "cd . && bash scripts/ship.sh 5"; do
+  gp "$c"; t "guard blocks a merge in a script: $c" [ $? = 2 ]
+done
+for c in "bash scripts/look.sh" "bash enforcement/t.sh" "bash scripts/managed.sh" "bash scripts/missing.sh"; do
+  gp "$c"; t "guard allows a script without a merge: $c" [ $? = 0 ]
+done
 # Merge: a local commit never pushed would be left out of the merge (PR #36).
 m=$tmp/gm; mkdir -p "$m"; git -C "$m" init -q -b main
 gmerge() { FAKE_GH=$2 PATH="$tmp/ghpr:$PATH" CLAUDE_PROJECT_DIR=$m bash "$here/agents/claude/hooks/guard-install.sh" 2>/dev/null <<<"$(jq -n --arg c "$1" '{tool_input:{command:$c}}')"; }

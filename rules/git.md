@@ -280,6 +280,9 @@ gh pr merge <n>; fi`. Never pipe the checks into `&& gh pr merge`
 flaw. The `guard-install.sh` hook blocks every ungated `gh pr merge`.
 Push in one command and merge in the next: the hook blocks a merge with a
 `git push` in the same command, since the PR would change after its check.
+Run the merge directly as a command, never from a script file: the hook
+cannot check a merge inside a script, so it blocks running a script that
+holds one (App01, 2026-10-17).
 Push every commit before the merge: a commit left only on the local branch
 is not part of the merge and is lost without a warning (PR #36). The hook
 also blocks a merge while the PR's branch has local commits not pushed.
