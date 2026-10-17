@@ -73,7 +73,9 @@ Stop early when nothing is worth a PR.
 3. **Repeated mistakes (D2).** In `.ai/feedback-log.md`, find tags seen two or
    more times that are not `enforced`. Turn each into a machine rule
    (`rules/enforcement.md`, sections 7–8), with a fixture that proves it
-   catches the mistake. Set the rows to `enforced`.
+   catches the mistake. Set the rows to `enforced`. When no machine rule can
+   catch it (a conversation mistake), ask the owner; on yes, set the rows to
+   `accepted`. A later row of that tag warns again.
    Rows tagged `lodestar-` (or `orca-` before 2.0.0) need no project rule.
    List them in the report, so the owner can have them fixed in
    lodestar-harness; set a row to `fixed-<version>` once the installed

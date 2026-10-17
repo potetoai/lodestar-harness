@@ -718,6 +718,13 @@ t "global hook reports maintenance due" bash -c 'grep -q "maintenance is due" <<
 sed -i 's/| open |/| enforced |/' "$p/.ai/feedback-log.md"; date +%F > "$p/.ai/last-maintenance"
 out=$(bash "$p/.claude/hooks/doctor.sh" "$p")
 t "enforced repeats and fresh maintenance clear D1/D2" bash -c '! grep -qE "⚠️ +D[12] " <<<"$1"' _ "$out"
+printf '| 2026-09-13 | asked-late | guessed intent | - | accepted |\n| 2026-09-14 | asked-late | again | - | accepted |\n' >>"$p/.ai/feedback-log.md"
+out=$(bash "$p/.claude/hooks/doctor.sh" "$p")
+t "repeats the owner accepted without a machine rule do not trigger D2" bash -c '! grep -qE "⚠️ +D2 " <<<"$1"' _ "$out"
+printf '| 2026-09-15 | asked-late | third time | - | open |\n' >>"$p/.ai/feedback-log.md"
+out=$(bash "$p/.claude/hooks/doctor.sh" "$p")
+t "a new row after acceptance triggers D2 again" grep -qE "⚠️ +D2 " <<<"$out"
+sed -i '/third time/d' "$p/.ai/feedback-log.md"
 printf '| 2026-09-11 | orca-x | missing step | - | reported |\n| 2026-09-12 | lodestar-x | again | - | reported |\n' >>"$p/.ai/feedback-log.md"
 out=$(bash "$p/.claude/hooks/doctor.sh" "$p")
 t "repeated lodestar- and old orca- tags do not trigger D2" bash -c '! grep -qE "⚠️ +D2 " <<<"$1"' _ "$out"

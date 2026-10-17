@@ -174,6 +174,8 @@ Every rule:
 - **Second time = machine rule.** When a tag appears a second time, the
   mistake becomes a lint rule or a test (section 7), and its rows become
   `enforced`. `doctor.sh` warns (D2) while a repeated tag is not enforced.
+  If no machine rule can catch it and the owner agrees, its rows become
+  `accepted`; a new row of that tag warns again.
 - Maintenance (`workflows/maintenance.md`) runs every 14 days and picks these up;
   `doctor.sh` warns (D1) when it is overdue.
 - Principles every project keeps: `rules/golden-principles.md`.
