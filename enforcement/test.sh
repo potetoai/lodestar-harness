@@ -170,6 +170,8 @@ echo d > "$c/a.txt"; rec verify; n=$(runs); cstop
 t "stop hook skips make verify right after the agent's passing run" [ $? = 0 -a "$(runs)" = "$n" ]
 echo e > "$c/a.txt"; rec sub; n=$(runs); cstop
 t "a sub-make's verify records no pass" [ "$(runs)" = $((n + 1)) ]
+echo f > "$c/a.txt"; rec verify; git -C "$c" -c user.name=t -c user.email=t@t commit -qam step; n=$(runs); cstop
+t "stop hook skips make verify after the agent ran it, then committed" [ $? = 0 -a "$(runs)" = "$n" ]
 # The project may be a subfolder of the repo (git prints paths from the root).
 q=$tmp/monorepo; mkdir -p "$q/sub"; git -C "$q" init -q; cp "$p/Makefile" "$q/sub/"
 echo a > "$q/sub/code.txt"; git -C "$q" add -A; git -C "$q" -c user.name=t -c user.email=t@t commit -qm init
