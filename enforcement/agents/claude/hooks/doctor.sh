@@ -166,6 +166,9 @@ no_repeated_mistakes() {
     }
     END { for (t in n) if (n[t] >= 2 && open[t]) { print "   repeated: " t > "/dev/stderr"; bad = 1 }; exit !bad }' .ai/feedback-log.md
 }
+# The Stop hook skips its own make verify when the agent's last run passed and
+# nothing changed since; that needs verify to record the pass.
+records_pass() { make -n verify 2>/dev/null | grep -q -- --record-pass; }
 main_protected() {
   command -v gh >/dev/null || return 1
   gh api "repos/{owner}/{repo}/rules/branches/main" --jq 'length > 0' 2>/dev/null | grep -q true ||
@@ -195,6 +198,7 @@ check A9b "template is current (else bootstrap.sh --upgrade)" warn template_curr
 check B5  "sensitive_paths declared in .ai/project.md"   fail grep -q '^sensitive_paths:' .ai/project.md
 check B6  ".ai/invariants.md lists at least one invariant" fail grep -qE '^\| *INV-' .ai/invariants.md
 check A10 "Makefile has format-check, lint-file, verify-full" warn has_targets format-check lint-file verify-full
+check A10b "make verify records its pass (last line: verify-before-stop.sh --record-pass, see the stack Makefile)" warn records_pass
 check A11 "AGENTS.md under 200 lines (move detail to .claude/rules/ with paths:, or docs)" warn short_agents_md
 check A12 "stack tools installed (.venv / node_modules), else run make setup" warn stack_env
 check D1  "maintenance done in the last 14 days (workflows/maintenance.md)" warn maintenance_recent
