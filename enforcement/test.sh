@@ -845,8 +845,9 @@ cp "$here/agents/claude/hooks/lodestar-lib.sh" .claude/hooks/
 g init -q -b main; echo 'def test_a(): assert True' > tests/test_a.py; echo 'def test_b(): assert True' > tests/test_b.py
 mkplan pa "a works"; approve; echo tests/test_a.py > .ai/test-lock; g add -A; g commit -qm "a tests" -m "Tests-First: pa"
 mkplan pb "b works"; approve; echo tests/test_b.py >> .ai/test-lock; g add -A; g commit -qm "b tests" -m "Tests-First: pb"
-mkplan pa "a works" "a2 works"; approve; g add -A; g commit -qm "a round 2" -m "Tests-First: pa v2"
+mkplan pa "a works" "a2 works"; approve; echo 'def test_a(): assert 2' > tests/test_a.py; g add -A; g commit -qm "a round 2" -m "Tests-First: pa v2"
 mkdir -p .ai/plans/completed; g mv .ai/plans/active/pa.md .ai/plans/completed/; g commit -qm "pa done"
+stopl; t "stop hook: a closed plan's later approved round is no edit of the tests" [ $? = 0 ]
 guard tests/test_b.py; t "guard: closing one plan keeps another active plan's tests locked" [ $? = 2 ]
 echo 'def test_b(): pass' > tests/test_b.py
 stopl; t "stop hook: closing one plan keeps another active plan's tests locked" [ $? = 2 ]

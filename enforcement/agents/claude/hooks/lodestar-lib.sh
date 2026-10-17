@@ -71,16 +71,19 @@ last_valid_tests_first() {
   return 1
 }
 
-# The newest valid Tests-First commit (up to revision $1, default HEAD) that
-# changed a plan still active. A round from a completed task is no baseline
-# for the current one, but closing one plan does not unlock the round of
-# another plan that is still active.
+# The lock baseline: the newest valid Tests-First commit (up to revision $1,
+# default HEAD), while some valid round changed a plan still active. Rounds
+# of completed tasks only are no baseline for the current one, but closing
+# one plan does not unlock another active plan's round. The newest round is
+# the baseline even when its plan is closed: it is owner-approved, so the
+# tests it rewrote are not edits.
 active_tests_first() {
-  local c p
+  local c p newest=""
   for c in $(git log --format=%H --grep='^Tests-First:' "${1:-HEAD}" -- 2>/dev/null); do
     valid_tests_first "$c" || continue
+    newest=${newest:-$c}
     while IFS= read -r p; do
-      [[ $p == .ai/plans/active/*.md ]] && [ -f "$p" ] && { echo "$c"; return 0; }
+      [[ $p == .ai/plans/active/*.md ]] && [ -f "$p" ] && { echo "$newest"; return 0; }
     done < <(git diff-tree --root --no-commit-id --name-only -r "$c")
   done
   return 1

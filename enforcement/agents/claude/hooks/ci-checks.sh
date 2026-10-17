@@ -154,7 +154,7 @@ if base_round=$(active_tests_first "$from"); then
     fi
     touched=$(git diff-tree --root --no-commit-id --name-only -r "$later" | grep -Fxf <(printf '%s\n' "$lock"))
     if [ -n "$touched" ]; then
-      fail "Commit $(git log -1 --format='%h %s' "$later") changes tests locked by $(git log -1 --format='%h' "$base_round") (its plan is still active):"
+      fail "Commit $(git log -1 --format='%h %s' "$later") changes tests locked by $(git log -1 --format='%h' "$base_round") (a plan with a round is still active):"
       printf '     %s\n' $touched
       locked_ok=0
     fi
