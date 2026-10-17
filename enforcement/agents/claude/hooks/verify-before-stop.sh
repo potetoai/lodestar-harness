@@ -12,15 +12,13 @@ export NO_COLOR=1 FORCE_COLOR=0  # plain text for the agent
 # example while it waits for a tests-first tester). Any change holds again.
 # Without git there is no memory and every failed stop holds. CI is the gate.
 held=$(git rev-parse --absolute-git-dir 2>/dev/null) && held=$held/lodestar-verify-held
-state() { # HEAD, each changed or untracked file's content (not the index), the failure
-  git rev-parse -q --verify HEAD
-  ( cd "$(git rev-parse --show-toplevel)" || exit
-    { git -c core.quotePath=false diff --name-only HEAD 2>/dev/null || git ls-files -c
-      git -c core.quotePath=false ls-files -o --exclude-standard; } | sort -u > "$held.paths"
-    while IFS= read -r f; do [ -f "$f" ] || echo "$f gone"; done < "$held.paths"
-    while IFS= read -r f; do [ -f "$f" ] && echo "$f"; done < "$held.paths" > "$held.files"
-    cat "$held.files"; git hash-object --stdin-paths < "$held.files" )
-  rm -f "$held.paths" "$held.files"
+state() { # the working files (tracked and untracked, not ignored) as a tree, the failure
+  # A copy of the index, so the real one is untouched. A commit does not change
+  # the tree: verify, then commit, then stop does not run verify again.
+  cp "${held%/*}/index" "$held.index" 2>/dev/null
+  ( cd "$(git rev-parse --show-toplevel)" && export GIT_INDEX_FILE=$held.index &&
+    git add -A . >/dev/null 2>&1 && git write-tree ) || echo "no tree $$ $RANDOM $(date +%s%N)"
+  rm -f "$held.index"
   tr -d '0-9' <<<"$1"
 }
 # A pass is remembered the same way: when nothing changed since 'make verify'
