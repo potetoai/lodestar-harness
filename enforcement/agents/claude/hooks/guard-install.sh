@@ -42,6 +42,28 @@ elif grep -qE '(^|[^[:alnum:]_.-])npm(\.cmd)?[[:space:]]+(install|i|add)([[:spac
   why="npm install -g installs globally, outside the project."
 fi
 
+# Merge inside a script the command runs (bash x.sh, ./x.sh, pwsh -File
+# x.ps1, python x.py): the checks below cannot see it, so it is blocked even
+# when it waits for CI. Catches a merge put in a script by mistake, not one
+# hidden on purpose. Files Lodestar manages (they hold merge commands as
+# test text) are skipped.
+if [ -z "$why" ]; then
+  base=${cwd:-${CLAUDE_PROJECT_DIR:-.}}; base=${base//"$bs"//}
+  while IFS= read -r name; do
+    s=${name//"$bs"//}; [[ $s == /* || $s =~ ^[a-zA-Z]: ]] || s=$base/$s
+    [ -f "$s" ] || continue
+    [[ $s =~ (^|/)(enforcement|\.claude/hooks|\.codex)/ ]] && continue
+    head -3 "$s" | grep -q 'Managed by lodestar-harness' && continue
+    if tr -d "\r\"'," < "$s" | tr '[:upper:]' '[:lower:]' |
+       grep -qE '(^|[^[:alnum:]_-])gh(\.exe)?[[:space:]]+([^;|&]*[[:space:]])?pr[[:space:]]+merge([^[:alnum:]_-]|$)|pulls/[^[:space:]]+/merge|mergepullrequest|enablepullrequestautomerge'; then
+      why="the script $name merges a PR, and a merge inside a script skips the CI-wait and owner-approval checks."
+      fix='Run the merge directly as its own command, not from a script file:
+if gh pr checks <n> --watch; then gh pr merge <n> --merge; fi'
+      break
+    fi
+  done < <(grep -oE "[^[:space:]\"';|&()]+\.(sh|bash|ps1|py|cmd|bat|js|mjs)([[:space:]\"';|&)]|$)" <<<"$cmd" | sed -E "s/[[:space:]\"';|&)]+$//")
+fi
+
 # Merge: drop each gated merge; any merge left is ungated. Matches gh under
 # any spelling (gh.exe, /usr/bin/gh, VAR=x gh, gh -R o/r, inside bash -c,
 # eval, backticks, an else branch, quoted) and `gh api .../pulls/<n>/merge
@@ -77,7 +99,8 @@ fi
 #    (.ai/approvals.log, written by approval-record.sh), with
 #    --match-head-commit <that head>, so GitHub refuses a newer head. No
 #    --auto: GitHub would merge later, after this check.
-# Known limit: a merge hidden in a script (bash x.sh) is not seen; CI and the
+# Known limit: a merge hidden on purpose (a script without a known extension,
+# or one written and run in the same command) is not seen; CI and the
 # owner's review of PRs stay the backstop.
 if [ -z "$why" ] && grep -qE '(^|[^[:alnum:]_-])gh(\.exe)?[[:space:]]+([^;|&]*[[:space:]])?pr[[:space:]]+merge([^[:alnum:]_-]|$)' <<<"$low"; then
   here=${cwd:-${CLAUDE_PROJECT_DIR:-.}}
