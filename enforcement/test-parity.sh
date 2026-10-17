@@ -14,7 +14,7 @@ cleanup() {
 trap cleanup EXIT
 unset LODESTAR_SKIP_HOOKS CLAUDE_PROJECT_DIR
 parity_home="$tmp/home"
-export CODEX_HOME="$parity_home/codex" LODESTAR_STATE_DIR="$tmp/state"
+export CODEX_HOME="$parity_home/codex" LODESTAR_STATE_DIR="$tmp/state" LODESTAR_INBOX="$tmp/inbox"
 mkdir -p "$parity_home" "$CODEX_HOME"
 for required in jq git make; do
   "$required" --version >/dev/null 2>&1 || { echo "Cannot run required fixture tool: $required" >&2; exit 2; }

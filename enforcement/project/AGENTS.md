@@ -41,3 +41,5 @@ Add a row to `.ai/feedback-log.md` right away (reuse the tag if the same kind
 of mistake happened before). A tag seen twice becomes a lint rule or a test.
 If the Lodestar system caused it (missing workflow step, wrong template or hook),
 start the tag with `lodestar-` and tell the owner it needs a fix in lodestar-harness.
+Log a `lodestar-` row also when you find such a fault yourself, even if the
+owner said nothing; the lodestar-harness session on this machine sees it.

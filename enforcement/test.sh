@@ -15,6 +15,8 @@ if command -v powershell.exe >/dev/null; then
   real_path=$(reg_get 'HKCU:\Environment'); reg_set "$regkey" ExpandString 'C:\Scratch'
 fi
 trap 'rm -rf "$tmp"; command -v powershell.exe >/dev/null && LK=$regkey pshell "Remove-Item -LiteralPath \$env:LK -Recurse -Force"' EXIT
+# The global hook keeps a bug inbox in the home folder; never touch the real one.
+export LODESTAR_INBOX=$tmp/inbox
 failed=0
 pass() { echo "PASS $1"; }
 bad()  { echo "FAIL $1"; failed=1; }
@@ -206,7 +208,9 @@ out=$(remind "$tmp/py"); rc=$?
 t "global hook says run make setup when .venv is missing" bash -c '[ $1 = 0 ] && grep -q "A12.*make setup" <<<"$2"' _ "$rc" "$out"
 mkdir "$tmp/py/.venv"
 out=$(remind "$tmp/py"); rc=$?
-t "global hook silent in ready project" bash -c '[ $1 = 0 ] && [ -z "$2" ]' _ "$rc" "$out"
+t "global hook in a ready project says only how to report Lodestar bugs" bash -c '[ $1 = 0 ] && [ "$(wc -l <<<"$2")" = 2 ] && grep -q "lodestar- row" <<<"$2"' _ "$rc" "$out"
+remind "$tmp/py" >/dev/null
+t "global hook adds the project to the inbox list once" [ "$(grep -c '/py$' "$LODESTAR_INBOX/projects.txt")" = 1 ]
 t "bootstrap gitignores the handoff file" bash -c 'cd "$1" && git check-ignore -q .ai/handoff.md' _ "$tmp/py"
 echo "next: x" > "$tmp/py/.ai/handoff.md"
 out=$(remind "$tmp/py")
@@ -222,6 +226,23 @@ mkdir -p "$tmp/self/enforcement" "$tmp/self/.ai"; git -C "$tmp/self" init -q
 touch "$tmp/self/enforcement/bootstrap.sh"; echo x > "$tmp/self/.ai/handoff.md"
 out=$(remind "$tmp/self")
 t "global hook points to the handoff in lodestar-harness too" grep -q "read .ai/handoff.md" <<<"$out"
+t "global hook in lodestar-harness is quiet with no bug reports" bash -c '! grep -q "reported Lodestar bugs" <<<"$1"' _ "$out"
+log=$tmp/py/.ai/feedback-log.md
+{ echo "| 2026-10-17 | lodestar-wrong-hold | Stop hook held a clean tree | stop-check | reported |"
+  echo "| 2026-10-16 | orca-old-bug | already fixed | x | fixed-1.8.0 |"
+  echo "| 2026-10-16 | own-mistake | project mistake | x | reported |"
+  echo "| 2026-10-15 | lodestar-pipe-cell | grep \`a|b\` split here | x | \`Reported\` (PR 9) |"; } >> "$log"
+tail -n 1 "$LODESTAR_INBOX/projects.txt" >> "$LODESTAR_INBOX/projects.txt"
+out=$(remind "$tmp/self")
+t "global hook lists a report once when its project is listed twice" [ "$(grep -c 'lodestar-wrong-hold' <<<"$out")" = 1 ]
+t "global hook reads a status in backticks or another case, and a cell with a pipe" bash -c 'grep -q "lodestar-pipe-cell" <<<"$1" && grep -q "a|b. split here" <<<"$1"' _ "$out"
+t "global hook in lodestar-harness lists a reported lodestar- row" bash -c 'grep -q "/py|2026-10-17|lodestar-wrong-hold" <<<"$1" && grep -q "clean tree" <<<"$1"' _ "$out"
+t "global hook skips fixed rows and project tags" bash -c '! grep -qE "orca-old-bug|own-mistake" <<<"$1"' _ "$out"
+out=$(CLAUDE_PROJECT_DIR=$tmp/self bash "$g" --prompt </dev/null)
+t "per-prompt gate in lodestar-harness does not list bug reports" [ -z "$out" ]
+grep -oE '[^ ]*\|2026-10-1[57]\|lodestar-[a-z-]+' <<<"$(remind "$tmp/self")" | sed 's/$/\r/' >> "$LODESTAR_INBOX/seen.txt"
+out=$(remind "$tmp/self")
+t "global hook stops listing reports marked seen (CRLF seen file too)" bash -c '! grep -q "reported Lodestar bugs" <<<"$1"' _ "$out"
 rm "$tmp/py/.ai/handoff.md"
 rm "$tmp/py/.ai/invariants.md"
 out=$(remind "$tmp/py"); rc=$?
@@ -729,7 +750,7 @@ printf '| 2026-09-11 | orca-x | missing step | - | reported |\n| 2026-09-12 | lo
 out=$(bash "$p/.claude/hooks/doctor.sh" "$p")
 t "repeated lodestar- and old orca- tags do not trigger D2" bash -c '! grep -qE "⚠️ +D2 " <<<"$1"' _ "$out"
 mkdir -p "$p/.venv"; out=$(remind "$p")
-t "global hook silent when nothing is due" [ -z "$out" ]
+t "global hook says nothing else when nothing is due" bash -c '[ "$(grep -vc "lodestar- row\|lodestar-harness sees it" <<<"$1")" = 0 ]' _ "$out"
 
 # 14. feedback-check hook: asks once per owner message that looks like a correction.
 p=$tmp/fb; mkdir -p "$p/.ai"; git -C "$p" init -q; echo '# Feedback log' > "$p/.ai/feedback-log.md"

@@ -13,7 +13,9 @@ A mistake caused by the Lodestar system itself (a missing workflow step, a wrong
 template or hook) gets the prefix `lodestar-` in its tag, for example
 `lodestar-install-outside-project`. It is fixed in lodestar-harness, not here, so
 `doctor.sh` does not ask for a project rule. Set its status to `reported`,
-then `fixed-<version>` once the template that fixes it is installed.
+then `fixed-<version>` once the template that fixes it is installed. Log it
+also when you find the fault yourself, even if the owner said nothing; the
+lodestar-harness session on this machine lists `reported` rows.
 
 | Date | Tag | Mistake | Rule / invariant | Status |
 |---|---|---|---|---|
