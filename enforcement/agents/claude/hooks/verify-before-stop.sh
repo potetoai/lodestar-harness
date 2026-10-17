@@ -90,7 +90,15 @@ state() { # HEAD, each changed or untracked file's content (not the index), the 
   rm -f "$held.paths" "$held.files"
   tr -d '0-9' <<<"$1"
 }
+# A pass is remembered the same way: when nothing changed since 'make verify'
+# last passed (for example the agent only answered a question), do not run
+# it again. The full run takes minutes in real projects.
+passed=${held%held}passed
+if [ -n "$held" ] && [ -f "$passed" ] && [ "$(cat "$passed")" = "$(state "" | git hash-object --stdin)" ]; then
+  push_check; exit
+fi
 if ! out=$(make --no-print-directory verify 2>&1); then
+  rm -f "${passed:-/nonexistent}"
   if [ -n "$held" ]; then
     now=$(state "$out" | git hash-object --stdin)
     if [ -n "$now" ] && [ "$(cat "$held" 2>/dev/null)" = "$now" ]; then
@@ -103,5 +111,5 @@ if ! out=$(make --no-print-directory verify 2>&1); then
   echo "$out" | tail -n 60 >&2
   exit 2
 fi
-[ -n "$held" ] && rm -f "$held"
+[ -n "$held" ] && { rm -f "$held"; state "" | git hash-object --stdin > "$passed"; }
 push_check

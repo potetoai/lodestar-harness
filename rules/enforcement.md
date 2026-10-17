@@ -36,6 +36,10 @@ nor the failure changed since the last hold, the stop ends (for example while
 the agent waits for a tests-first tester). Any change holds again. CI stays
 the gate.
 
+A pass is remembered the same way: when the files did not change since
+`verify` last passed (the agent only answered a question), the Stop hook does
+not run it again.
+
 After `verify` passes, the Stop hook also holds once per HEAD while the
 current branch has commits on no remote branch: push the own branch (always
 allowed, no need to ask), or on the default branch move the commits to a

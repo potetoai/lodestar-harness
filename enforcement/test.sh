@@ -140,10 +140,27 @@ hold "test_b failed"; t "stop hook holds after a tracked file changes" [ $? = 2 
 git -C "$p" add -A
 hold "test_b failed"; t "stop hook: staging alone is no change" [ $? = 0 ]
 hold ""; t "stop hook passes when verify passes" [ $? = 0 ]
+echo again > "$p/a.txt"
 hold "test_b failed"; t "stop hook holds again after a pass" [ $? = 2 ]
 rm "$p/a.txt"
 hold "test_b failed"; t "stop hook holds after a file is deleted" [ $? = 2 ]
 hold "test_b failed"; t "stop hook lets go once the deletion was held" [ $? = 0 ]
+# A pass is remembered: with no change since, the next stop skips make verify
+# (it takes minutes in real projects); any change runs it again.
+c=$tmp/passcache; mkdir -p "$c"; git -C "$c" init -q
+printf 'verify:
+	@echo run >> "$$RUNS"
+' > "$c/Makefile"; echo a > "$c/a.txt"
+git -C "$c" add -A; git -C "$c" -c user.name=t -c user.email=t@t commit -qm init
+cstop() { RUNS=$tmp/passcache.runs CLAUDE_PROJECT_DIR=$c bash "$here/agents/claude/hooks/verify-before-stop.sh" 2>/dev/null <<<'{"stop_hook_active":false}'; }
+runs() { wc -l < "$tmp/passcache.runs" | tr -d ' '; }
+cstop; cstop; t "stop hook skips make verify when nothing changed since a pass" [ $? = 0 -a "$(runs)" = 1 ]
+echo b > "$c/a.txt"; cstop; t "stop hook runs make verify again after a change" [ "$(runs)" = 2 ]
+echo c > "$c/new.txt"; cstop; cstop; t "stop hook: a new file runs it once, then skips" [ "$(runs)" = 3 ]
+printf 'verify:
+	@echo run >> "$$RUNS"; exit 1
+' > "$c/Makefile"
+cstop; t "stop hook: a failing run after a change still holds" [ $? = 2 ]
 # The project may be a subfolder of the repo (git prints paths from the root).
 q=$tmp/monorepo; mkdir -p "$q/sub"; git -C "$q" init -q; cp "$p/Makefile" "$q/sub/"
 echo a > "$q/sub/code.txt"; git -C "$q" add -A; git -C "$q" -c user.name=t -c user.email=t@t commit -qm init
