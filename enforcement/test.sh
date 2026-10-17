@@ -838,6 +838,24 @@ mkdir -p .ai/plans/completed; g mv .ai/plans/active/old.md .ai/plans/completed/;
 echo 'def test_a(): assert 1' > tests/test_a.py; g commit -qam "later merged change"
 mkplan new "n works"; echo tests/test_n.py > .ai/test-lock
 stopl; t "stop hook ignores a completed task's round while a new lock is written" [ $? = 0 ]
+# Two active plans: closing the one with the newest round keeps the other's
+# round in force (guard, stop hook, and CI on a later branch).
+p=$tmp/twolock; mkdir -p "$p/tests" "$p/.claude/hooks"; cd "$p"
+cp "$here/agents/claude/hooks/lodestar-lib.sh" .claude/hooks/
+g init -q -b main; echo 'def test_a(): assert True' > tests/test_a.py; echo 'def test_b(): assert True' > tests/test_b.py
+mkplan pa "a works"; approve; echo tests/test_a.py > .ai/test-lock; g add -A; g commit -qm "a tests" -m "Tests-First: pa"
+mkplan pb "b works"; approve; echo tests/test_b.py >> .ai/test-lock; g add -A; g commit -qm "b tests" -m "Tests-First: pb"
+mkplan pa "a works" "a2 works"; approve; g add -A; g commit -qm "a round 2" -m "Tests-First: pa v2"
+mkdir -p .ai/plans/completed; g mv .ai/plans/active/pa.md .ai/plans/completed/; g commit -qm "pa done"
+guard tests/test_b.py; t "guard: closing one plan keeps another active plan's tests locked" [ $? = 2 ]
+echo 'def test_b(): pass' > tests/test_b.py
+stopl; t "stop hook: closing one plan keeps another active plan's tests locked" [ $? = 2 ]
+g checkout -q -- tests/test_b.py; newbranch later; echo 'x = 1' > app.py; g add -A; g commit -qm "other work"
+check; t "PR: a branch that leaves a merged round's tests alone passes" [ $? = 0 ]
+echo 'def test_b(): pass' > tests/test_b.py; g commit -qam "weaken b"
+check; t "PR: a merged round still locks its tests while its plan is active" [ $? = 1 ]
+g checkout -q main; g mv .ai/plans/active/pb.md .ai/plans/completed/; g commit -qm "pb done"
+guard tests/test_b.py; t "guard: the lock expires when the last plan is completed" [ $? = 0 ]
 cd "$here"
 
 # 18. Line endings: a new repo gets LF for all text files; an existing repo

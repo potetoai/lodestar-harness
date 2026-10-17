@@ -142,6 +142,24 @@ for c in $(git log --reverse --format=%H --grep='^Tests-First:' "$from..HEAD"); 
     fi
   done
 done
+# A round merged before this branch still locks its tests while its plan is
+# active: this branch may change them only in a freshly approved round.
+if base_round=$(active_tests_first "$from"); then
+  lock=$(git show "$base_round:.ai/test-lock" 2>/dev/null | lock_paths)
+  previous_round=$base_round
+  for later in $([ -n "$lock" ] && git rev-list --reverse "$from..HEAD"); do
+    if valid_tests_first "$later"; then
+      fresh_relock_approval "$later" "$previous_round" && { previous_round=$later; continue; }
+      previous_round=$later
+    fi
+    touched=$(git diff-tree --root --no-commit-id --name-only -r "$later" | grep -Fxf <(printf '%s\n' "$lock"))
+    if [ -n "$touched" ]; then
+      fail "Commit $(git log -1 --format='%h %s' "$later") changes tests locked by $(git log -1 --format='%h' "$base_round") (its plan is still active):"
+      printf '     %s\n' $touched
+      locked_ok=0
+    fi
+  done
+fi
 [ $locked_ok = 1 ] && echo "✅ tests-first rounds approved; locked tests unchanged"
 
 # 4. New TODO/FIXME/HACK: list them; debt left on purpose belongs in tech-debt.md.

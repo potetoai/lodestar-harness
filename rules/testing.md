@@ -196,6 +196,8 @@ automatically; when unsure, select it.
    `.ai/test-lock` in the final commit. The lock expires on its own once its
    plan leaves `active/`, even if the file is forgotten; the owner never has
    to unlock anything.
+   While another active plan still has a Tests-First round, keep
+   `.ai/test-lock`: the lock stays in force until the last such plan closes.
 
 **When a test or criterion turns out wrong mid-task** (a misread criterion,
 the owner changes their mind, a test that cannot work):
