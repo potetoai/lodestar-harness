@@ -4,8 +4,8 @@
 # (rules/testing.md, "Tests-first mode").
 # - .ai/approvals.log: never edited by the agent (approval-record.sh writes it).
 # - Tests in .ai/test-lock and the lock itself: blocked while the task is
-#   active (a plan in .ai/plans/active/). The lock expires when the plan moves
-#   to completed/. It reopens only when the owner approved changed criteria
+#   active (a plan in .ai/plans/active/). The lock expires when the last
+#   plan with a Tests-First round moves to completed/. It reopens only when the owner approved changed criteria
 #   (relock window), so the tester can write the new round of tests.
 # - The lock may gain lines while an active plan is approved (a later step
 #   of the plan adds its tests); a line already in it cannot change.

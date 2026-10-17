@@ -71,20 +71,24 @@ last_valid_tests_first() {
   return 1
 }
 
-# The newest valid Tests-First commit, only while a plan it changed is still
-# active. A round from a completed task is no baseline for the current one.
+# The newest valid Tests-First commit (up to revision $1, default HEAD) that
+# changed a plan still active. A round from a completed task is no baseline
+# for the current one, but closing one plan does not unlock the round of
+# another plan that is still active.
 active_tests_first() {
   local c p
-  c=$(last_valid_tests_first) || return 1
-  while IFS= read -r p; do
-    [[ $p == .ai/plans/active/*.md ]] && [ -f "$p" ] && { echo "$c"; return 0; }
-  done < <(git diff-tree --root --no-commit-id --name-only -r "$c")
+  for c in $(git log --format=%H --grep='^Tests-First:' "${1:-HEAD}" -- 2>/dev/null); do
+    valid_tests_first "$c" || continue
+    while IFS= read -r p; do
+      [[ $p == .ai/plans/active/*.md ]] && [ -f "$p" ] && { echo "$c"; return 0; }
+    done < <(git diff-tree --root --no-commit-id --name-only -r "$c")
+  done
   return 1
 }
 
-# Is the test lock in force? Yes while the plan of the last valid Tests-First
-# round is still active, or while a new lock is being written (uncommitted)
-# for an active plan. A lock left over from a completed task has no effect.
+# Is the test lock in force? Yes while a plan of a valid Tests-First round is
+# still active, or while a new lock is being written (uncommitted) for an
+# active plan. A lock left over from completed tasks only has no effect.
 lock_active() {
   if [ -n "$(git status --porcelain -- .ai/test-lock 2>/dev/null)" ] &&
      ls .ai/plans/active/*.md >/dev/null 2>&1; then
