@@ -333,6 +333,21 @@ used 1110000
 LODESTAR_STATE_DIR=$tmp/nudge-state bash "$here/agents/claude/global/context-nudge.sh" \
   <<<"{\"tool_input\":{\"agent_id\":\"a1\"},\"transcript_path\":\"$(native "$tr")\",\"session_id\":\"s1\"}" 2>/dev/null
 t "context nudge: an agent_id inside tool_input is not a subagent" [ $? = 2 ]
+# A finished task (PR merged, plan closed) asks for /clear once, at any context size.
+tr2=$tmp/done.jsonl; echo '{"type":"assistant","message":{"usage":{"input_tokens":5}}}' > "$tr2"
+fin() { jq -nc --arg t "$(native "$tr2")" --arg c "$1" --arg r "${2:-}" --arg a "${3:-}" \
+  '{transcript_path:$t,session_id:"s2",tool_name:"Bash",tool_input:{command:$c},tool_response:{stdout:$r}} + (if $a == "" then {} else {agent_id:$a} end)' |
+  LODESTAR_STATE_DIR=$tmp/done-state bash "$here/agents/claude/global/context-nudge.sh"; }
+out=$(fin 'cd x && gh pr merge 41 --merge' 2>&1); rc=$?
+t "task done: a merged PR asks for handoff and /clear" bash -c '[ $1 = 2 ] && grep -q "PR 41 merged" <<<"$2" && grep -q "handoff.md" <<<"$2" && grep -q "/clear" <<<"$2"' _ "$rc" "$out"
+fin 'gh pr merge 41 --merge' 2>/dev/null; t "task done: once per PR" [ $? = 0 ]
+fin 'gh pr view 42 --json state' 'MERGED' 2>/dev/null; t "task done: the owner's merge seen with gh pr view" [ $? = 2 ]
+fin 'gh pr view 43 --json state' 'OPEN' 2>/dev/null; t "task done: an open PR is not done" [ $? = 0 ]
+fin 'gh pr merge 44' 'GraphQL: Merge already in progress' 2>/dev/null; t "task done: a failed merge is not done" [ $? = 0 ]
+fin 'gh pr merge 45 --auto --merge' 2>/dev/null; t "task done: --auto has not merged yet" [ $? = 0 ]
+fin 'echo "then run gh pr merge 46"; grep -n "gh pr view" f' 'MERGED' 2>/dev/null; t "task done: quoted text is not a command" [ $? = 0 ]
+fin 'git mv .ai/plans/active/p.md .ai/plans/completed/' 2>/dev/null; t "task done: a plan moved to completed" [ $? = 2 ]
+fin 'gh pr merge 47' '' a9 2>/dev/null; t "task done: a subagent is not asked for /clear" [ $? = 0 ]
 
 # 8. Several parts: root Makefile runs targets in each part, routes lint-file.
 p=$tmp/multi; mkdir -p "$p"

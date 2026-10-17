@@ -33,6 +33,38 @@ if [ -n "$agent" ]; then
   [ -r "$transcript" ] && [ -s "$transcript" ] || exit 0
 fi
 
+# A finished task is the natural point for a fresh session. Seen from the
+# command: the agent merged a PR (gh pr merge, not --auto, no error printed),
+# saw the owner's merge (gh pr view printing MERGED), or moved a plan to
+# completed. Once per PR or plan. A subagent reports to its dispatcher instead.
+# jq runs only when the text appears at all.
+if [ -z "$agent" ] && [[ $input == *'gh pr '* || $input == *'plans/completed'* ]]; then
+  finished=$(jq -r '(.tool_input.command // "" | strings) as $c
+    | ((.tool_response // "") | if type == "string" then . else tostring end) as $r
+    | def run($p): "(^|[;&|(\\n])\\s*" + $p;  # only where a command starts, not quoted text
+      ($c | [match(run("gh pr (merge|view)\\s+#?([0-9]+)")).captures[2].string] | first // "") as $n
+    | if ($c | test(run("gh pr merge"))) and ($c | test("--auto") | not)
+         and ($r | test("GraphQL:|error|failed|not mergeable"; "i") | not) then "PR \($n) merged"
+      elif ($c | test(run("gh pr view"))) and ($r | test("MERGED")) then "PR \($n) merged"
+      elif ($c | test(run("(git )?mv [^;&|\\n]*plans/active/[^;&|\\n]*plans/completed"))) then
+        "plan closed: \($c | [scan("plans/active/[^ ;&|]+")] | first // "")"
+      else empty end' <<<"$input" 2>/dev/null | tr -d '\r')
+  if [ -n "$finished" ]; then
+    reminder_claim task-done "$finished"; claimed=$?
+    if [ "$claimed" = 0 ]; then
+      cat >&2 <<EOF
+A task just finished ($finished). This is the point for a fresh session: every turn re-reads the whole context.
+- Finish the step you are on; do not start a new task in this session.
+- Overwrite .ai/handoff.md (short, English: state, open items, next step, do-not-do).
+- Tell the owner, in their language: the task is done; type /clear, then "continue" or the next task.
+If the owner already asked for more in this turn, finish that first, then say it.
+EOF
+      exit 2
+    fi
+    [ "$claimed" = 1 ] || advisory_unavailable 'cannot persist task-done reminder state'
+  fi
+fi
+
 # Context of the last API call: what the next turn re-reads. Only the tail is
 # read (this runs after every tool call on transcripts of many MB); a line still
 # being written is skipped, not fatal.
