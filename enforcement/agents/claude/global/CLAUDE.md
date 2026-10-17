@@ -29,7 +29,8 @@ source: edits there apply to every project).
    history stays in plans and git; the file is gitignored), then tell the
    owner: type `/clear` (it works from the phone too), then type "continue".
    A new session is told to read that file first. A hook also reminds you
-   once the context passes 200k tokens; follow it the same way.
+   when a PR merges or a plan closes, and once the context passes 200k
+   tokens; follow it the same way.
 
 ## For subagents
 

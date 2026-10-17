@@ -205,3 +205,8 @@ Every rule:
   context size. Past 200k tokens (`LODESTAR_NUDGE_AT` changes it) it tells the
   agent once: finish the current step, overwrite `.ai/handoff.md`, ask the owner
   for `/clear`. It repeats at every further 100k. It never blocks a tool.
+- The same hook marks the end of a task: when the agent merges a PR (`gh pr
+  merge`), sees the owner's merge (`gh pr view` printing MERGED), or moves a
+  plan to `completed`, it tells the agent once per PR or plan to write the
+  handoff and offer the owner `/clear`. Only a command counts, not quoted text;
+  subagents are left out.

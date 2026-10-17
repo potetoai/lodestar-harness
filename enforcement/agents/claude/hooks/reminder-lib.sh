@@ -30,7 +30,7 @@ reminder_claim() {
   key=${key%% *}
   state="$reminder_dir/$reminder_key-$kind"
   mkdir -p "$reminder_dir" 2>/dev/null || return 2
-  if [ "$kind" = feedback ]; then
+  if [ "$kind" = feedback ] || [ "$kind" = task-done ]; then
     mkdir "$state-$key" 2>/dev/null && return 0
     [ -d "$state-$key" ] && return 1
     return 2

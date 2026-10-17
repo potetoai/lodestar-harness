@@ -42,7 +42,8 @@ The script checks each item and prints a ✅ / ⚠️ / ❌ table:
   If a file already has your own content, the script only **adds** the
   Lodestar part and keeps a backup (`CLAUDE.md.bak`, `AGENTS.md.bak`).
 - It installs the machine-wide hooks: the readiness reminder, and the
-  context nudge that asks for `/clear` once a session passes 200k tokens.
+  context nudge that asks for `/clear` when a task ends (a PR merged, a plan
+  closed) or a session passes 200k tokens.
   Claude uses its settings file; Codex uses `hooks.json` in its homes.
   Claude remains the default agent in Orca; these registrations do not
   change the default provider or model.
