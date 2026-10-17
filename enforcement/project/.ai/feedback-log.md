@@ -5,6 +5,9 @@ owner never has to. Reuse the same short tag for the same kind of mistake.
 When a tag appears a second time, turn it into a lint rule or a test
 (`rules/enforcement.md`, section 8) and set its rows to `enforced`.
 `doctor.sh` warns about repeated tags that are not enforced yet.
+When no lint rule or test can catch the mistake (for example a conversation
+mistake), and the owner agrees, set its rows to `accepted`. A new row of that
+tag with any other status makes `doctor.sh` warn again.
 
 A mistake caused by the Lodestar system itself (a missing workflow step, a wrong
 template or hook) gets the prefix `lodestar-` in its tag, for example

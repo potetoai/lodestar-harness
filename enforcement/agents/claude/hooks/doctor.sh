@@ -154,14 +154,15 @@ maintenance_recent() {
   local d; d=$(tr -d '\r\n' < .ai/last-maintenance 2>/dev/null) || return 1
   [ $(( ($(date +%s) - $(date -d "$d" +%s)) / 86400 )) -le 14 ]
 }
-# A tag (2nd column) seen twice or more whose rows are not all "enforced".
+# A tag (2nd column) seen twice or more whose rows are not all "enforced" or "accepted"
+# (owner agreed no machine rule fits). A new row with another status warns again.
 # Tags starting with lodestar- (orca- before 2.0.0) are Lodestar's own mistakes, fixed upstream: skipped.
 no_repeated_mistakes() {
   [ -f .ai/feedback-log.md ] || return 0
   ! awk -F'|' 'NR > 2 && NF > 5 {
       tag = $3; gsub(/^ +| +$/, "", tag); st = $6; gsub(/^ +| +$/, "", st)
       if (tag == "" || tag == "Tag" || tag ~ /^-+$/ || tag ~ /^(lodestar|orca)-/) next
-      n[tag]++; if (st != "enforced") open[tag] = 1
+      n[tag]++; if (st != "enforced" && st != "accepted") open[tag] = 1
     }
     END { for (t in n) if (n[t] >= 2 && open[t]) { print "   repeated: " t > "/dev/stderr"; bad = 1 }; exit !bad }' .ai/feedback-log.md
 }
