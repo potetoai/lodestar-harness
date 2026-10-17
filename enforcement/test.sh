@@ -155,6 +155,45 @@ hold "test_c failed"; t "stop hook lets a prototype branch stop while verify fai
 git -C "$p" checkout -q -
 hold "test_c failed"; t "stop hook holds that failure again off the prototype branch" [ $? = 2 ]
 
+# 6c. Stop hook sends the agent back once per HEAD while commits exist only on
+#     this machine: push the own branch (always allowed); on main, move them.
+r=$tmp/pushremote.git; git init -q --bare "$r"
+p=$tmp/pushstop; mkdir -p "$p"; git -C "$p" init -q -b main; git -C "$p" remote add origin "$r"
+printf 'verify:
+	@true
+' > "$p/Makefile"
+gc() { git -C "$p" -c user.name=t -c user.email=t@t commit -q --allow-empty -m "$1"; }
+gc init; git -C "$p" push -q origin main 2>/dev/null
+pstop() { CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/verify-before-stop.sh" 2>&1 >/dev/null <<<"{\"stop_hook_active\":${1:-false}}"; }
+pstop >/dev/null; t "push check: all pushed lets the stop end" [ $? = 0 ]
+git -C "$p" checkout -q -b feat/x; gc one
+out=$(pstop); t "push check: unpushed commit on own branch holds" [ $? = 2 ]
+t "push check: says to push the branch, no asking" grep -q "git push -u origin feat/x; pushing your own branch is always allowed" <<<"$out"
+pstop true >/dev/null; t "push check: lets go on the second attempt" [ $? = 0 ]
+pstop >/dev/null; t "push check: holds once per HEAD" [ $? = 0 ]
+gc two; pstop >/dev/null; t "push check: a new commit holds again" [ $? = 2 ]
+printf 'verify:
+	@echo red; exit 1
+' > "$p/Makefile"
+out=$(pstop); t "push check: a failing verify is reported first" grep -q "make verify' fails" <<<"$out"
+printf 'verify:
+	@true
+' > "$p/Makefile"
+git -C "$p" push -q -u origin feat/x 2>/dev/null; gc three; git -C "$p" push -q 2>/dev/null
+pstop >/dev/null; t "push check: pushed branch lets the stop end" [ $? = 0 ]
+git -C "$p" checkout -q --detach; gc four; pstop >/dev/null; t "push check: detached HEAD is skipped" [ $? = 0 ]
+git -C "$p" checkout -q main; gc five
+out=$(pstop); t "push check: unpushed commit on main holds" [ $? = 2 ]
+t "push check: on main says to move to a feature branch" grep -q "Move them to a feature branch" <<<"$out"
+git -C "$p" checkout -q -b proto/try; gc six; pstop >/dev/null; t "push check: prototype branch is skipped" [ $? = 0 ]
+git -C "$p" checkout -q feat/x; gc seven; rm "$p/Makefile"
+pstop >/dev/null; t "push check: runs without a Makefile too" [ $? = 2 ]
+git -C "$p" checkout -q -b feat/gone; gc g1; git -C "$p" push -q -u origin feat/gone 2>/dev/null
+gc g2; git -C "$p" push -q origin --delete feat/gone 2>/dev/null; git -C "$p" fetch -q --prune 2>/dev/null
+pstop >/dev/null; t "push check: a branch whose upstream is gone is skipped" [ $? = 0 ]
+git -C "$p" remote remove origin; gc eight
+pstop >/dev/null; t "push check: no remote is skipped" [ $? = 0 ]
+
 # 7. Global reminder hook: speaks only in projects that are not ready; never blocks.
 g=$here/agents/claude/global/check-readiness.sh
 remind() { CLAUDE_PROJECT_DIR=$1 bash "$g" </dev/null; }
