@@ -53,6 +53,7 @@ out=$(bash "$p/.claude/hooks/doctor.sh" "$p"); rc=$?
 t "doctor passes tier A after filling" [ $rc = 0 ] || echo "$out"
 t "doctor runs every check (A10 present)" grep -q 'A10 ' <<<"$out"
 t "short AGENTS.md passes A11" grep -qE '✅ A11 ' <<<"$out"
+t "bootstrapped verify records its pass (A10b)" grep -qE '✅ A10b ' <<<"$out"
 cp "$p/AGENTS.md" "$tmp/agents.bak"; seq 201 >> "$p/AGENTS.md"
 out=$(bash "$p/.claude/hooks/doctor.sh" "$p"); rc=$?
 t "doctor warns on a long AGENTS.md (A11), still ready" bash -c '[ $1 = 0 ] && grep -qE "⚠️ +A11 " <<<"$2"' _ "$rc" "$out"
@@ -161,6 +162,14 @@ printf 'verify:
 	@echo run >> "$$RUNS"; exit 1
 ' > "$c/Makefile"
 cstop; t "stop hook: a failing run after a change still holds" [ $? = 2 ]
+# make verify records its own pass (top-level make only): the stop right
+# after the agent's passing run does not repeat it.
+printf 'verify:\n\t@echo run >> "$$RUNS"\n\t@[ "$(MAKELEVEL)" != 0 ] || bash "$$HOOK" --record-pass\nsub:\n\t@$(MAKE) -s verify\n' > "$c/Makefile"
+rec() { (cd "$c" && RUNS=$tmp/passcache.runs HOOK=$here/agents/claude/hooks/verify-before-stop.sh make -s "$1" </dev/null); }
+echo d > "$c/a.txt"; rec verify; n=$(runs); cstop
+t "stop hook skips make verify right after the agent's passing run" [ $? = 0 -a "$(runs)" = "$n" ]
+echo e > "$c/a.txt"; rec sub; n=$(runs); cstop
+t "a sub-make's verify records no pass" [ "$(runs)" = $((n + 1)) ]
 # The project may be a subfolder of the repo (git prints paths from the root).
 q=$tmp/monorepo; mkdir -p "$q/sub"; git -C "$q" init -q; cp "$p/Makefile" "$q/sub/"
 echo a > "$q/sub/code.txt"; git -C "$q" add -A; git -C "$q" -c user.name=t -c user.email=t@t commit -qm init
@@ -331,6 +340,7 @@ p2=$tmp/multijoined; mkdir -p "$p2"
 bash "$here/bootstrap.sh" "$p2" --stack "python=backend node-ts=frontend" >/dev/null
 t "multi: space-joined --stack (as enforcement.json records it) works" bash -c 'test -f "$1/backend/Makefile" -a -f "$1/frontend/Makefile" && ! ls "$1" | grep -q " "' _ "$p2"
 t "multi: root has contract targets" bash -c 'cd "$1" && make -n setup lint test verify' _ "$p"
+t "multi: root verify records its pass (A10b)" bash -c 'make -n -C "$1" verify | grep -q -- --record-pass' _ "$p"
 # Replace the part Makefiles with stubs so no real tools are needed.
 printf 'verify:\n\t@echo backend-verify\nlint-file:\n\t@echo "backend-lint $(FILE)"\n' > "$p/backend/Makefile"
 printf 'verify:\n\t@echo frontend-verify\ntypecheck:\n\t@echo frontend-typecheck\nlint-file:\n\t@echo "frontend-lint $(FILE)"\n' > "$p/frontend/Makefile"

@@ -38,7 +38,9 @@ the gate.
 
 A pass is remembered the same way: when the files did not change since
 `verify` last passed (the agent only answered a question), the Stop hook does
-not run it again.
+not run it again. `make verify` records its own pass (its last line runs
+`verify-before-stop.sh --record-pass`, top-level make only), so when the agent
+just ran it, the Stop hook does not run it a second time (doctor A10b).
 
 After `verify` passes, the Stop hook also holds once per HEAD while the
 current branch has commits on no remote branch: push the own branch (always
@@ -90,6 +92,7 @@ checked by the onboarding report and review.
 | B5 | `sensitive_paths:` declared in `.ai/project.md` (may be empty, with a reason) | Required |
 | B6 | `.ai/invariants.md` lists at least one invariant | Required |
 | A10 | `format-check`, `lint-file`, `verify-full` targets | Recommended |
+| A10b | `verify` ends with `verify-before-stop.sh --record-pass` (top-level make only), so a passing run by the agent is not repeated by the Stop hook | Recommended |
 | A11 | `AGENTS.md` under 200 lines; detail moves to `.claude/rules/` (scoped with `paths:`) or docs | Recommended |
 | A12 | Stack tools installed (`.venv` / `node_modules`); else run `make setup` | Recommended |
 | C1 | `main` requires a PR and passing checks (set by hand on GitHub) | Recommended |

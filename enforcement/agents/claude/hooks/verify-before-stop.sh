@@ -6,6 +6,34 @@
 cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
 export NO_COLOR=1 FORCE_COLOR=0  # plain text for the agent
 
+# Hold once per state. When the files and the failure (digits ignored, so
+# timings do not count) are the same as at the last hold, nothing was done
+# since: let the stop end instead of sending the agent back again (for
+# example while it waits for a tests-first tester). Any change holds again.
+# Without git there is no memory and every failed stop holds. CI is the gate.
+held=$(git rev-parse --absolute-git-dir 2>/dev/null) && held=$held/lodestar-verify-held
+state() { # HEAD, each changed or untracked file's content (not the index), the failure
+  git rev-parse -q --verify HEAD
+  ( cd "$(git rev-parse --show-toplevel)" || exit
+    { git -c core.quotePath=false diff --name-only HEAD 2>/dev/null || git ls-files -c
+      git -c core.quotePath=false ls-files -o --exclude-standard; } | sort -u > "$held.paths"
+    while IFS= read -r f; do [ -f "$f" ] || echo "$f gone"; done < "$held.paths"
+    while IFS= read -r f; do [ -f "$f" ] && echo "$f"; done < "$held.paths" > "$held.files"
+    cat "$held.files"; git hash-object --stdin-paths < "$held.files" )
+  rm -f "$held.paths" "$held.files"
+  tr -d '0-9' <<<"$1"
+}
+# A pass is remembered the same way: when nothing changed since 'make verify'
+# last passed (for example the agent only answered a question), do not run
+# it again. The full run takes minutes in real projects.
+passed=${held%held}passed
+# 'make verify' ends with this script --record-pass (top-level make only), so
+# a run the agent made itself counts: the stop right after does not repeat it.
+if [ "$1" = --record-pass ]; then
+  [ -n "$held" ] && { rm -f "$held"; state "" | git hash-object --stdin > "$passed"; }
+  exit 0
+fi
+
 # A prototype branch (proto/*) is thrown away, never pushed (guard-install
 # blocks it) or merged, so its work is not verified (workflows/prototype.md).
 case $(git symbolic-ref --short -q HEAD 2>/dev/null) in proto/*) exit 0 ;; esac
@@ -73,27 +101,6 @@ if ! err=$(make -n verify 2>&1 >/dev/null); then
   echo "Run 'bash .claude/hooks/doctor.sh' to see why, fix it, then finish." >&2
   exit 2
 fi
-# Hold once per state. When the files and the failure (digits ignored, so
-# timings do not count) are the same as at the last hold, nothing was done
-# since: let the stop end instead of sending the agent back again (for
-# example while it waits for a tests-first tester). Any change holds again.
-# Without git there is no memory and every failed stop holds. CI is the gate.
-held=$(git rev-parse --absolute-git-dir 2>/dev/null) && held=$held/lodestar-verify-held
-state() { # HEAD, each changed or untracked file's content (not the index), the failure
-  git rev-parse -q --verify HEAD
-  ( cd "$(git rev-parse --show-toplevel)" || exit
-    { git -c core.quotePath=false diff --name-only HEAD 2>/dev/null || git ls-files -c
-      git -c core.quotePath=false ls-files -o --exclude-standard; } | sort -u > "$held.paths"
-    while IFS= read -r f; do [ -f "$f" ] || echo "$f gone"; done < "$held.paths"
-    while IFS= read -r f; do [ -f "$f" ] && echo "$f"; done < "$held.paths" > "$held.files"
-    cat "$held.files"; git hash-object --stdin-paths < "$held.files" )
-  rm -f "$held.paths" "$held.files"
-  tr -d '0-9' <<<"$1"
-}
-# A pass is remembered the same way: when nothing changed since 'make verify'
-# last passed (for example the agent only answered a question), do not run
-# it again. The full run takes minutes in real projects.
-passed=${held%held}passed
 if [ -n "$held" ] && [ -f "$passed" ] && [ "$(cat "$passed")" = "$(state "" | git hash-object --stdin)" ]; then
   push_check; exit
 fi

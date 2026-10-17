@@ -29,8 +29,10 @@ typecheck:
 test:
 	npm test
 
-# Fast checks, run by the Stop hook. Keep it under ~3 minutes.
+# Fast checks, run by the Stop hook. Keep it under ~3 minutes. The last line
+# records the pass, so the Stop hook does not run it a second time.
 verify: format-check lint typecheck test
+	@[ "$(MAKELEVEL)" != 0 ] || [ ! -f .claude/hooks/verify-before-stop.sh ] || bash .claude/hooks/verify-before-stop.sh --record-pass
 
 # Everything, run by CI. Add integration/E2E targets here.
 verify-full: verify
