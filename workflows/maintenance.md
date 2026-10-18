@@ -42,7 +42,9 @@ Stop early when nothing is worth a PR.
 
 1. **Health.** Run `bash .claude/hooks/doctor.sh`. If the template is
    outdated (A9b), run `bootstrap.sh <dir> --stack <s> --upgrade` (stacks are
-   recorded in `.ai/enforcement.json`) as the first PR. `--upgrade` never
+   recorded in `.ai/enforcement.json`) as the first PR, with the route line
+   `Lodestar route: MAINTENANCE risk=low` in its text (CI checks it from
+   template 2.7.9; open PRs need the line too). `--upgrade` never
    touches [project] files, so compare them with the new templates in
    `enforcement/project/` and `enforcement/stacks/` (for example the
    `.ai/feedback-log.md` columns, or the `lint-file` recipe) and

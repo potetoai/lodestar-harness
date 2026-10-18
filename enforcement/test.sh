@@ -594,6 +594,28 @@ printf 'test-mutation:\n\t@true\n' > Makefile
 out=$(bash "$here/agents/claude/hooks/ci-checks.sh" main 2>&1)
 t "PR: an empty mutation report says no part ran it" grep -q "No part of the repo ran mutation testing" <<<"$out"
 g checkout -q -- Makefile; unset LODESTAR_TEST_MUTATION
+# 7. Route line in the PR text.
+# Each branch is compared with its own start (rbase), not with main.
+route() { LODESTAR_PR_BODY=$1 bash "$here/agents/claude/hooks/ci-checks.sh" rbase 2>&1; }
+newbranch r1; g tag -f rbase >/dev/null; echo 'y = 5' > app/ui.py; echo 'a = 1' > app/a.py; echo 'b = 1' > app/b.py; g add -A; g commit -qm "three files"
+route 'Fix.' >/dev/null; t "PR: no route line fails" [ $? = 1 ]
+route '**Lodestar route: BUILD_REVIEW risk=low**' >/dev/null; t "PR: a route line with markup fails" [ $? = 1 ]
+out=$(route $'Fix.\nLodestar route: SIMPLE risk=low'); rc=$?
+t "PR: SIMPLE with 3 files fails" bash -c '[ $1 = 1 ] && grep -q "3 files changed" <<<"$2"' _ "$rc" "$out"
+route $'Lodestar route: BUILD_REVIEW risk=low\nFix.' >/dev/null; t "PR: BUILD_REVIEW without a review line fails" [ $? = 1 ]
+route $'Lodestar route: BUILD_REVIEW risk=low\r\nLodestar review: APPROVE, fresh reviewer, abc123\r\n' >/dev/null; t "PR: BUILD_REVIEW with a review line passes (CRLF text)" [ $? = 0 ]
+route $'Lodestar route: SIMPLE risk=low\nLodestar route: BUILD_REVIEW risk=low escalated-from=SIMPLE\nLodestar review: APPROVE' >/dev/null; t "PR: the last route line counts (escalation)" [ $? = 0 ]
+route 'Lodestar route: MAINTENANCE risk=low' >/dev/null; t "PR: MAINTENANCE with 3 project files and no review fails" [ $? = 1 ]
+route $'Lodestar route: MAINTENANCE risk=low
+Lodestar review: APPROVE' >/dev/null; t "PR: MAINTENANCE with 3 project files and a review passes" [ $? = 0 ]
+route 'Lodestar route: PROTOTYPE risk=high' >/dev/null; t "PR: PROTOTYPE with high risk fails" [ $? = 1 ]
+PR_AUTHOR='dependabot[bot]' route '' >/dev/null; t "PR: a bot's PR skips the route line" [ $? = 0 ]
+newbranch r2; g tag -f rbase >/dev/null; echo 'y = 6' > app/ui.py; mkdir -p .ai/plans/active; echo x >> .ai/approvals.log; echo '# p' > .ai/plans/active/p.md; g add -A; g commit -qm "one file + bookkeeping"
+route 'Lodestar route: SIMPLE risk=low' >/dev/null; t "PR: SIMPLE with one file plus .ai/ bookkeeping passes" [ $? = 0 ]
+route 'Lodestar route: SIMPLE risk=high' >/dev/null; t "PR: SIMPLE with high risk fails" [ $? = 1 ]
+newbranch r3; g tag -f rbase >/dev/null; mkdir -p .github/workflows; for f in a b c; do echo x > .claude/hooks/$f.sh; done; echo x > .github/workflows/ci.yml; echo 'y = 7' > app/ui.py; g add -A; g commit -qm "template upgrade"
+route 'Lodestar route: MAINTENANCE risk=low' >/dev/null; t "PR: a template upgrade (Lodestar files + 1 file) passes as MAINTENANCE" [ $? = 0 ]
+route 'Lodestar route: SIMPLE risk=low' >/dev/null; t "PR: the same upgrade as SIMPLE fails (Lodestar files count)" [ $? = 1 ]
 cd "$here"
 
 # 10. protect-tests: locked while the task is active; relock window only after

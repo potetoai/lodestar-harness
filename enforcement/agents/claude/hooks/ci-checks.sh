@@ -14,6 +14,8 @@
 #   6. Mutation testing (`make test-mutation`) on changed sensitive code, only when
 #      LODESTAR_TEST_MUTATION=true (CI: the PR label "test-mutation"): score and surviving
 #      mutants go to the summary (no failure).
+#   7. The PR text has the route line; SIMPLE stays small and below high
+#      risk; BUILD_REVIEW and up name their independent review.
 # Usage: ci-checks.sh <base-ref>     (for example origin/main)
 base=${1:?usage: ci-checks.sh <base-ref>}
 from=$(git merge-base "$base" HEAD) || { echo "ci-checks: cannot find merge base with $base" >&2; exit 1; }
@@ -208,6 +210,52 @@ fi
 echo "Mutation testing (report only):"; sed 's/^/     /' <<<"$mut"
 [ -n "${GITHUB_STEP_SUMMARY:-}" ] &&
   printf '## Mutation testing (report only)\n\n```\n%s\n```\n' "$(head -n 300 <<<"$mut")" >> "$GITHUB_STEP_SUMMARY"
+
+# 7. The PR text names its route (router/ROUTER.md, "Lodestar route:") and,
+#    for a reviewed workflow, the review. Read live from GitHub, so a rerun
+#    after `gh pr edit` sees the fixed text. Tests pass LODESTAR_PR_BODY.
+route_check() {
+  local body line wf risk n reviewed
+  body=$(tr -d '\r' <<<"$1")
+  line=$(grep -E '^Lodestar route: ' <<<"$body" | tail -n1)
+  if ! [[ $line =~ ^Lodestar\ route:\ (SIMPLE|BUILD_REVIEW|INDEPENDENT_COMPARE|COMPLEX|PROTOTYPE|ONBOARDING|MAINTENANCE)\ risk=(low|medium|high|critical)(\ escalated-from=[A-Z_]+)?[[:space:]]*$ ]]; then
+    fail "The PR text has no route line. Add one line, plain text: 'Lodestar route: <WORKFLOW> risk=<level>' (router/ROUTER.md)."
+    echo "   Fix it with 'gh pr edit <n> --body-file <file>', then rerun this job ('gh run rerun <run-id> --failed')."
+    return
+  fi
+  wf=${BASH_REMATCH[1]}; risk=${BASH_REMATCH[2]}
+  grep -qE '^Lodestar review: [^[:space:]]' <<<"$body" && reviewed=1 || reviewed=0
+  # Bookkeeping under .ai/ (approvals, plans) is not part of the change; for
+  # MAINTENANCE and ONBOARDING neither are the files Lodestar manages.
+  case $wf in
+    MAINTENANCE|ONBOARDING) n=$(grep -cvE '^(\.ai/|\.claude/|\.codex/|\.github/|$)' <<<"$changed") ;;
+    *) n=$(grep -cvE '^(\.ai/|$)' <<<"$changed") ;;
+  esac
+  case $wf in
+    SIMPLE|PROTOTYPE|MAINTENANCE|ONBOARDING)
+      if [[ $wf == SIMPLE || $wf == PROTOTYPE ]] && [[ $risk == high || $risk == critical ]]; then
+        fail "$wf with risk=$risk: high risk needs at least BUILD_REVIEW (router/ROUTER.md, rule 16)."; return
+      elif [ "$n" -ge 3 ] && { [ $wf = SIMPLE ] || [ $reviewed = 0 ]; }; then
+        fail "$wf, but $n files changed (outside .ai/ and, for MAINTENANCE and ONBOARDING, Lodestar's own files): 3 or more need at least BUILD_REVIEW with a review (router/ROUTER.md, SIMPLE), or for $wf a 'Lodestar review:' line."; return
+      fi ;;
+    *)
+      if [ $reviewed = 0 ]; then
+        fail "$wf needs an independent review (workflows/build-review.md). Fix its findings and add a line: 'Lodestar review: <verdict>, <who>, <commit>'."; return
+      fi ;;
+  esac
+  echo "✅ route: $wf risk=$risk"
+}
+if [[ ${PR_AUTHOR:-} == *'[bot]' ]]; then
+  echo "✅ route line skipped: PR opened by $PR_AUTHOR"
+elif [ -n "${LODESTAR_PR_BODY+x}" ]; then
+  route_check "$LODESTAR_PR_BODY"
+elif [ -n "${PR_NUMBER:-}" ]; then
+  if body=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '.body // ""' 2>/dev/null); then
+    route_check "$body"
+  else
+    fail "Cannot read the PR text to check its route line (gh api repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER)."
+  fi
+fi
 
 [ $fails = 0 ] || { echo "PR checks failed: $fails"; exit 1; }
 echo "PR checks passed."
