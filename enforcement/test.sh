@@ -245,6 +245,16 @@ t "bootstrap gitignores the handoff file" bash -c 'cd "$1" && git check-ignore -
 echo "next: x" > "$tmp/py/.ai/handoff.md"
 out=$(remind "$tmp/py")
 t "global hook tells a new session to read the handoff" grep -q "read .ai/handoff.md" <<<"$out"
+pc() { git -C "$tmp/py" add .ai/plans/active && GIT_COMMITTER_DATE="$1" git -C "$tmp/py" -c user.name=t -c user.email=t@t commit -q --no-verify -m plan -- .ai/plans/active; }
+echo '# old' > "$tmp/py/.ai/plans/active/old.md"; pc '2020-01-01T12:00:00'
+echo '# new' > "$tmp/py/.ai/plans/active/new.md"; pc "$(date +%FT%T)"
+echo '# draft' > "$tmp/py/.ai/plans/active/draft.md"
+out=$(remind "$tmp/py")
+t "global hook lists an active plan no commit touched for days" bash -c 'grep -q "active/old.md (last commit 2020-01-01)" <<<"$1" && grep -q "git mv it to .ai/plans/completed/" <<<"$1"' _ "$out"
+t "global hook skips a fresh or uncommitted active plan" bash -c '! grep -qE "new.md|draft.md" <<<"$1"' _ "$out"
+out=$(LODESTAR_STALE_PLAN_DAYS=99999 remind "$tmp/py")
+t "stale-plan age can be set" bash -c '! grep -q "plans in .ai/plans/active/" <<<"$1"' _ "$out"
+git -C "$tmp/py" rm -q .ai/plans/active/old.md .ai/plans/active/new.md; rm "$tmp/py/.ai/plans/active/draft.md"; pc "$(date +%FT%T)"
 out=$(CLAUDE_PROJECT_DIR=$tmp/py bash "$g" --prompt </dev/null)
 t "per-prompt gate does not repeat the handoff" bash -c '! grep -q handoff <<<"$1"' _ "$out"
 out=$(bash "$here/bootstrap.sh" "$tmp/py" --stack python)

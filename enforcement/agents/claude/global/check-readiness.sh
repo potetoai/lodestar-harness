@@ -79,4 +79,21 @@ if [ -n "$due" ]; then
   echo "$due"
   echo "Tell the owner, and offer to run: $lodestar/workflows/maintenance.md"
 fi
+# A merged plan must move to completed/ (workflows/complex.md), but nothing
+# checked it: real projects kept done plans in active/ for weeks, and every
+# session reads them all. List active plans no commit has touched for
+# LODESTAR_STALE_PLAN_DAYS (2) days; an uncommitted plan is new and skipped.
+n=${LODESTAR_STALE_PLAN_DAYS:-2}; [[ $n =~ ^[0-9]+$ ]] || n=2
+cutoff=$(date -d "$n days ago" +%F 2>/dev/null || date -v-"$n"d +%F 2>/dev/null)
+stale=$(for f in .ai/plans/active/*.md; do
+  [ -f "$f" ] || continue
+  d=$(git log -1 --format=%cd --date=short -- "$f" 2>/dev/null)
+  [ -n "$d" ] && ! [[ $d > $cutoff ]] && echo "  $f (last commit $d)"
+done)
+if [ -n "$stale" ]; then
+  echo "Lodestar: plans in .ai/plans/active/ with no commit since $cutoff:"
+  echo "$stale"
+  echo "Check each against the merged PRs. Done: git mv it to .ai/plans/completed/ (a small PR)."
+  echo "Not done: write in its progress log what it waits for. Tell the owner which is which."
+fi
 exit 0

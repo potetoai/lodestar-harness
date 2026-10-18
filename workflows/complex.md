@@ -36,7 +36,9 @@ Write the plan to a file: copy `.ai/plans/TEMPLATE.md` to
 record; the file is, so later sessions and other workers can pick the task up.
 Update its progress log after each phase and its decision log whenever a
 choice is made. When the task is merged, move the file to
-`.ai/plans/completed/`. High-risk tasks (tests-first mode) need this file too,
+`.ai/plans/completed/`. At session start the global hook `check-readiness.sh`
+lists active plans no commit has touched for 2 days, so a forgotten one
+gets closed or noted. High-risk tasks (tests-first mode) need this file too,
 even outside COMPLEX; CI checks it.
 
 ### Phase 3 — Architecture Review
