@@ -32,6 +32,9 @@ bs='\'   # Windows paths: backslashes become slashes
 cwd=$(jq -r '.cwd // empty' <<<"$input"); cwd=${cwd//"$bs"//}
 [ -n "$cmd" ] || exit 0
 low=${cmd,,}
+# A git push: `push` is git's subcommand (after git's own options such as
+# -C dir), not a word later on (git stash push, echo "...push...").
+gitpush='(^|[[:space:]])git([[:space:]]+(-c[[:space:]]+[^[:space:]]+|-[^[:space:]]+))*[[:space:]]+push([[:space:]]|$)'
 
 why=""
 fix=""
@@ -106,7 +109,7 @@ if [ -z "$why" ] && grep -qE '(^|[^[:alnum:]_-])gh(\.exe)?[[:space:]]+([^;|&]*[[
   here=${cwd:-${CLAUDE_PROJECT_DIR:-.}}
   proj=${CLAUDE_PROJECT_DIR:-$here}
   to=""; command -v timeout >/dev/null && to="timeout 15"
-  if grep -qE '(^|[[:space:]])git[[:space:]]+([^;|&]*[[:space:]])?push([[:space:]]|$)' <<<"$low"; then
+  if grep -qE "$gitpush" <<<"$low"; then
     why="a push in the same command as the merge changes the PR after this check."
     fix="Push in one command, then merge in the next: if gh pr checks <n> --watch; then gh pr merge <n> --merge; fi"
   elif grep -qE '(^|[^[:alnum:]_])gh_repo=' <<<"$low"; then
@@ -213,7 +216,7 @@ if [ -z "$why" ]; then
       fix="Run the command without it and fix what the hooks report."
       break
     fi
-    grep -qE '[[:space:]]push([[:space:]]|$)' <<<"$seg" || continue
+    grep -qE "$gitpush" <<<"$seg" || continue
     # A prototype branch never leaves the machine (workflows/prototype.md):
     # no push of a proto/* branch, and no push at all while on one.
     if grep -qE '[[:space:]:+"'"'"'=](refs/heads/)?proto/' <<<"$seg" || [[ "${branch,,}" == proto/* ]] ||
