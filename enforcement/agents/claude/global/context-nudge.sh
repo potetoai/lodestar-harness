@@ -42,7 +42,11 @@ fi
 # moved a plan to completed. Once per PR or plan. A subagent reports to its
 # dispatcher instead. jq runs only when the text appears at all.
 if [ -z "$agent" ] && [[ $input == *'gh pr '* || $input == *'plans/completed'* ]]; then
-  finished=$(jq -r '(.tool_input.command // "" | strings) as $c
+  # A heredoc body is text (a commit message, a PR body), not commands; inside
+  # quotes, separators and then/do/else do not start a command.
+  finished=$(jq -r '(.tool_input.command // "" | strings
+      | gsub("<<-?\\s*[\"'\'']?(?<t>[A-Za-z_]+)[\"'\'']?[^\\n]*\\n(?:.*\\n)*?\\s*\\k<t>(?=\\n|$|\\))"; "")
+      | gsub("(?<q>'\''[^'\'']*'\''|\"(?:[^\"\\\\]|\\\\.)*\")"; .q | gsub("[;&|\\n]|\\b(?:then|do|else)\\b"; " "))) as $c
     | ((.tool_response // "") | if type == "string" then . else tostring end) as $r
     | def run($p): "(^|[;&|(\\n]|\\b(?:then|do|else)\\s)\\s*" + $p;  # only where a command starts, not quoted text
       ($c | [match(run("gh pr (merge|view)\\s+#?([0-9]+)")).captures[2].string] | first // "") as $n

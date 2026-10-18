@@ -407,6 +407,9 @@ jq -nc --arg t "$(native "$tr2")" '{transcript_path:$t,session_id:"s2",tool_name
   LODESTAR_STATE_DIR=$tmp/done-state bash "$here/agents/claude/global/context-nudge.sh" 2>/dev/null
 t "task done: a merge moved to the background has not finished" [ $? = 0 ]
 fin 'echo "then gh is fine"; echo "gh pr merge 51"' 2>/dev/null; t "task done: then inside quoted text is not a command" [ $? = 0 ]
+fin 'git commit -m "x; then gh pr merge 52"' 2>/dev/null; t "task done: a separator inside quotes is not a command" [ $? = 0 ]
+fin "$(printf '%s\n' "git commit -F - <<'EOF'" 'needs: if gh pr checks 53 --watch; then gh pr merge 53' 'EOF')" 2>/dev/null
+t "task done: a heredoc body is not a command" [ $? = 0 ]
 fin 'echo "then run gh pr merge 46"; grep -n "gh pr view" f' 'MERGED' 2>/dev/null; t "task done: quoted text is not a command" [ $? = 0 ]
 fin 'git mv .ai/plans/active/p.md .ai/plans/completed/' 2>/dev/null; t "task done: a plan moved to completed" [ $? = 2 ]
 fin 'gh pr merge 47' '' a9 2>/dev/null; t "task done: a subagent is not asked for /clear" [ $? = 0 ]
