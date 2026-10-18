@@ -341,7 +341,16 @@ fin() { jq -nc --arg t "$(native "$tr2")" --arg c "$1" --arg r "${2:-}" --arg a 
 out=$(fin 'cd x && gh pr merge 41 --merge' 2>&1); rc=$?
 t "task done: a merged PR asks for handoff and /clear" bash -c '[ $1 = 2 ] && grep -q "PR 41 merged" <<<"$2" && grep -q "handoff.md" <<<"$2" && grep -q "/clear" <<<"$2"' _ "$rc" "$out"
 fin 'gh pr merge 41 --merge' 2>/dev/null; t "task done: once per PR" [ $? = 0 ]
-fin 'gh pr view 42 --json state' 'MERGED' 2>/dev/null; t "task done: the owner's merge seen with gh pr view" [ $? = 2 ]
+fin 'gh pr view 42 --json state' 'MERGED' 2>/dev/null; t "task done: a merged PR this session did not open is not its task" [ $? = 0 ]
+fin 'gh pr create --fill' 'https://github.com/o/r/pull/420' 2>/dev/null; t "task done: opening a PR is not a finished task" [ $? = 0 ]
+fin 'gh pr view 42 --json state' 'MERGED' 2>/dev/null; t "task done: PR 420 opened here does not make PR 42 its task" [ $? = 0 ]
+fin 'gh pr view https://github.com/x/y/pull/420' 'state: MERGED url: https://github.com/x/y/pull/420' 2>/dev/null; t "task done: another repo's PR by link is not its task" [ $? = 0 ]
+fin 'gh pr view --repo x/y 420' 'state: MERGED' 2>/dev/null; t "task done: another repo's PR by --repo is not its task" [ $? = 0 ]
+out=$(fin 'gh pr view -R o/r 420' 'state: MERGED' 2>&1); t "task done: the owner's merge of a PR opened here, by -R and number" grep -q "PR 420 merged" <<<"$out"
+fin 'cd x && gh pr create --title t --body b' 'https://github.com/o/r/pull/42' 2>/dev/null
+fin 'gh pr view 42 --json state' 'MERGED' 2>/dev/null; t "task done: the owner's merge of a PR opened here, seen with gh pr view" [ $? = 2 ]
+fin 'gh pr create --fill' 'https://github.com/o/r/pull/43' 2>/dev/null
+out=$(fin 'gh pr view' 'state: MERGED' 2>&1); t "task done: a bare gh pr view counts once the session opened a PR" grep -q "PR 43 merged" <<<"$out"
 fin 'gh pr view 43 --json state' 'OPEN' 2>/dev/null; t "task done: an open PR is not done" [ $? = 0 ]
 fin 'gh pr merge 44' 'GraphQL: Merge already in progress' 2>/dev/null; t "task done: a failed merge is not done" [ $? = 0 ]
 fin 'gh pr merge 45 --auto --merge' 2>/dev/null; t "task done: --auto has not merged yet" [ $? = 0 ]
