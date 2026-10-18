@@ -1113,11 +1113,13 @@ chmod +x "$tmp/ghpr/gh"
 ghok='7 fix/x 1111111 false\nREADME.md'
 gp() { FAKE_GH=$ghok PATH="$tmp/ghpr:$PATH" CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/guard-install.sh" 2>/dev/null <<<"$(jq -n --arg c "$1" '{tool_input:{command:$c}}')"; }
 for c in "git push origin main" "git push -u origin HEAD:main" "git push origin --delete master" "git push" "git push -u origin" \
-         'git commit --no-verify -m "x"' 'git commit -nm "x"' "git add . && git push --no-verify origin fix/a"; do
+         'git commit --no-verify -m "x"' 'git commit -nm "x"' "git add . && git push --no-verify origin fix/a" \
+         "git -C . push origin main" "git --no-pager push" "git -c push.default=current push"; do
   gp "$c"; t "guard blocks: $c" [ $? = 2 ]
 done
 for c in "git push -u origin fix/a" "git push origin fix/main-page" "git pull origin main" "git log main" \
-         "git commit -m 'rename -n flag'" "if gh pr checks 3 --watch; then gh pr merge 3 --merge --delete-branch; fi"; do
+         "git commit -m 'rename -n flag'" "if gh pr checks 3 --watch; then gh pr merge 3 --merge --delete-branch; fi" \
+         "git stash push -q a.txt && git switch -c fix/b" 'echo "git stash push, then switch"' "git log --grep push"; do
   gp "$c"; t "guard allows: $c" [ $? = 0 ]
 done
 # Merge only on green CI: the merge must sit behind the CI wait's exit code.
@@ -1158,6 +1160,7 @@ git -C "$m" update-ref refs/remotes/origin/fix/m HEAD
 merge7="if gh pr checks 7 --watch; then gh pr merge 7 --merge; fi"
 pr7='7 fix/m aaaaaaa false\nsrc/app.py'
 gmerge "$merge7" "$pr7"; t "guard allows a merge when the branch is fully pushed" [ $? = 0 ]
+gmerge "git stash push -q && $merge7" "$pr7"; t "guard allows a merge after git stash push" [ $? = 0 ]
 git -C "$m" -c user.name=t -c user.email=t@t commit -q --allow-empty -m two
 gmerge "$merge7" "$pr7"; t "guard blocks a merge while the PR's branch has an unpushed commit" [ $? = 2 ]
 gmerge 'gh pr checks 7 --watch; if ($LASTEXITCODE -eq 0) { gh pr merge 7 --merge }' "$pr7"; t "guard blocks the PowerShell merge with an unpushed commit" [ $? = 2 ]
