@@ -34,18 +34,24 @@ if [ -n "$agent" ]; then
 fi
 
 # A finished task is the natural point for a fresh session. Seen from the
-# command: the agent merged a PR (gh pr merge, not --auto, no error printed),
+# command: the agent merged a PR (gh pr merge, also after `then` as the guard
+# requires; not --auto, no error or failed check printed, not moved to the
+# background),
 # saw the owner's merge of a PR this session opened (gh pr view printing
 # MERGED; reading an old or another project's PR is not a finished task), or
 # moved a plan to completed. Once per PR or plan. A subagent reports to its
 # dispatcher instead. jq runs only when the text appears at all.
 if [ -z "$agent" ] && [[ $input == *'gh pr '* || $input == *'plans/completed'* ]]; then
-  finished=$(jq -r '(.tool_input.command // "" | strings) as $c
+  # A heredoc body is text (a commit message, a PR body), not commands; inside
+  # quotes, separators and then/do/else do not start a command.
+  finished=$(jq -r '(.tool_input.command // "" | strings
+      | gsub("<<-?\\s*[\"'\'']?(?<t>[A-Za-z_]+)[\"'\'']?[^\\n]*\\n(?:.*\\n)*?\\s*\\k<t>(?=\\n|$|\\))"; "")
+      | gsub("(?<q>'\''[^'\'']*'\''|\"(?:[^\"\\\\]|\\\\.)*\")"; .q | gsub("[;&|\\n]|\\b(?:then|do|else)\\b"; " "))) as $c
     | ((.tool_response // "") | if type == "string" then . else tostring end) as $r
-    | def run($p): "(^|[;&|(\\n])\\s*" + $p;  # only where a command starts, not quoted text
+    | def run($p): "(^|[;&|(\\n]|\\b(?:then|do|else)\\s)\\s*" + $p;  # only where a command starts, not quoted text
       ($c | [match(run("gh pr (merge|view)\\s+#?([0-9]+)")).captures[2].string] | first // "") as $n
     | if ($c | test(run("gh pr merge"))) and ($c | test("--auto") | not)
-         and ($r | test("GraphQL:|error|failed|not mergeable"; "i") | not) then "PR \($n) merged"
+         and ($r | test("GraphQL:|error|fail|not mergeable|\"backgroundTaskId\":\"|\"interrupted\":true"; "i") | not) then "PR \($n) merged"
       elif ($c | test(run("gh pr create"))) then
         ($r | [scan("github\\.com/[^/\\s\"\\\\]+/[^/\\s\"\\\\]+/pull/[0-9]+")] | first // empty | "opened \(.)")
       elif ($c | test(run("gh pr view"))) and ($r | test("MERGED")) then

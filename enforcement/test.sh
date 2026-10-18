@@ -400,6 +400,16 @@ out=$(fin 'gh pr view' 'state: MERGED' 2>&1); t "task done: a bare gh pr view co
 fin 'gh pr view 43 --json state' 'OPEN' 2>/dev/null; t "task done: an open PR is not done" [ $? = 0 ]
 fin 'gh pr merge 44' 'GraphQL: Merge already in progress' 2>/dev/null; t "task done: a failed merge is not done" [ $? = 0 ]
 fin 'gh pr merge 45 --auto --merge' 2>/dev/null; t "task done: --auto has not merged yet" [ $? = 0 ]
+out=$(fin 'if gh pr checks 48 --watch; then gh pr merge 48 --merge --match-head-commit abc; fi' $'verify\tpass\t1m' 2>&1)
+t "task done: the guard's checks-then-merge form" grep -q "PR 48 merged" <<<"$out"
+fin 'if gh pr checks 49 --watch; then gh pr merge 49 --merge; fi' $'verify\tfail\t1m' 2>/dev/null; t "task done: failed checks did not merge" [ $? = 0 ]
+jq -nc --arg t "$(native "$tr2")" '{transcript_path:$t,session_id:"s2",tool_name:"Bash",tool_input:{command:"if gh pr checks 50 --watch; then gh pr merge 50; fi"},tool_response:{stdout:"",interrupted:false,backgroundTaskId:"b1"}}' |
+  LODESTAR_STATE_DIR=$tmp/done-state bash "$here/agents/claude/global/context-nudge.sh" 2>/dev/null
+t "task done: a merge moved to the background has not finished" [ $? = 0 ]
+fin 'echo "then gh is fine"; echo "gh pr merge 51"' 2>/dev/null; t "task done: then inside quoted text is not a command" [ $? = 0 ]
+fin 'git commit -m "x; then gh pr merge 52"' 2>/dev/null; t "task done: a separator inside quotes is not a command" [ $? = 0 ]
+fin "$(printf '%s\n' "git commit -F - <<'EOF'" 'needs: if gh pr checks 53 --watch; then gh pr merge 53' 'EOF')" 2>/dev/null
+t "task done: a heredoc body is not a command" [ $? = 0 ]
 fin 'echo "then run gh pr merge 46"; grep -n "gh pr view" f' 'MERGED' 2>/dev/null; t "task done: quoted text is not a command" [ $? = 0 ]
 fin 'git mv .ai/plans/active/p.md .ai/plans/completed/' 2>/dev/null; t "task done: a plan moved to completed" [ $? = 2 ]
 fin 'gh pr merge 47' '' a9 2>/dev/null; t "task done: a subagent is not asked for /clear" [ $? = 0 ]
