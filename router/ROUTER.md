@@ -526,6 +526,7 @@ PROTOTYPE, ONBOARDING or MAINTENANCE; `<level>` is low, medium, high or critical
 bold or other markup, nothing else on the line, and write it before the work
 starts, even when a prose reply also names the workflow. A re-route during the
 task writes a new line ending in ` escalated-from=<previous WORKFLOW>`.
+The PR body repeats the last route line; CI checks it (`rules/git.md`, section 12).
 An operation that writes data (running an update job, a migration, a
 backfill) is a change and gets a line too, usually SIMPLE. Questions with no
 change need no line.

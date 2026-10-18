@@ -235,7 +235,10 @@ Before committing, inspect changed files for accidental secrets.
 
 When a task's work is complete and its verification has passed, the worker pushes
 its own feature branch and opens a pull request against the base branch, with the
-verification evidence in the PR body. Pushing the worker's own branch and opening
+verification evidence in the PR body. The PR body also carries the task's route
+line (`Lodestar route: <WORKFLOW> risk=<level>`, `router/ROUTER.md`) and, for
+BUILD_REVIEW and up, `Lodestar review: <verdict>, <who>, <commit>`; CI fails
+without them (`ci-checks.sh`). Pushing the worker's own branch and opening
 a PR is allowed by default. Pushing directly to a shared or base branch is not.
 Commit, push and open the PR without asking the owner; report it in one line.
 Push before stopping to wait for the owner too: a commit only on this machine
