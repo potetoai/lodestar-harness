@@ -35,9 +35,10 @@ fi
 
 # A finished task is the natural point for a fresh session. Seen from the
 # command: the agent merged a PR (gh pr merge, not --auto, no error printed),
-# saw the owner's merge (gh pr view printing MERGED), or moved a plan to
-# completed. Once per PR or plan. A subagent reports to its dispatcher instead.
-# jq runs only when the text appears at all.
+# saw the owner's merge of a PR this session opened (gh pr view printing
+# MERGED; reading an old or another project's PR is not a finished task), or
+# moved a plan to completed. Once per PR or plan. A subagent reports to its
+# dispatcher instead. jq runs only when the text appears at all.
 if [ -z "$agent" ] && [[ $input == *'gh pr '* || $input == *'plans/completed'* ]]; then
   finished=$(jq -r '(.tool_input.command // "" | strings) as $c
     | ((.tool_response // "") | if type == "string" then . else tostring end) as $r
@@ -45,10 +46,36 @@ if [ -z "$agent" ] && [[ $input == *'gh pr '* || $input == *'plans/completed'* ]
       ($c | [match(run("gh pr (merge|view)\\s+#?([0-9]+)")).captures[2].string] | first // "") as $n
     | if ($c | test(run("gh pr merge"))) and ($c | test("--auto") | not)
          and ($r | test("GraphQL:|error|failed|not mergeable"; "i") | not) then "PR \($n) merged"
-      elif ($c | test(run("gh pr view"))) and ($r | test("MERGED")) then "PR \($n) merged"
+      elif ($c | test(run("gh pr create"))) then
+        ($r | [scan("github\\.com/[^/\\s\"\\\\]+/[^/\\s\"\\\\]+/pull/[0-9]+")] | first // empty | "opened \(.)")
+      elif ($c | test(run("gh pr view"))) and ($r | test("MERGED")) then
+        "view\t\($c | [match(run("gh pr view([^;&|\\n]*)")).captures[1].string] | first)"
       elif ($c | test(run("(git )?mv [^;&|\\n]*plans/active/[^;&|\\n]*plans/completed"))) then
         "plan closed: \($c | [scan("plans/active/[^ ;&|]+")] | first // "")"
       else empty end' <<<"$input" 2>/dev/null | tr -d '\r')
+  # PRs this session opened, one owner/repo/pull/N per line. A view counts
+  # when it names one of them: by link, by -R repo and number, or by number
+  # alone (the same number in another repo is not told apart); a view with
+  # neither (the branch's PR) counts once the session opened any PR.
+  case $finished in
+    'opened '*)
+      if reminder_state && mkdir -p "$reminder_dir" 2>/dev/null; then
+        echo "${finished#opened github.com/}" >> "$reminder_dir/$reminder_key-opened"
+      fi
+      finished= ;;
+    view$'\t'*)
+      args=${finished#view$'\t'}; finished=
+      reminder_state && opened=$(cat "$reminder_dir/$reminder_key-opened" 2>/dev/null) && [ -n "$opened" ] || opened=
+      url=$(grep -oE 'github\.com/[^/ ]+/[^/ ]+/pull/[0-9]+' <<<"$args" | head -n1)
+      repo=$(grep -oE '(-R|--repo)[= ]+[^ ]+' <<<"$args" | head -n1 | sed -E 's/^(-R|--repo)[= ]+//; s#^(https?://)?github\.com/##')
+      n=$(grep -oE '(^| )#?[0-9]+( |$)' <<<"$args" | head -n1 | tr -dc '0-9')
+      if [ -n "$url" ]; then hit=$(grep -Fx "${url#github.com/}" <<<"$opened")
+      elif [ -n "$n" ] && [ -n "$repo" ]; then hit=$(grep -Fx "$repo/pull/$n" <<<"$opened")
+      elif [ -n "$n" ]; then hit=$(grep -E "/pull/$n\$" <<<"$opened")
+      elif [ -n "$repo" ]; then hit=
+      else hit=$opened; n=${opened##*/pull/}; fi
+      [ -n "$hit" ] && finished="PR ${n:-${url##*/}} merged" ;;
+  esac
   if [ -n "$finished" ]; then
     reminder_claim task-done "$finished"; claimed=$?
     if [ "$claimed" = 0 ]; then
