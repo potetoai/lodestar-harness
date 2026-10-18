@@ -187,6 +187,15 @@ Every rule:
   it lists `reported` `lodestar-`/`orca-` rows of those projects that are not
   in `~/.lodestar/seen.txt`. After fixing one (or deciding it is not a
   Lodestar bug), add its `project|date|tag` line to `seen.txt`.
+- **Daily GitHub sweep:** in lodestar-harness, the first session of the day
+  also runs `gh-sweep.sh` (global hook folder). It reads each listed project's
+  GitHub and shows what is new since the last sweep: PRs merged with no route
+  line or (BUILD_REVIEW and up) no review line, PRs closed unmerged, open PRs
+  with failing checks, a failed CI run on main. Read only; no tokens spent.
+  Each project's last good sweep is kept in `~/.lodestar/gh-sweep.txt`; a
+  project whose sweep fails (offline) keeps its old time, and the next
+  session retries it. Find the cause: a Lodestar fault is fixed here, a project
+  slip goes to that project's session as a prompt for the owner.
 - **Sweep:** maintenance looks through git and PR history for mistakes the hook
   missed (fix commits on fresh code, reverts, PRs with requested changes).
 - **Second time = machine rule.** When a tag appears a second time, the

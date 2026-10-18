@@ -17,6 +17,8 @@ fi
 trap 'rm -rf "$tmp"; command -v powershell.exe >/dev/null && LK=$regkey pshell "Remove-Item -LiteralPath \$env:LK -Recurse -Force"' EXIT
 # The global hook keeps a bug inbox in the home folder; never touch the real one.
 export LODESTAR_INBOX=$tmp/inbox
+# The daily GitHub sweep (gh-sweep.sh) already ran today, so other tests never call gh.
+mkdir -p "$LODESTAR_INBOX"; echo "$(date +%F)" > "$LODESTAR_INBOX/gh-sweep.txt"
 failed=0
 pass() { echo "PASS $1"; }
 bad()  { echo "FAIL $1"; failed=1; }
@@ -271,6 +273,40 @@ t "per-prompt gate in lodestar-harness does not list bug reports" [ -z "$out" ]
 grep -oE '[^ ]*\|2026-10-1[57]\|lodestar-[a-z-]+' <<<"$(remind "$tmp/self")" | sed 's/$/\r/' >> "$LODESTAR_INBOX/seen.txt"
 out=$(remind "$tmp/self")
 t "global hook stops listing reports marked seen (CRLF seen file too)" bash -c '! grep -q "reported Lodestar bugs" <<<"$1"' _ "$out"
+# Daily GitHub sweep, with a fake gh that prints canned JSON (fails in folders matching FAKE_GH_FAIL).
+fk=$tmp/fakegh; mkdir -p "$fk"
+printf '#!/bin/sh\n[ -n "$FAKE_GH_FAIL" ] && pwd | grep -q "$FAKE_GH_FAIL" && exit 1\ncat "%s/$1.json"\n' "$fk" > "$fk/gh"; chmod +x "$fk/gh"
+pr() { printf '{"number":%s,"state":"%s","body":"%s","mergedAt":"%s","closedAt":"%s","updatedAt":"%s","author":%s,"statusCheckRollup":[%s]}' "$@"; }
+new=2026-05-01T00:00:00Z old=2025-01-01T00:00:00Z me='{"login":"me"}'
+echo "[$(pr 9 MERGED 'no line' $new $new $new "$me" ''),
+$(pr 8 MERGED 'Lodestar route: BUILD_REVIEW risk=low' $new $new $new "$me" ''),
+$(pr 7 MERGED 'Lodestar route: BUILD_REVIEW risk=low\r\nLodestar review: pass, reviewer, abc' $new $new $new "$me" ''),
+$(pr 6 MERGED 'Lodestar route: SIMPLE risk=low' $new $new $new "$me" ''),
+$(pr 5 MERGED 'no line' $old $old $old "$me" ''),
+$(pr 4 CLOSED x '' $new $new null ''),
+$(pr 3 OPEN x '' '' $new "$me" '{"conclusion":"SUCCESS"},{"conclusion":"FAILURE"}'),
+$(pr 2 OPEN x '' '' $new "$me" '{"conclusion":"SUCCESS"},{"conclusion":"","status":"IN_PROGRESS"}'),
+$(pr 10 OPEN x '' '' $new "$me" '{"state":"FAILURE"}'),
+$(pr 1 MERGED 'no line' $new $new $new '{"login":"app/dependabot"}' '')]" > "$fk/pr.json"
+echo '[{"conclusion":"failure","createdAt":"'$new'","workflowName":"CI"},{"conclusion":"success","createdAt":"'$new'","workflowName":"Lint"},
+{"conclusion":"failure","createdAt":"2026-04-01T00:00:00Z","workflowName":"Lint"}]' > "$fk/run.json"
+sweep() { PATH="$fk:$PATH" CLAUDE_PROJECT_DIR=$tmp/self bash "$g" </dev/null; }
+pself=$(cd "$tmp/self" && { pwd -W 2>/dev/null || pwd; }); echo "$pself" >> "$LODESTAR_INBOX/projects.txt"
+ppy=$(tr -d '\r' < "$LODESTAR_INBOX/projects.txt" | grep '/py$' | head -n1)
+st=$LODESTAR_INBOX/gh-sweep.txt
+printf '2000-01-01\n2026-01-01T00:00:00Z %s\n2026-01-01T00:00:00Z %s\n' "$ppy" "$pself" > "$st"
+out=$(FAKE_GH_FAIL=. sweep)
+t "gh sweep is silent and keeps each project's time when gh fails" bash -c '! grep -q "GitHub sweep" <<<"$1" && [ "$(grep -c "^2026-01-01T" "$2")" = 2 ] && grep -q "^retry$" "$2"' _ "$out" "$st"
+out=$(FAKE_GH_FAIL=/self sweep)
+t "gh sweep lists merged PRs with no route line, once per project" bash -c '[ "$(grep -c "/py: PR merged with no route line: #9$" <<<"$1")" = 1 ]' _ "$out"
+t "gh sweep lists a reviewed workflow merged with no review line" grep -q "merged as BUILD_REVIEW with no review line: #8$" <<<"$out"
+t "gh sweep lists PRs closed unmerged (null author too), failing open PRs, main CI failing" bash -c 'grep -q "closed without merge.*: #4$" <<<"$1" && grep -q "failing checks: #3 #10$" <<<"$1" && grep -q "CI CI failed on main$" <<<"$1"' _ "$out"
+t "gh sweep skips old, bot, passing, in-progress, reviewed PRs and a workflow green again" bash -c '! grep -qE "#(7|6|5|2|1)( |$)|Lint" <<<"$1"' _ "$out"
+t "gh sweep keeps the old time of a project that failed, and retries" bash -c 'grep -qxF "2026-01-01T00:00:00Z $3" "$2" && ! grep -q "^2026-01-01T.*/py$" "$2" && grep -q "^retry$" "$2" && ! grep -q "/self:" <<<"$1"' _ "$out" "$st" "$pself"
+out=$(sweep)
+t "gh sweep retry shows the failed project only, from its old time" bash -c 'grep -q "/self: PR merged with no route line: #9$" <<<"$1" && ! grep -q "/py:" <<<"$1" && grep -q "^$(date +%F)$" "$2"' _ "$out" "$st"
+out=$(sweep)
+t "gh sweep runs once a day" bash -c '! grep -q "GitHub sweep" <<<"$1"' _ "$out"
 rm "$tmp/py/.ai/handoff.md"
 rm "$tmp/py/.ai/invariants.md"
 out=$(remind "$tmp/py"); rc=$?

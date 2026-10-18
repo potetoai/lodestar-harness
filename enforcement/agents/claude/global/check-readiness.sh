@@ -42,6 +42,7 @@ if [ -f enforcement/bootstrap.sh ]; then             # lodestar-harness itself
     echo "Tell the owner. Fix each in lodestar-harness (or decide it is not a Lodestar bug),"
     echo "then add its project|date|tag line to $inbox/seen.txt so it stops showing."
   fi
+  bash "$here/gh-sweep.sh"     # once a day: what GitHub shows since the last sweep
   exit 0
 fi
 if [ "$mode" != --prompt ] && [ -f .ai/feedback-log.md ]; then
