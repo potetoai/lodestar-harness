@@ -82,6 +82,7 @@ if [ -z "$agent" ] && [[ $input == *'gh pr '* || $input == *'plans/completed'* ]
       cat >&2 <<EOF
 A task just finished ($finished). This is the point for a fresh session: every turn re-reads the whole context.
 - Finish the step you are on; do not start a new task in this session.
+- A plan this PR finished leaves .ai/plans/active/: git mv it to completed/ (a small PR if not done in this one).
 - Overwrite .ai/handoff.md (short, English: state, open items, next step, do-not-do).
 - Tell the owner, in their language: the task is done; type /clear, then "continue" or the next task.
 If the owner already asked for more in this turn, finish that first, then say it.
