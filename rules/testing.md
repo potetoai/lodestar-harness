@@ -169,7 +169,9 @@ automatically; when unsure, select it.
    approved and tests are locked, a hook (`sensitive-gate.sh`) blocks edits to
    non-test files in `sensitive_paths`; CI fails a PR whose sensitive changes
    have no approved plan.
-3. **Tests first (tester role).** One test per criterion. Run them and
+3. **Tests first (tester role).** Only after step 2: tests written before
+   the approval are red with no locked round, so the stop hook holds the
+   agent at every change. One test per criterion. Run them and
    confirm they **fail** before any implementation; a test that passes on the
    old code proves nothing. The tests must fail **only** because the behavior
    is missing: run `make lint` on them first. List the test files in
