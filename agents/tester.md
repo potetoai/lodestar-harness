@@ -45,6 +45,15 @@ In high-risk tasks the tester works **before** the builder
   affected tests and commit a new `Tests-First:` round the same way.
 - Do not write the implementation.
 
+## Reading the plan
+
+- The brief carries the approved acceptance criteria and names the plan
+  section for this step. Work from the brief; do not read the whole plan.
+- If the brief is not enough, read only that section (Grep its heading,
+  then Read with offset and limit), once.
+- Write the plan's progress log once, at the end, in one Edit, just before
+  the commit.
+
 ## Editing
 
 A hook lints each file after every edit, so a half-done file fails (an

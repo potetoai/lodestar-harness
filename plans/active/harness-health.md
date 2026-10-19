@@ -49,7 +49,8 @@ does not read code. Prefer removing to adding.
 
 Rule in `enforcement/README.md` §3: raise `VERSION` at most once every 7-14
 days; release at once only for a fault that blocks work or a security fix.
-The tester plan-reads fix (owner yes, 2026-10-19) goes in the next batch.
+The tester plan-reads fix (owner yes, 2026-10-19) shipped the same day:
+it lives in `agents/` and the Router, which projects read from here.
 
 Done when: the rule is merged.
 
