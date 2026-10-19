@@ -114,6 +114,15 @@ session-start text, about 1.9k; its always-on rule conflicts with the Router).
 Kept on by the owner: the claude.ai skills and connectors (about 3.9k).
 Base after: 42.6k at turn one (51.2k before, about 8.6k less).
 
+Record (2026-10-19): `/context` in a fresh App01 session fell from 34.2k to
+17.9k (system tools 23.8k to 11.7k, skills 4.8k to 2.1k, Claude Docs MCP
+1.3k to 0), about 8% of cost at 5% per 10k. Changes, each undone by removing
+the line: in `~/.claude/settings.json`, `"permissions": {"deny":
+["PowerShell"]}` (the Bash tool stays), `"disableClaudeAiConnectors": true`
+and `"syncClaudeAiSkills": false`; in a project's gitignored
+`.claude/settings.local.json`, `"enableArtifact": false`. Confirm with the
+billed turn-one number (first bullet above).
+
 ## When to run step 3 again
 
 - After updating lodestar-harness (`git pull`): the Lodestar part of
