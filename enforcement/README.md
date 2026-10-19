@@ -99,6 +99,12 @@ a project failure: run it again with Git Bash.
 
 ## 3. Upgrade a project after the templates change
 
+Release cadence (owner decision 2026-10-19): batch template changes and
+raise `VERSION` at most once every 7-14 days, so each project upgrades
+rarely. Merged changes wait on main until the next batch. Release at once
+only for a fault that blocks work in a project (a hook blocking correct
+work, a false approval, a broken install) or a security fix.
+
 Raise `VERSION`, then in each project:
 
 ```bash
