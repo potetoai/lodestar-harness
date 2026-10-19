@@ -33,7 +33,7 @@ and the owner dropped shortening for tokens on 2026-10-12.
   keeps it.
 - `bash scripts/check-links.sh` passes after each phase. No file under
   `enforcement/` changes, so no template bump.
-- Do not touch `plans/active/subagent-cost.md` or `agent-pitfalls.md` text
+- Do not touch `plans/completed/subagent-cost.md` or `agent-pitfalls.md` text
   beyond link paths while they are measuring.
 
 ## 3. Phases
@@ -42,7 +42,7 @@ and the owner dropped shortening for tokens on 2026-10-12.
 
 Depends on Q1. With (a): move the four files to `plans/completed/ideas/`,
 update the links in `AGENTS.md`, `plans/completed/token-efficiency.md` and
-`plans/active/subagent-cost.md` (path only), and say in `AGENTS.md` that
+`plans/completed/subagent-cost.md` (path only), and say in `AGENTS.md` that
 `plans/ideas/` holds unrated ideas only.
 
 Done when: `plans/ideas/` holds no rated plan; links pass.
