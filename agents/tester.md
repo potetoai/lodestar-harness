@@ -29,7 +29,8 @@ In high-risk tasks the tester works **before** the builder
 
 - Start from the acceptance criteria the owner approved (they replied
   "duyệt" or "approve"; the approval is in `.ai/approvals.log`). Write one test per
-  criterion, and nothing that is not in the criteria.
+  criterion, and nothing that is not in the criteria. Write no test before
+  that approval: red tests then hold every stop (`make verify` fails).
 - Run the tests and confirm they **fail** on the current code. Report the
   failing output.
 - Make the tests lint-clean (`make lint`) before locking them: once locked,
