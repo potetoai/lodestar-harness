@@ -666,6 +666,9 @@ route 'Fix.' >/dev/null; t "PR: no route line fails" [ $? = 1 ]
 route '**Lodestar route: BUILD_REVIEW risk=low**' >/dev/null; t "PR: a route line with markup fails" [ $? = 1 ]
 out=$(route $'Fix.\nLodestar route: SIMPLE risk=low'); rc=$?
 t "PR: SIMPLE with 3 files fails" bash -c '[ $1 = 1 ] && grep -q "3 files changed" <<<"$2"' _ "$rc" "$out"
+out=$(route $'Lodestar route: SIMPLE risk=low
+Lodestar review: APPROVE, fresh reviewer, abc123'); rc=$?
+t "PR: SIMPLE with 3 files and a review line still fails, and says to change the route" bash -c '[ $1 = 1 ] && grep -q "change the route line" <<<"$2"' _ "$rc" "$out"
 route $'Lodestar route: BUILD_REVIEW risk=low\nFix.' >/dev/null; t "PR: BUILD_REVIEW without a review line fails" [ $? = 1 ]
 route $'Lodestar route: BUILD_REVIEW risk=low\r\nLodestar review: APPROVE, fresh reviewer, abc123\r\n' >/dev/null; t "PR: BUILD_REVIEW with a review line passes (CRLF text)" [ $? = 0 ]
 route $'Lodestar route: SIMPLE risk=low\nLodestar route: BUILD_REVIEW risk=low escalated-from=SIMPLE\nLodestar review: APPROVE' >/dev/null; t "PR: the last route line counts (escalation)" [ $? = 0 ]
