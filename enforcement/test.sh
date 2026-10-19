@@ -174,6 +174,11 @@ echo e > "$c/a.txt"; rec sub; n=$(runs); cstop
 t "a sub-make's verify records no pass" [ "$(runs)" = $((n + 1)) ]
 echo f > "$c/a.txt"; rec verify; git -C "$c" -c user.name=t -c user.email=t@t commit -qam step; n=$(runs); cstop
 t "stop hook skips make verify after the agent ran it, then committed" [ $? = 0 -a "$(runs)" = "$n" ]
+# An edit of the same size in the same clock tick as the index write: git
+# trusts the file times only while the index copy keeps its own time.
+touch -d @1700000000 "$c/a.txt"; git -C "$c" update-index -q --refresh; touch -d @1700000000 "$c/.git/index"
+rec verify; n=$(runs); echo g > "$c/a.txt"; touch -d @1700000000 "$c/a.txt"; cstop
+t "stop hook sees a same-size edit in the index's clock tick" [ "$(runs)" = $((n + 1)) ]
 # The project may be a subfolder of the repo (git prints paths from the root).
 q=$tmp/monorepo; mkdir -p "$q/sub"; git -C "$q" init -q; cp "$p/Makefile" "$q/sub/"
 echo a > "$q/sub/code.txt"; git -C "$q" add -A; git -C "$q" -c user.name=t -c user.email=t@t commit -qm init
