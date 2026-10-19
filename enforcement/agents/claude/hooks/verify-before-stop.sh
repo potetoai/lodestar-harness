@@ -15,7 +15,7 @@ held=$(git rev-parse --absolute-git-dir 2>/dev/null) && held=$held/lodestar-veri
 state() { # the working files (tracked and untracked, not ignored) as a tree, the failure
   # A copy of the index, so the real one is untouched. A commit does not change
   # the tree: verify, then commit, then stop does not run verify again.
-  cp "${held%/*}/index" "$held.index" 2>/dev/null
+  cp -p "${held%/*}/index" "$held.index" 2>/dev/null
   ( cd "$(git rev-parse --show-toplevel)" && export GIT_INDEX_FILE=$held.index &&
     git add -A . >/dev/null 2>&1 && git write-tree ) || echo "no tree $$ $RANDOM $(date +%s%N)"
   rm -f "$held.index"
