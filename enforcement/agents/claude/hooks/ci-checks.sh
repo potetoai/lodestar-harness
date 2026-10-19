@@ -235,8 +235,10 @@ route_check() {
     SIMPLE|PROTOTYPE|MAINTENANCE|ONBOARDING)
       if [[ $wf == SIMPLE || $wf == PROTOTYPE ]] && [[ $risk == high || $risk == critical ]]; then
         fail "$wf with risk=$risk: high risk needs at least BUILD_REVIEW (router/ROUTER.md, rule 16)."; return
-      elif [ "$n" -ge 3 ] && { [ $wf = SIMPLE ] || [ $reviewed = 0 ]; }; then
-        fail "$wf, but $n files changed (outside .ai/ and, for MAINTENANCE and ONBOARDING, Lodestar's own files): 3 or more need at least BUILD_REVIEW with a review (router/ROUTER.md, SIMPLE), or for $wf a 'Lodestar review:' line."; return
+      elif [ "$n" -ge 3 ] && [ $wf = SIMPLE ]; then
+        fail "SIMPLE, but $n files changed (outside .ai/): 3 or more need at least BUILD_REVIEW with a review (router/ROUTER.md, SIMPLE). A 'Lodestar review:' line does not make SIMPLE pass; change the route line."; return
+      elif [ "$n" -ge 3 ] && [ $reviewed = 0 ]; then
+        fail "$wf, but $n files changed (outside .ai/ and, for MAINTENANCE and ONBOARDING, Lodestar's own files): 3 or more need a review. Add a line: 'Lodestar review: <verdict>, <who>, <commit>'."; return
       fi ;;
     *)
       if [ $reviewed = 0 ]; then
