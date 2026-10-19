@@ -446,6 +446,9 @@ t "multi: several stacks without subdirs is refused" [ $? = 1 ]
 p=$tmp/pr; mkdir -p "$p/app" "$p/tests" "$p/.ai"; cd "$p"
 g() { git -c user.name=t -c user.email=t@t -c core.autocrlf=false "$@"; }
 g init -q -b main
+# ci-checks.sh calls plain git; a Windows global core.autocrlf=true would
+# restore files as CRLF and leave them modified for g.
+g config core.autocrlf false
 printf 'sensitive_paths:\n  - app/money.py\n  - app/db/\n' > .ai/project.md
 echo 'x = 1' > app/money.py; echo 'y = 1' > app/ui.py; echo 'def test_a(): pass' > tests/test_a.py
 mkdir -p .claude/hooks; cp "$here/agents/claude/hooks/lodestar-lib.sh" .claude/hooks/
