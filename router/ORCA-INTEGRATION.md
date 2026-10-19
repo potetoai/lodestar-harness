@@ -457,7 +457,7 @@ Observable Acceptance:
 
 A subagent pays for its whole context again on every call, so its cost
 follows the number of calls it makes, not the length of its brief (measured
-2026-10-12: `plans/active/subagent-cost.md`, section 2). The brief carries
+2026-10-12: `plans/completed/subagent-cost.md`, section 2). The brief carries
 the material, so the run does not spend calls finding it. This changes where
 the run finds things, not how much it reads or checks: the run still opens
 whatever a finding needs.

@@ -25,7 +25,7 @@ stay.
   shortening `router/ROUTER.md` (627 lines), `router/ORCA-INTEGRATION.md`
   (900) or `rules/testing.md` (687) does not pay off in tokens. Long files
   could still cost quality (rules missed), but no evidence of that exists yet.
-- `plans/active/subagent-cost.md` phase 4 is measuring critic and reviewer
+- `plans/completed/subagent-cost.md` phase 4 is measuring critic and reviewer
   runs until 10 critic runs since 2026-10-13. Changing subagent settings
   before then mixes up its numbers.
 - No glossary exists: `project/.ai/project.md` (508 lines) has no section for
@@ -161,7 +161,7 @@ one file (phase 0); and a maintenance dry run stays within 5 excerpts.
 
 ### Phase 4 — Effort by role (item 1, only if Q2 is yes)
 
-Starts after `plans/active/subagent-cost.md` phase 4 has its numbers.
+Starts after `plans/completed/subagent-cost.md` phase 4 has its numbers.
 
 - Check whether transcripts record the effort level. If yes, add it as a
   column to `usage-report.py` and compare cost and findings per role.
