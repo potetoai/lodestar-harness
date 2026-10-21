@@ -33,7 +33,7 @@ SCAN=(. ":(exclude)*.md" ":(exclude).claude/hooks/*" ":(exclude).github/workflow
 # Keep this pattern in sync with lint-file.sh.
 SUPPRESS='(#[[:space:]]*noqa|#[[:space:]]*type:[[:space:]]*ignore|#[[:space:]]*pylint:[[:space:]]*disable|eslint-disable|oxlint-disable|@ts-ignore|@ts-expect-error|//[[:space:]]*nolint)'
 
-changed=$(git diff --name-only "$from" HEAD)
+changed=$(git -c core.quotepath=off diff --name-only "$from" HEAD)
 
 # 1. Sensitive paths need tests.
 patterns=$(sed -n '/^sensitive_paths:/,/^[^[:space:]-]/p' .ai/project.md 2>/dev/null |
@@ -62,7 +62,7 @@ for c in $(git rev-list --no-merges "$from..HEAD"); do
     else
       hits+=("$f")
     fi
-  done < <(git diff-tree --root --no-commit-id --name-only -r "$c")
+  done < <(git -c core.quotepath=off diff-tree --root --no-commit-id --name-only -r "$c")
 done
 mapfile -t hits < <(printf '%s\n' "${hits[@]}" | sed '/^$/d' | sort -u)
 if [ ${#hits[@]} -gt 0 ]; then
@@ -90,20 +90,21 @@ fi
 # Tests-first order, from history: whatever tool made the edit (Edit, a Bash
 # script...), a commit changing sensitive code needs, at its parent, an
 # owner-approved plan and a lock that lists a test changed on this branch
-# (the sensitive-gate.sh rule), or a plan with a "No-Test-Reason:" line.
+# (the sensitive-gate.sh rule), or a plan changed on this branch with a
+# "No-Test-Reason:" line (an old plan from main does not excuse new code).
 for c in $(git rev-list --reverse --no-merges "$from..HEAD"); do
   git log -1 --format=%B "$c" | grep -q '^No-Test-Reason:' && continue
   hit=""
   while IFS= read -r f; do [ -n "$f" ] && sensitive "$f" && { hit=$f; break; }; done \
-    < <(git diff-tree --root --no-commit-id --name-only -r "$c")
+    < <(git -c core.quotepath=off diff-tree --root --no-commit-id --name-only -r "$c")
   [ -n "$hit" ] || continue
-  ok=0 before=$(git diff --name-only "$from" "$c^")
+  ok=0 before=$(git -c core.quotepath=off diff --name-only "$from" "$c^" 2>/dev/null)
   lock=$(git show "$c^:.ai/test-lock" 2>/dev/null | lock_paths)
   while IFS= read -r p; do
     [[ $p == .ai/plans/active/*.md ]] && plan_approved_at "$c^" "$p" || continue
-    git show "$c^:$p" | grep -q '^No-Test-Reason:' && { ok=1; break; }
+    grep -qxF -- "$p" <<<"$before" && git show "$c^:$p" | grep -q '^No-Test-Reason:' && { ok=1; break; }
     [ -n "$lock" ] && grep -qixFf <(printf '%s\n' "$lock") <<<"$before" && { ok=1; break; }
-  done < <(git ls-tree --name-only "$c^" .ai/plans/active/)
+  done < <(git -c core.quotepath=off ls-tree --name-only "$c^" .ai/plans/active/ 2>/dev/null)
   if [ $ok = 0 ]; then
     fail "Commit $(git log -1 --format='%h %s' "$c") changes $hit before its tests were locked."
     echo "   Tests-first: commit the approved plan, the failing tests and .ai/test-lock first (trailer"
@@ -138,7 +139,7 @@ fresh_relock_approval() {
     now=$(git show "$c:$p" 2>/dev/null | criteria_hash)
     then=$(git show "$previous:$p" 2>/dev/null | criteria_hash)
     [ "$now" != "$then" ] && ! hash_approved "$now" <<<"$log" && return 0
-  done < <(git diff-tree --root --no-commit-id --name-only -r "$c")
+  done < <(git -c core.quotepath=off diff-tree --root --no-commit-id --name-only -r "$c")
   return 1
 }
 

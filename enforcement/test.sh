@@ -488,6 +488,9 @@ check; t "PR: sensitive change after the approved plan and locked tests passes" 
 newbranch b2s; mkplan money3 "money is exact"; approve; echo 'def test_d(): pass' >> tests/test_a.py; echo tests/test_a.py > .ai/test-lock
 echo 'x = 5' > app/money.py; g add -A; g commit -qm "plan, tests and money at once"
 check; t "PR: plan, tests and sensitive code in one commit fails (no proof tests came first)" [ $? = 1 ]
+newbranch b2v; mkplan "sửa-tiền" "money is exact"; approve; echo 'def test_e(): pass' >> tests/test_a.py; echo tests/test_a.py > .ai/test-lock
+g add -A; g commit -qm "tests first"; echo 'x = 6' > app/money.py; g commit -qam "money"
+check; t "PR: tests-first order holds with a non-ASCII plan name" [ $? = 0 ]
 newbranch b3; echo 'y = 2' > app/ui.py; g commit -qam "ui only"
 check; t "PR: non-sensitive change passes" [ $? = 0 ]
 newbranch b4; echo 'import os  # noqa: F401' >> app/ui.py; g commit -qam "noqa"
