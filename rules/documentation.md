@@ -78,6 +78,7 @@ none were required.
   criterion in their language with the English line next to it. The owner
   approves the file, not the translation.
 - Ask for the approval word that fits: `duyệt` when `owner_language` is `vi`,
-  `approve` otherwise. Both work in every project.
+  `approve` otherwise. Both work in every project. The owner types it in the
+  chat; an answer picked in AskUserQuestion is not recorded.
 - Files written before this rule may stay in another language. Do not
   translate an approved plan's criteria: that voids the approval.

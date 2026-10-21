@@ -162,13 +162,17 @@ automatically; when unsure, select it.
    criteria, not test code. A hook (`approval-record.sh`) records that
    approval with a hash of the criteria in `.ai/approvals.log`; the agent
    never writes that file. Only a message that starts with the approval word
-   counts ("để mình duyệt" does not). With several plans waiting, the owner
+   counts ("để mình duyệt" does not), and only one the owner types: an answer
+   picked in a question box (AskUserQuestion) is not recorded, so never ask
+   for approval that way. With several plans waiting, the owner
    names each one ("approve fix-login", the file name without its date); the
    hook lists the names.
    Editing the criteria afterwards needs a new approval. Until the criteria are
    approved and tests are locked, a hook (`sensitive-gate.sh`) blocks edits to
    non-test files in `sensitive_paths`; CI fails a PR whose sensitive changes
-   have no approved plan.
+   have no approved plan, or come in a commit before it and the locked tests.
+   The hook sees only the Edit and Write tools: change sensitive files with
+   those, never through a Bash or Python script.
 3. **Tests first (tester role).** Only after step 2: tests written before
    the approval are red with no locked round, so the stop hook holds the
    agent at every change. One test per criterion. Run them and

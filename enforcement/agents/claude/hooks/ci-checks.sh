@@ -2,7 +2,8 @@
 # Managed by lodestar-harness. Edit in lodestar-harness/enforcement, not by hand.
 # Pull-request checks (rules/testing.md, rules/enforcement.md):
 #   1. A change to sensitive_paths needs a test change, or a commit trailer
-#      "No-Test-Reason: <reason>".
+#      "No-Test-Reason: <reason>". Each commit changing it must come after
+#      the approved plan and the locked tests (tests-first order).
 #   2. A new lint suppression (noqa, eslint-disable, ts-ignore...) needs a
 #      reason on the same line: "# noqa: F401 -- <reason>".
 #   3. Every "Tests-First:" commit includes a plan whose criteria the owner
@@ -86,6 +87,29 @@ if [ ${#hits[@]} -gt 0 ]; then
 else
   echo "✅ no sensitive paths changed"
 fi
+# Tests-first order, from history: whatever tool made the edit (Edit, a Bash
+# script...), a commit changing sensitive code needs, at its parent, an
+# owner-approved plan and a lock that lists a test changed on this branch
+# (the sensitive-gate.sh rule), or a plan with a "No-Test-Reason:" line.
+for c in $(git rev-list --reverse --no-merges "$from..HEAD"); do
+  git log -1 --format=%B "$c" | grep -q '^No-Test-Reason:' && continue
+  hit=""
+  while IFS= read -r f; do [ -n "$f" ] && sensitive "$f" && { hit=$f; break; }; done \
+    < <(git diff-tree --root --no-commit-id --name-only -r "$c")
+  [ -n "$hit" ] || continue
+  ok=0 before=$(git diff --name-only "$from" "$c^")
+  lock=$(git show "$c^:.ai/test-lock" 2>/dev/null | lock_paths)
+  while IFS= read -r p; do
+    [[ $p == .ai/plans/active/*.md ]] && plan_approved_at "$c^" "$p" || continue
+    git show "$c^:$p" | grep -q '^No-Test-Reason:' && { ok=1; break; }
+    [ -n "$lock" ] && grep -qixFf <(printf '%s\n' "$lock") <<<"$before" && { ok=1; break; }
+  done < <(git ls-tree --name-only "$c^" .ai/plans/active/)
+  if [ $ok = 0 ]; then
+    fail "Commit $(git log -1 --format='%h %s' "$c") changes $hit before its tests were locked."
+    echo "   Tests-first: commit the approved plan, the failing tests and .ai/test-lock first (trailer"
+    echo "   'Tests-First: <task>'), then the code in a later commit (rules/testing.md, \"Tests-first mode\")."
+  fi
+done
 
 # 2. New lint suppressions need a reason (" -- <reason>" on the same line).
 new=$(git diff -U0 "$from" HEAD -- "${SCAN[@]}" | awk -v re="$SUPPRESS" '
