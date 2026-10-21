@@ -481,7 +481,16 @@ check; t "PR: plan the owner never approved fails" [ $? = 1 ]
 printf 'Approved by the owner: 2026-09-29\n' >> .ai/plans/active/money.md; g commit -qam "agent writes its own approval line"
 check; t "PR: an approval line written by the agent does not count" [ $? = 1 ]
 approve; g add -A; g commit -qm "owner approved"
-check; t "PR: sensitive change with test and owner-approved plan passes" [ $? = 0 ]
+check; t "PR: code committed before its plan and locked tests fails (tests-first order)" [ $? = 1 ]
+newbranch b2t; mkplan money2 "money is exact"; approve; echo 'def test_c(): pass' >> tests/test_a.py; echo tests/test_a.py > .ai/test-lock
+g add -A; g commit -qm "tests first" -m "Tests-First: money2"; echo 'x = 4' > app/money.py; g commit -qam "money"
+check; t "PR: sensitive change after the approved plan and locked tests passes" [ $? = 0 ]
+newbranch b2s; mkplan money3 "money is exact"; approve; echo 'def test_d(): pass' >> tests/test_a.py; echo tests/test_a.py > .ai/test-lock
+echo 'x = 5' > app/money.py; g add -A; g commit -qm "plan, tests and money at once"
+check; t "PR: plan, tests and sensitive code in one commit fails (no proof tests came first)" [ $? = 1 ]
+newbranch b2v; mkplan "sửa-tiền" "money is exact"; approve; echo 'def test_e(): pass' >> tests/test_a.py; echo tests/test_a.py > .ai/test-lock
+g add -A; g commit -qm "tests first"; echo 'x = 6' > app/money.py; g commit -qam "money"
+check; t "PR: tests-first order holds with a non-ASCII plan name" [ $? = 0 ]
 newbranch b3; echo 'y = 2' > app/ui.py; g commit -qam "ui only"
 check; t "PR: non-sensitive change passes" [ $? = 0 ]
 newbranch b4; echo 'import os  # noqa: F401' >> app/ui.py; g commit -qam "noqa"
