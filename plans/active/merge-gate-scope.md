@@ -108,6 +108,12 @@ or fixed); template upgrade PRs; edits of locked tests (owner keeps them).
 - 2026-10-22: plan written; route BUILD_REVIEW risk=high (tests-first),
   owner "làm đi". Critic run; 8 findings, 7 fixed, 1 kept as a known limit.
   Owner "duyệt" on criteria ff927ee0 (2026-10-22). Tests written first.
+- 2026-10-22: guard written (`guard-install.sh`): safety list and
+  sensitive_paths kept apart so only the built-in `.claude/` frees
+  `.claude/docs/`; file change types and lock growth from the PR's files;
+  lock read from GitHub at the target tip and the PR base; gh timeout 15 s
+  to 7 s (four calls in the 30 s hook). Checked against real gh output on
+  this repo (PR #78, a 404 lock, a raw read at a branch and a commit).
 
 ## 4. Decision log
 

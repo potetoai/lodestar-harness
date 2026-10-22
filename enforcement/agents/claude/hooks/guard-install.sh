@@ -125,17 +125,23 @@ fi
 #    branch with its origin copy; none, or a fork PR: skipped.
 # 2. Owner-only merge (rules/git.md): a PR that changes (or renames away) a
 #    file in sensitive_paths, a locked test, or a safety file (hooks, CI,
-#    project rules) merges only after the owner typed "duyệt merge PR <n>"
-#    (.ai/approvals.log, written by approval-record.sh), with
-#    --match-head-commit <that head>, so GitHub refuses a newer head. No
-#    --auto: GitHub would merge later, after this check.
+#    project rules; under .claude/ all but .claude/docs/) merges only after
+#    the owner typed "duyệt merge PR <n>" (.ai/approvals.log, written by
+#    approval-record.sh), with --match-head-commit <that head>, so GitHub
+#    refuses a newer head. No --auto: GitHub would merge later, after this
+#    check. Locked tests come from .ai/test-lock on GitHub (the target
+#    branch's tip and the PR's base), never the local copy, which already
+#    holds the PR's own lines. A test the PR adds, or a lock that only gains
+#    lines, is not owner-only.
 # Known limit: a merge hidden on purpose (a script without a known extension,
 # or one written and run in the same command) is not seen; CI and the
 # owner's review of PRs stay the backstop.
 if [ -z "$why" ] && grep -qE '(^|[^[:alnum:]_-])gh(\.exe)?[[:space:]]+([^;|&]*[[:space:]])?pr[[:space:]]+merge([^[:alnum:]_-]|$)' <<<"$low"; then
   here=${cwd:-${CLAUDE_PROJECT_DIR:-.}}
   proj=${CLAUDE_PROJECT_DIR:-$here}
-  to=""; command -v timeout >/dev/null && to="timeout 15"
+  # Four gh calls per merge must fit the hook's 30 s limit: a hook that
+  # times out lets the merge run.
+  to=""; command -v timeout >/dev/null && to="timeout 7"
   if grep -qE "$gitpush" <<<"$low"; then
     why="a push in the same command as the merge changes the PR after this check."
     fix="Push in one command, then merge in the next: if gh pr checks <n> --watch; then gh pr merge <n> --merge; fi"
@@ -143,13 +149,32 @@ if [ -z "$why" ] && grep -qE '(^|[^[:alnum:]_-])gh(\.exe)?[[:space:]]+([^;|&]*[[
     why="a merge with GH_REPO set (another repo) cannot be checked from here."
     fix="Ask the owner to merge it on GitHub."
   fi
-  # Owner-only files: the safety files, then the project's sensitive_paths and
-  # locked tests, lower case, without ./ and comments. A pattern with no glob
-  # also covers the folder of that name.
-  pats=$({ printf '%s\n' .claude/ .codex/ .github/ enforcement/ .ai/project.md .ai/enforcement.json .ai/test-lock
-    [ -f "$proj/.ai/project.md" ] && sed -n '/^sensitive_paths:/,/^[^[:space:]-]/p' "$proj/.ai/project.md" | sed -n 's/^[[:space:]]*-[[:space:]]*//p'
-    [ -f "$proj/.ai/test-lock" ] && sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' "$proj/.ai/test-lock"
-  } | tr -d "\"'\r" | sed -E 's/[[:space:]]+#.*//; s/[[:space:]]+$//; s#^\./##' | tr '[:upper:]' '[:lower:]')
+  # Owner-only patterns, lower case, without ./ and comments: the safety
+  # files, the project's sensitive_paths, and (per PR, below) the locked
+  # tests.
+  norm() { tr -d "\"'\r" | sed -E -e '/^[[:space:]]*#/d' -e 's/[[:space:]]+#.*//; s/[[:space:]]+$//; s#^\./##' | tr '[:upper:]' '[:lower:]'; }
+  safe=$(printf '%s\n' .claude/ .codex/ .github/ enforcement/ .ai/project.md .ai/enforcement.json .ai/test-lock)
+  sens=$([ -f "$proj/.ai/project.md" ] && sed -n '/^sensitive_paths:/,/^[^[:space:]-]/p' "$proj/.ai/project.md" | sed -n 's/^[[:space:]]*-[[:space:]]*//p' | norm)
+  # covered PATH PATTERNS [CHANGE]: PATH (lower case) matches a pattern. A
+  # pattern with no glob also covers the folder of that name. With CHANGE
+  # (safety files only): .claude/docs/ is free of .claude/, and a lock that
+  # only gains lines ("grown") is free of .ai/test-lock.
+  covered() {
+    local pat
+    while IFS= read -r pat; do
+      [ -n "$pat" ] || continue
+      if [ -n "$3" ]; then
+        [ "$pat" = .claude/ ] && [[ $1 == .claude/docs/* ]] && continue
+        [ "$pat" = .ai/test-lock ] && [ "$3" = grown ] && continue
+      fi
+      case $pat in
+        */) [[ $1 == "$pat"* ]] && return 0 ;;
+        *[*?[]*) [[ $1 == $pat ]] && return 0 ;;
+        *) [[ $1 == "$pat" || $1 == "$pat"/* ]] && return 0 ;;
+      esac
+    done <<<"$2"
+    return 1
+  }
   # Each merge: its selector (number, branch or URL) is the first argument
   # that is not a flag or a flag's value; none means the current branch.
   while [ -z "$why" ] && IFS= read -r m; do
@@ -170,15 +195,24 @@ if [ -z "$why" ] && grep -qE '(^|[^[:alnum:]_-])gh(\.exe)?[[:space:]]+([^;|&]*[[
         *) [ -z "$sel" ] && sel=$tk ;;
       esac
     done
-    info=$(cd "$here" 2>/dev/null && $to gh pr view ${sel:+"$sel"} --json number,headRefName,headRefOid,isCrossRepository \
-      -q '"\(.number) \(.headRefName) \(.headRefOid) \(.isCrossRepository)"' 2>/dev/null | tr -d '\r')
-    read -r num h oid cross <<<"$info"
-    # Every file, past gh pr view's 100, with a rename's old path too.
+    info=$(cd "$here" 2>/dev/null && $to gh pr view ${sel:+"$sel"} --json number,headRefName,headRefOid,isCrossRepository,baseRefName,baseRefOid \
+      -q '"\(.number) \(.headRefName) \(.headRefOid) \(.isCrossRepository) \(.baseRefName) \(.baseRefOid)"' 2>/dev/null | tr -d '\r')
+    read -r num h oid cross bname boid <<<"$info"
+    # Every file, past gh pr view's 100, as "<change>\t<path>"; a rename's old
+    # path counts as removed, and no change type as changed. The lock is
+    # "grown" when gh shows it added, or modified with a diff where every
+    # line it removes (not a comment or blank) is added back unchanged.
     files=""
-    [ -n "$oid" ] && files=$(cd "$here" 2>/dev/null && $to gh api --paginate "repos/{owner}/{repo}/pulls/$num/files" \
-      --jq '.[] | .filename, (.previous_filename // empty)' 2>/dev/null | tr -d '\r')
-    if [ -z "$oid" ] || [ -z "$files" ]; then
-      why="gh could not read the PR or its files, so the merge cannot be checked."
+    if [ -n "$boid" ] && raw=$(cd "$here" 2>/dev/null && $to gh api --paginate "repos/{owner}/{repo}/pulls/$num/files" 2>/dev/null); then
+      files=$(jq -r '.[] |
+        (if (.filename | ascii_downcase) == ".ai/test-lock" and (.status == "added" or (.status == "modified" and (.patch // "") != "" and
+            ((.patch | split("\n") | map(rtrimstr("\r"))) as $l | [$l[] | select(startswith("+")) | .[1:]] as $add |
+             all($l[] | select(startswith("-")) | .[1:] | select(test("^\\s*(#|$)") | not); . as $r | any($add[]; . == $r)))))
+         then "grown" elif (.status // "") == "" then "changed" else .status end) + "\t" + .filename,
+        (.previous_filename // empty | "removed\t" + .)' <<<"$raw" 2>/dev/null | tr -d '\r')
+    fi
+    if [ -z "$boid" ] || [ -z "$files" ]; then
+      why="gh could not read the PR, its target branch or its files, so the merge cannot be checked."
       fix="Check that gh works (gh auth status) and retry, or ask the owner to merge it."; break
     fi
     left=0
@@ -187,24 +221,32 @@ if [ -z "$why" ] && grep -qE '(^|[^[:alnum:]_-])gh(\.exe)?[[:space:]]+([^;|&]*[[
       why="branch $h has $left local commit(s) that were never pushed; the merge would leave them out."
       fix="Push the branch first (git push), then merge behind the CI wait as usual."; break
     fi
+    # Locked tests: .ai/test-lock on GitHub at the target branch's tip and at
+    # the PR's base commit. No lock (HTTP 404) is fine; any other read error
+    # blocks.
+    lock=""
+    for ref in "$bname" "$boid"; do
+      enc=$(jq -rn --arg r "$ref" '$r | @uri')
+      out=$(cd "$here" 2>/dev/null && $to gh api "repos/{owner}/{repo}/contents/.ai/test-lock?ref=$enc" -H "Accept: application/vnd.github.raw" 2>&1)
+      if [ $? = 0 ]; then lock+=$out$'\n'
+      elif ! grep -q 'HTTP 404' <<<"$out"; then
+        why="gh could not read .ai/test-lock at $ref, so the merge cannot be checked for locked tests."
+        fix="Check that gh works (gh auth status) and retry, or ask the owner to merge it."; break
+      fi
+    done
+    [ -n "$why" ] && break
+    lockpats=$(norm <<<"$lock")
     hit=""
-    while IFS= read -r f; do
+    while IFS=$'\t' read -r ch f; do
       [ -n "$f" ] || continue
       lf=${f,,}
-      while IFS= read -r pat; do
-        [ -n "$pat" ] || continue
-        case $pat in
-          */) [[ $lf == "$pat"* ]] && hit=$f ;;
-          *[*?[]*) [[ $lf == $pat ]] && hit=$f ;;
-          *) [[ $lf == "$pat" || $lf == "$pat"/* ]] && hit=$f ;;
-        esac
-        [ -n "$hit" ] && break
-      done <<<"$pats"
-      [ -n "$hit" ] && break
+      if covered "$lf" "$safe" "$ch" || covered "$lf" "$sens" || { [ "$ch" != added ] && covered "$lf" "$lockpats"; }; then
+        hit=$f; break
+      fi
     done <<<"$files"
     [ -n "$hit" ] || continue
-    if ! tr -d '\r' < "$proj/.ai/approvals.log" 2>/dev/null | grep -qE "[[:space:]]merge-pr[[:space:]]+$num[[:space:]]+$oid\$"; then
-      why="PR #$num changes $hit (sensitive code or a safety file), so only the owner approves its merge."
+    if ! tr -d '\r' 2>/dev/null < "$proj/.ai/approvals.log" | grep -qE "[[:space:]]merge-pr[[:space:]]+$num[[:space:]]+$oid\$"; then
+      why="PR #$num changes $hit (sensitive code, a locked test or a safety file), so only the owner approves its merge."
       fix="Tell the owner what the PR changes and how it was checked, then ask them to type \"duyệt merge PR $num\" (or \"approve merge PR $num\"). A new push needs a new approval."; break
     fi
     if [ $auto = 1 ] || [ "${match,,}" != "${oid,,}" ]; then
