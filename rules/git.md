@@ -263,7 +263,8 @@ wait for a human instead:
 - the change is security-sensitive (see `rules/security.md`); a PR that changes
   `sensitive_paths`, a locked test or a safety file is also blocked by
   `guard-install.sh` until the owner types "duyệt merge PR <n>"
-  (`rules/enforcement.md`, "Owner-only merge"). The hook knows only those
+  (`rules/enforcement.md`, "Owner-only merge"; adding new tests to the lock
+  and editing `.claude/docs/` are not owner-only). The hook knows only those
   file lists: a security change elsewhere still needs the worker to stop and
   ask,
 - the operation is destructive (deletes data, writes a real database, rewrites
