@@ -191,6 +191,12 @@ automatically; when unsure, select it.
    (its progress log), or CI rejects the round. While the plan is approved the lock may
    gain lines; a line already in it cannot be changed or removed (the hook
    blocks an edit that does either), and no new approval is needed.
+   Approved criteria cannot schedule an edit of an already-locked test for a
+   later step: hooks and CI open a locked test only in a relock window
+   (below). Plan such a step one of two ways: write the early test so the
+   later step only adds a new test (a separate test file for the new
+   columns, say), or, at the step that must change the locked test, change
+   its criterion and ask for the approval word again.
 4. **Implementation (builder role).** Make the tests pass. Anything beyond
    the approved criteria (a new criterion, a behavior change elsewhere) needs
    the owner's approval first: stop, ask, and update the plan. The builder never
