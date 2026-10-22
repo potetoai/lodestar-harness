@@ -31,6 +31,33 @@ cmd=$(jq -r '.tool_input.command // empty' <<<"$input" | tr -d '\r')
 bs='\'   # Windows paths: backslashes become slashes
 cwd=$(jq -r '.cwd // empty' <<<"$input"); cwd=${cwd//"$bs"//}
 [ -n "$cmd" ] || exit 0
+# Text, not commands: the body of a quoted heredoc fed to cat or tee
+# (cat <<'EOF' > file, git commit -m "$(cat <<'EOF' ...)") or to
+# git commit -F - is never run, so the checks below skip it; a handoff or a
+# commit message may quote a merge.
+# A heredoc fed to a shell or an interpreter (bash, python), unquoted (its
+# $(...) runs), or piped on to another command stays checked.
+orig=$cmd
+cmd=$(awk '
+  function word(s,  a) {
+    sub(/^[[:space:]]+/, "", s)
+    while (match(s, /^[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+/)) s = substr(s, RLENGTH + 1)
+    split(s, a, /[[:space:]]+/); s = tolower(a[1]); gsub(/["\047]/, "", s)
+    sub(/.*\//, "", s); sub(/\.exe$/, "", s); return s
+  }
+  skip { t = $0; if (dash) sub(/^\t+/, "", t); if (t == delim) skip = 0; next }
+  { print }
+  match($0, /<<-?[[:space:]]*(\047[A-Za-z_][A-Za-z0-9_]*\047|"[A-Za-z_][A-Za-z0-9_]*")/) {
+    pre = substr($0, 1, RSTART - 1); op = substr($0, RSTART, RLENGTH); post = substr($0, RSTART + RLENGTH)
+    if (pre ~ /<$/ || post ~ /\||<</) next
+    n = split(pre, parts, /;|&&|\|\||\|/); outer = word(parts[n]); inner = parts[n]
+    if (match(inner, /.*[(`]/)) inner = substr(inner, RLENGTH + 1)
+    inner = word(inner)
+    if (((inner == "cat" || inner == "tee") && (outer == "cat" || outer == "tee" || outer == "git")) ||
+        (inner == "git" && parts[n] ~ /[[:space:]]commit[[:space:]]/)) {
+      dash = (op ~ /^<<-/); delim = op; sub(/^<<-?[[:space:]]*/, "", delim); gsub(/["\047]/, "", delim); skip = 1
+    }
+  }' <<<"$cmd")
 low=${cmd,,}
 # A git push: `push` is git's subcommand (after git's own options such as
 # -C dir), not a word later on (git stash push, echo "...push...").
@@ -239,7 +266,7 @@ fi
 
 # Tests-First commit: the plan and approvals.log must be in it, approved.
 if [ -z "$why" ] && grep -qE '(^|[[:space:]])git[[:space:]]+([^;|&]*[[:space:]])?commit([[:space:]]|$)' <<<"$cmd" &&
-   grep -qE '(^|["'"'"'[:space:]])Tests-First:' <<<"$cmd"; then
+   grep -qE '(^|["'"'"'[:space:]])Tests-First:' <<<"$orig"; then
   why=$(cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null && . .claude/hooks/lodestar-lib.sh 2>/dev/null && {
     st=$(git -c core.quotepath=off status --porcelain -uall 2>/dev/null)
     staging=1; grep -qE 'git[[:space:]]+add([[:space:]]|$)|commit[[:space:]]+([^;|&]*[[:space:]])?-[a-z]*a' <<<"$low" && staging=0

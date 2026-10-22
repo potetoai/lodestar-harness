@@ -60,14 +60,28 @@ fi
 # Plans whose current criteria are not approved yet. With several waiting, the
 # owner names each one ("approve my-plan"), so one word never approves a
 # plan they have not read.
-pending=() named=()
+# A named plan already approved as it is now is reported, never swapped for
+# another waiting plan the owner did not name.
+pending=() named=() named_done=()
 for p in .ai/plans/active/*.md; do
   h=$(criteria_hash < "$p") || continue
-  [ -f .ai/approvals.log ] && hash_approved "$h" < .ai/approvals.log && continue
-  pending+=("$p")
   n=$(basename "$p" .md); n=${n,,}; n=${n#[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-}
-  grep -qE "(^|[^[:alnum:]-])$n([^[:alnum:]-]|\$)" <<<"$low" && named+=("$p")
+  said=0; grep -qE "(^|[^[:alnum:]-])$n([^[:alnum:]-]|\$)" <<<"$low" && said=1
+  if [ -f .ai/approvals.log ] && hash_approved "$h" < .ai/approvals.log; then
+    [ $said = 1 ] && named_done+=("$p"); continue
+  fi
+  pending+=("$p")
+  [ $said = 1 ] && named+=("$p")
 done
+if [ ${#named[@]} = 0 ] && [ ${#named_done[@]} -gt 0 ]; then
+  for p in "${named_done[@]}"; do
+    echo "Lodestar: the owner approved $p, but its criteria as they are now were already approved, so nothing was recorded."
+  done
+  echo "An approval opens a relock window only for changed criteria (rules/testing.md, 'When a test or"
+  echo "criterion turns out wrong'). If a locked test is wrong, update the criterion it got wrong (make it"
+  echo "more precise), run the critic on the change, show the owner, then ask for the approval word again."
+  exit 0
+fi
 if [ ${#named[@]} = 0 ] && [ ${#pending[@]} -gt 1 ]; then
   echo "Lodestar: the owner approved, but ${#pending[@]} plans are waiting, so nothing was recorded."
   echo "Ask the owner to reply with the approval word (\"duyệt\" when owner_language is vi, else"

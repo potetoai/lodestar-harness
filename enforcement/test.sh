@@ -821,6 +821,7 @@ printf '# Plan
 ' > "$p/.ai/plans/active/2026-01-02-y-z.md"; stamp "$p/.ai/plans/active/2026-01-02-y-z.md"
 out=$(rec "duyệt"); t "with 2 plans waiting, a bare 'duyệt' records nothing and lists the names" bash -c 'grep -qx "  y-z" <<<"$1" && [ ! -s "$2" ]' _ "$out" "$p/.ai/approvals.log"
 rec "Duyệt y-z nhé" >/dev/null; t "'duyệt <name>' records only the named plan" bash -c 'grep -q "y-z.md" "$1" && [ $(wc -l < "$1") = 1 ]' _ "$p/.ai/approvals.log"
+out=$(rec "duyệt y-z"); t "naming an already approved plan records nothing, not the other waiting plan" bash -c '[ $(wc -l < "$2") = 1 ] && grep -q "y-z.md, but its criteria .* already approved" <<<"$1" && grep -q "relock" <<<"$1"' _ "$out" "$p/.ai/approvals.log"
 rec "duyệt" >/dev/null; t "with 1 plan left, a bare 'duyệt' records it" [ "$(wc -l < "$p/.ai/approvals.log")" = 2 ]
 sed -i 's/- \[ \] a/- [x] a/' "$p/.ai/plans/active/x.md"
 t "ticking a criterion off keeps it approved" bash -c 'cd "$1" && . .claude/hooks/lodestar-lib.sh && plan_approved_now .ai/plans/active/x.md' _ "$p"
@@ -1159,6 +1160,18 @@ for c in "if gh pr checks 52 --watch --interval 20; then gh pr merge 52 --merge 
          'gh pr checks 52 --watch; if ($?) { gh pr merge 52 }' \
          'git commit -m "merge only on green CI"' "gh pr view 52" "gh api repos/o/r/pulls/5"; do
   gp "$c"; t "guard allows: $c" [ $? = 0 ]
+done
+# Text in a quoted heredoc fed to cat, tee or git commit is not run (ProjectS
+# session 74); a heredoc a shell or interpreter runs, unquoted, or piped on is.
+body=$'Merge: gh pr merge 5 --merge\ngit push origin main\nEOF'
+for c in $'cat > .ai/handoff.md <<\'EOF\'\n'"$body" $'git commit -q -m "$(cat <<\'EOF\'\nfix: x\n\n'"$body"$'\n)"' \
+         $'git commit -F - <<"EOF"\n'"$body" $'tee -a log.md >/dev/null <<-\'EOF\'\n'"$body"; do
+  gp "$c"; t "guard allows heredoc text: ${c%%$'\n'*}" [ $? = 0 ]
+done
+for c in $'bash <<\'EOF\'\n'"$body" $'python - <<\'EOF\'\n'"$body" $'cat > x.md <<EOF\n'"$body" \
+         $'cat <<\'EOF\' | bash\n'"$body" $'bash -c "$(cat <<\'EOF\'\n'"$body"$'\n)"' \
+         $'cat > x.md <<\'EOF\'\n'"$body"$'\ngh pr merge 6'; do
+  gp "$c"; t "guard blocks run heredoc: ${c%%$'\n'*}" [ $? = 2 ]
 done
 # A merge inside a script the command runs is blocked, even behind a CI wait.
 mkdir -p "$p/scripts" "$p/enforcement"
