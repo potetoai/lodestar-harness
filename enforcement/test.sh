@@ -1264,11 +1264,14 @@ export FAKE_LOCK_TIP='# locked\ntests/test_pay.py' FAKE_LOCK_BASE='# locked\ntes
 for f in src/auth/login.py db/init.sql tests/test_pay.py .github/workflows/ci.yml .claude/hooks/guard-install.sh \
          .codex/hooks.json .ai/project.md .ai/test-lock enforcement/test.sh app/pay/card.py app/pay keys/prod.pem SRC/Auth/x.py \
          .claude/settings.json .claude/settings.local.json .claude/agents/reviewer.md .claude/skills/s/SKILL.md \
-         .claude/commands/c.md .claude/new-folder/x.md .Claude/Settings.json added\|src/auth/new.py; do
+         .claude/commands/c.md .claude/new-folder/x.md .claude/docs-old/x.md .Claude/Settings.json added\|src/auth/new.py; do
   gmerge "$merge7" "7 fix/m aaaaaaa false main 0000000\nREADME.md\n$f"; t "guard blocks an unapproved merge that changes $f" [ $? = 2 ]
 done
 gmerge "$merge7" '7 fix/m aaaaaaa false main 0000000\nsrc/authors.py\ndocs/sql.md\ntests/test_other.py\napp/payroll.py'; t "guard allows a merge of files outside the owner-only list" [ $? = 0 ]
 gmerge "$merge7" '7 fix/m aaaaaaa false main 0000000\n.claude/docs/data.md\n.Claude/Docs/Run.md\nREADME.md'; t "guard allows a merge whose .claude/ files are all in .claude/docs/" [ $? = 0 ]
+sed -i 's#^sensitive_paths:#&\n  - .claude/#' "$m/.ai/project.md"
+gmerge "$merge7" '7 fix/m aaaaaaa false main 0000000\n.claude/docs/data.md'; t "guard blocks .claude/docs/ when sensitive_paths lists .claude/" [ $? = 2 ]
+sed -i '/^  - \.claude\/$/d' "$m/.ai/project.md"
 gmerge "$merge7" '7 fix/m aaaaaaa false main 0000000\nrenamed|docs/ci.yml||.github/workflows/ci.yml'; t "guard blocks a rename away from a safety file (old path listed)" [ $? = 2 ]
 gmerge "$merge7" '7 fix/m aaaaaaa false\nREADME.md'; t "guard blocks a merge when gh gives no base branch" [ $? = 2 ]
 # The lock may grow without the owner. Removing or changing a line, deleting

@@ -139,9 +139,14 @@ fi
 if [ -z "$why" ] && grep -qE '(^|[^[:alnum:]_-])gh(\.exe)?[[:space:]]+([^;|&]*[[:space:]])?pr[[:space:]]+merge([^[:alnum:]_-]|$)' <<<"$low"; then
   here=${cwd:-${CLAUDE_PROJECT_DIR:-.}}
   proj=${CLAUDE_PROJECT_DIR:-$here}
-  # Four gh calls per merge must fit the hook's 30 s limit: a hook that
-  # times out lets the merge run.
-  to=""; command -v timeout >/dev/null && to="timeout 7"
+  # gh within what is left of a 25 s budget for the whole hook (its limit is
+  # 30 s, and a hook that times out lets the merge run). Out of time: the
+  # call fails, so the merge is blocked.
+  ghc() {
+    command -v timeout >/dev/null || { gh "$@"; return; }
+    local rem=$((25 - SECONDS)); [ $rem -gt 1 ] || return 124
+    timeout $rem gh "$@"
+  }
   if grep -qE "$gitpush" <<<"$low"; then
     why="a push in the same command as the merge changes the PR after this check."
     fix="Push in one command, then merge in the next: if gh pr checks <n> --watch; then gh pr merge <n> --merge; fi"
@@ -195,7 +200,7 @@ if [ -z "$why" ] && grep -qE '(^|[^[:alnum:]_-])gh(\.exe)?[[:space:]]+([^;|&]*[[
         *) [ -z "$sel" ] && sel=$tk ;;
       esac
     done
-    info=$(cd "$here" 2>/dev/null && $to gh pr view ${sel:+"$sel"} --json number,headRefName,headRefOid,isCrossRepository,baseRefName,baseRefOid \
+    info=$(cd "$here" 2>/dev/null && ghc pr view ${sel:+"$sel"} --json number,headRefName,headRefOid,isCrossRepository,baseRefName,baseRefOid \
       -q '"\(.number) \(.headRefName) \(.headRefOid) \(.isCrossRepository) \(.baseRefName) \(.baseRefOid)"' 2>/dev/null | tr -d '\r')
     read -r num h oid cross bname boid <<<"$info"
     # Every file, past gh pr view's 100, as "<change>\t<path>"; a rename's old
@@ -203,16 +208,17 @@ if [ -z "$why" ] && grep -qE '(^|[^[:alnum:]_-])gh(\.exe)?[[:space:]]+([^;|&]*[[
     # "grown" when gh shows it added, or modified with a diff where every
     # line it removes (not a comment or blank) is added back unchanged.
     files=""
-    if [ -n "$boid" ] && raw=$(cd "$here" 2>/dev/null && $to gh api --paginate "repos/{owner}/{repo}/pulls/$num/files" 2>/dev/null); then
+    if [ -n "$boid" ] && raw=$(cd "$here" 2>/dev/null && ghc api --paginate "repos/{owner}/{repo}/pulls/$num/files?per_page=100" 2>/dev/null); then
       files=$(jq -r '.[] |
         (if (.filename | ascii_downcase) == ".ai/test-lock" and (.status == "added" or (.status == "modified" and (.patch // "") != "" and
             ((.patch | split("\n") | map(rtrimstr("\r"))) as $l | [$l[] | select(startswith("+")) | .[1:]] as $add |
              all($l[] | select(startswith("-")) | .[1:] | select(test("^\\s*(#|$)") | not); . as $r | any($add[]; . == $r)))))
          then "grown" elif (.status // "") == "" then "changed" else .status end) + "\t" + .filename,
-        (.previous_filename // empty | "removed\t" + .)' <<<"$raw" 2>/dev/null | tr -d '\r')
+        (.previous_filename // empty | "removed\t" + .)' <<<"$raw" 2>/dev/null) || files=""
+      files=${files//$'\r'/}
     fi
     if [ -z "$boid" ] || [ -z "$files" ]; then
-      why="gh could not read the PR, its target branch or its files, so the merge cannot be checked."
+      why="gh could not read the PR, its target branch or its files (an error, or too slow), so the merge cannot be checked."
       fix="Check that gh works (gh auth status) and retry, or ask the owner to merge it."; break
     fi
     left=0
@@ -227,7 +233,7 @@ if [ -z "$why" ] && grep -qE '(^|[^[:alnum:]_-])gh(\.exe)?[[:space:]]+([^;|&]*[[
     lock=""
     for ref in "$bname" "$boid"; do
       enc=$(jq -rn --arg r "$ref" '$r | @uri')
-      out=$(cd "$here" 2>/dev/null && $to gh api "repos/{owner}/{repo}/contents/.ai/test-lock?ref=$enc" -H "Accept: application/vnd.github.raw" 2>&1)
+      out=$(cd "$here" 2>/dev/null && ghc api "repos/{owner}/{repo}/contents/.ai/test-lock?ref=$enc" -H "Accept: application/vnd.github.raw" 2>&1)
       if [ $? = 0 ]; then lock+=$out$'\n'
       elif ! grep -q 'HTTP 404' <<<"$out"; then
         why="gh could not read .ai/test-lock at $ref, so the merge cannot be checked for locked tests."

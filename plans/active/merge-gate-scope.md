@@ -114,9 +114,26 @@ or fixed); template upgrade PRs; edits of locked tests (owner keeps them).
   lock read from GitHub at the target tip and the PR base; gh timeout 15 s
   to 7 s (four calls in the 30 s hook). Checked against real gh output on
   this repo (PR #78, a 404 lock, a raw read at a branch and a commit).
+  `bash enforcement/test.sh`: 757 passed, 0 failed.
+- 2026-10-22: reviewer subagent: approve, 0 blocker/major, 5 minor, 4
+  suggestions. Fixed: one 25 s budget for all gh calls in the hook (a slow
+  gh now blocks at 25 s instead of overrunning 30 s); a jq failure empties
+  the file list (blocks) instead of leaving part of it; `per_page=100`;
+  docs row (lock growth is allowed by the edit hooks while a plan is
+  approved, not checked by CI; a lock change with no diff is owner-only);
+  tests for `.claude/docs-old/` and for `.claude/` listed in sensitive_paths.
+  Deferred, see decision log.
 
 ## 4. Decision log
 
 - 2026-10-22: owner chose "remove false positives first" over AI review of
   sensitive code; locked-test edits stay owner-only; App01 relock report:
   option A (doc line, no new unlock path).
+- 2026-10-22: review items deferred (outside the approved criteria, or
+  existing before this plan): GitHub lists at most 3000 files, so a huge PR
+  could hide a safety file past the cap (fix: compare with `changedFiles`);
+  merges that are not owner-only are not pinned to a head commit, so a push
+  during the CI wait merges unchecked; a new file inside a locked folder
+  (`tests/core/conftest.py`) merges free, the sharpest case of the test-setup
+  limit; a 404 for a missing ref reads as "no lock". Bring these to the
+  2026-11-05 decision on AI review of sensitive code.
