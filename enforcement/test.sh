@@ -1140,16 +1140,37 @@ for c in ".venv/Scripts/python.exe -m pip install ruff" "source .venv/bin/activa
   gi "$c"; t "guard allows: $c" [ $? = 0 ]
 done
 p=$tmp/gp; mkdir -p "$p"; git -C "$p" init -q -b main
-# Fake gh for merges: $FAKE_GH is "<n> <branch> <head> <fork>", then the PR's
-# files. `gh pr view` prints the first line, `gh api` the files; empty: fails.
+# Fake gh for merges: $FAKE_GH is "<n> <branch> <head> <fork> <base branch>
+# <base commit>", then the PR's files, one per line: "<path>" (modified) or
+# "<status>|<path>|<patch, ; for a new line>|<old path>" (status "-": none).
+# `gh pr view` prints the first line; `gh api .../files` the files as JSON,
+# one page each; `gh api .../contents/.ai/test-lock?ref=<r>` prints
+# $FAKE_LOCK_TIP (r = base branch) or $FAKE_LOCK_BASE (r = base commit):
+# unset is HTTP 404, "ERR" another error. Empty $FAKE_GH: every call fails.
 mkdir -p "$tmp/ghpr"
 cat > "$tmp/ghpr/gh" <<'EOF'
 #!/bin/sh
 [ -n "$FAKE_GH" ] || exit 1
-if [ "$1" = api ]; then printf '%b\n' "$FAKE_GH" | tail -n +2; else printf '%b\n' "$FAKE_GH" | head -n 1; fi
+first=$(printf '%b\n' "$FAKE_GH" | head -n 1)
+case "$*" in
+  *contents/.ai/test-lock*)
+    args="$*"; ref=${args##*ref=}; ref=${ref%% *}; set -- $first
+    if [ "$ref" = "$5" ]; then has=${FAKE_LOCK_TIP+x}; v=$FAKE_LOCK_TIP
+    elif [ "$ref" = "$6" ]; then has=${FAKE_LOCK_BASE+x}; v=$FAKE_LOCK_BASE
+    else has=""; fi
+    [ -n "$has" ] || { echo "gh: Not Found (HTTP 404)" >&2; exit 1; }
+    [ "$v" = ERR ] && { echo "gh: Server Error (HTTP 502)" >&2; exit 1; }
+    printf '%b\n' "$v" ;;
+  api*) printf '%b\n' "$FAKE_GH" | tail -n +2 | jq -cR 'select(length > 0) | split("|") |
+      if length == 1 then {filename: .[0], status: "modified"} else
+        {filename: .[1]} + (if .[0] == "-" then {} else {status: .[0]} end)
+        + (if (.[2] // "") != "" then {patch: (.[2] | gsub(";"; "\n"))} else {} end)
+        + (if (.[3] // "") != "" then {previous_filename: .[3]} else {} end) end | [.]' ;;
+  *) echo "$first" ;;
+esac
 EOF
 chmod +x "$tmp/ghpr/gh"
-ghok='7 fix/x 1111111 false\nREADME.md'
+ghok='7 fix/x 1111111 false main 0000000\nREADME.md'
 gp() { FAKE_GH=$ghok PATH="$tmp/ghpr:$PATH" CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/guard-install.sh" 2>/dev/null <<<"$(jq -n --arg c "$1" '{tool_input:{command:$c}}')"; }
 for c in "git push origin main" "git push -u origin HEAD:main" "git push origin --delete master" "git push" "git push -u origin" \
          'git commit --no-verify -m "x"' 'git commit -nm "x"' "git add . && git push --no-verify origin fix/a" \
@@ -1209,7 +1230,7 @@ gmerge() { FAKE_GH=$2 PATH="$tmp/ghpr:$PATH" CLAUDE_PROJECT_DIR=$m bash "$here/a
 git -C "$m" checkout -q -b fix/m; git -C "$m" -c user.name=t -c user.email=t@t commit -q --allow-empty -m one
 git -C "$m" update-ref refs/remotes/origin/fix/m HEAD
 merge7="if gh pr checks 7 --watch; then gh pr merge 7 --merge; fi"
-pr7='7 fix/m aaaaaaa false\nsrc/app.py'
+pr7='7 fix/m aaaaaaa false main 0000000\nsrc/app.py'
 gmerge "$merge7" "$pr7"; t "guard allows a merge when the branch is fully pushed" [ $? = 0 ]
 gmerge "git stash push -q && $merge7" "$pr7"; t "guard allows a merge after git stash push" [ $? = 0 ]
 git -C "$m" -c user.name=t -c user.email=t@t commit -q --allow-empty -m two
@@ -1220,12 +1241,12 @@ gmerge "if gh pr checks 7 --watch; then gh pr merge --squash -d 7; fi" "$pr7"; t
 gmerge "if gh pr checks 7 --watch; then gh pr merge -b x fix/m; fi" "$pr7"; t "guard blocks the unpushed merge named by branch" [ $? = 2 ]
 gmerge "git push && $merge7" "$pr7"; t "guard blocks a merge with a push before it in the same command" [ $? = 2 ]
 gmerge "$merge7; git push" "$pr7"; t "guard blocks a merge that pushes only after it" [ $? = 2 ]
-gmerge "$merge7" '7 fix/m aaaaaaa true\nsrc/app.py'; t "guard skips the unpushed check for a fork PR" [ $? = 0 ]
+gmerge "$merge7" '7 fix/m aaaaaaa true main 0000000\nsrc/app.py'; t "guard skips the unpushed check for a fork PR" [ $? = 0 ]
 git -C "$m" checkout -q -b side
 gmerge "$merge7" "$pr7"; t "guard blocks the unpushed PR branch when merging from another branch (PR #36)" [ $? = 2 ]
 git -C "$m" checkout -q fix/m
 gmerge "$merge7" ""; t "guard blocks a merge when gh cannot read the PR" [ $? = 2 ]
-gmerge "$merge7" '7 fix/m aaaaaaa false'; t "guard blocks a merge when gh cannot list the PR's files" [ $? = 2 ]
+gmerge "$merge7" '7 fix/m aaaaaaa false main 0000000'; t "guard blocks a merge when gh cannot list the PR's files" [ $? = 2 ]
 gmerge "if gh pr checks 7 -R o/r --watch; then gh pr merge 7 -R o/r; fi" "$pr7"; t "guard blocks a merge in another repo (-R)" [ $? = 2 ]
 gmerge "if GH_REPO=o/r gh pr checks 7 --watch; then GH_REPO=o/r gh pr merge 7; fi" "$pr7"; t "guard blocks a merge in another repo (GH_REPO)" [ $? = 2 ]
 for c in "gh api -X 'PUT' repos/o/r/pulls/7/merge" 'gh api --method "PUT" repos/o/r/pulls/7/merge' \
@@ -1233,20 +1254,60 @@ for c in "gh api -X 'PUT' repos/o/r/pulls/7/merge" 'gh api --method "PUT" repos/
          "gh api graphql -f query='mutation { enablePullRequestAutoMerge(input: {pullRequestId: \"x\"}) { clientMutationId } }'"; do
   gmerge "$c" "$pr7"; t "guard blocks: $c" [ $? = 2 ]
 done
-gmerge "$merge7" '7 fix/other aaaaaaa false\nsrc/app.py'; t "guard allows a merge of a branch with no local copy" [ $? = 0 ]
+gmerge "$merge7" '7 fix/other aaaaaaa false main 0000000\nsrc/app.py'; t "guard allows a merge of a branch with no local copy" [ $? = 0 ]
 git -C "$m" update-ref refs/remotes/origin/fix/m HEAD
 gmerge "$merge7" "$pr7"; t "guard allows the merge once the commit is pushed" [ $? = 0 ]
 # Owner-only merge: sensitive code, locked tests and safety files need the
 # owner's "duyệt merge PR <n>" for the PR's current head.
 mkdir -p "$m/.ai"; printf 'name: x\nsensitive_paths:\n  - "src/auth/"\n  - "*.sql"\n  - ./app/pay  # money\n  - Keys\nowner_language: vi\n' > "$m/.ai/project.md"
-printf '# locked\ntests/test_pay.py\n' > "$m/.ai/test-lock"
+export FAKE_LOCK_TIP='# locked\ntests/test_pay.py' FAKE_LOCK_BASE='# locked\ntests/test_pay.py'
 for f in src/auth/login.py db/init.sql tests/test_pay.py .github/workflows/ci.yml .claude/hooks/guard-install.sh \
-         .codex/hooks.json .ai/project.md .ai/test-lock enforcement/test.sh app/pay/card.py app/pay keys/prod.pem SRC/Auth/x.py; do
-  gmerge "$merge7" "7 fix/m aaaaaaa false\nREADME.md\n$f"; t "guard blocks an unapproved merge that changes $f" [ $? = 2 ]
+         .codex/hooks.json .ai/project.md .ai/test-lock enforcement/test.sh app/pay/card.py app/pay keys/prod.pem SRC/Auth/x.py \
+         .claude/settings.json .claude/settings.local.json .claude/agents/reviewer.md .claude/skills/s/SKILL.md \
+         .claude/commands/c.md .claude/new-folder/x.md .Claude/Settings.json added\|src/auth/new.py; do
+  gmerge "$merge7" "7 fix/m aaaaaaa false main 0000000\nREADME.md\n$f"; t "guard blocks an unapproved merge that changes $f" [ $? = 2 ]
 done
-gmerge "$merge7" '7 fix/m aaaaaaa false\nsrc/authors.py\ndocs/sql.md\ntests/test_other.py\napp/payroll.py'; t "guard allows a merge of files outside the owner-only list" [ $? = 0 ]
-gmerge "$merge7" '7 fix/m aaaaaaa false\ndocs/ci.yml\n.github/workflows/ci.yml'; t "guard blocks a rename away from a safety file (old path listed)" [ $? = 2 ]
-auth7='7 fix/m aaaaaaa false\nsrc/auth/login.py'
+gmerge "$merge7" '7 fix/m aaaaaaa false main 0000000\nsrc/authors.py\ndocs/sql.md\ntests/test_other.py\napp/payroll.py'; t "guard allows a merge of files outside the owner-only list" [ $? = 0 ]
+gmerge "$merge7" '7 fix/m aaaaaaa false main 0000000\n.claude/docs/data.md\n.Claude/Docs/Run.md\nREADME.md'; t "guard allows a merge whose .claude/ files are all in .claude/docs/" [ $? = 0 ]
+gmerge "$merge7" '7 fix/m aaaaaaa false main 0000000\nrenamed|docs/ci.yml||.github/workflows/ci.yml'; t "guard blocks a rename away from a safety file (old path listed)" [ $? = 2 ]
+gmerge "$merge7" '7 fix/m aaaaaaa false\nREADME.md'; t "guard blocks a merge when gh gives no base branch" [ $? = 2 ]
+# The lock may grow without the owner. Removing or changing a line, deleting
+# or renaming the lock away, or a lock diff gh does not give: owner-only.
+lk='7 fix/m aaaaaaa false main 0000000\nadded|tests/test_new.py'
+gmerge "$merge7" "$lk\nmodified|.ai/test-lock|@@ -1,2 +1,3 @@; # locked; tests/test_pay.py;+tests/test_new.py"; t "guard allows a merge that only adds lines to the lock" [ $? = 0 ]
+gmerge "$merge7" "$lk\nmodified|.ai/test-lock|@@ -1,2 +1,3 @@; # locked;-tests/test_pay.py;\\\\ No newline at end of file;+tests/test_pay.py;+tests/test_new.py"; t "guard allows lock growth after a missing final newline" [ $? = 0 ]
+gmerge "$merge7" "$lk\nmodified|.ai/test-lock|@@ -1,3 +1,3 @@;-# locked;-; tests/test_pay.py;+tests/test_new.py"; t "guard allows lock growth that drops a comment or blank line" [ $? = 0 ]
+(unset FAKE_LOCK_TIP FAKE_LOCK_BASE; gmerge "$merge7" "$lk\nadded|.ai/test-lock|@@ -0,0 +1 @@;+tests/test_new.py"); t "guard allows a merge that creates the lock" [ $? = 0 ]
+for d in "modified|.ai/test-lock|@@ -1,2 +1,2 @@; # locked;-tests/test_pay.py;+tests/test_new.py" \
+         "modified|.ai/test-lock|@@ -1,2 +1,2 @@; # locked;-tests/test_pay.py;+Tests/test_pay.py" \
+         "modified|.ai/test-lock|@@ -1,2 +1,2 @@; # locked;-tests/test_pay.py;+# tests/test_pay.py" \
+         "modified|.ai/test-lock" "removed|.ai/test-lock" "renamed|.ai/old-lock||.ai/test-lock" \
+         "-|.ai/test-lock|@@ -1 +1,2 @@; tests/test_pay.py;+tests/test_new.py" \
+         "modified|.ai/test-lock|@@ -1 +1,2 @@; tests/test_pay.py;+tests/test_new.py\nmodified|src/auth/login.py"; do
+  gmerge "$merge7" "$lk\n$d"; t "guard blocks an unapproved merge with: ${d//\\n/ + }" [ $? = 2 ]
+done
+# Locked tests: the lock on GitHub at the target branch's tip and at the PR's
+# base; the local working-tree lock is not used; a file the PR adds is free.
+printf 'tests/test_local.py\n' > "$m/.ai/test-lock"
+gmerge "$merge7" '7 fix/m aaaaaaa false main 0000000\ntests/test_local.py'; t "guard ignores the local working-tree lock" [ $? = 0 ]
+for d in "removed|tests/test_pay.py" "renamed|tests/test_moved.py||tests/test_pay.py" "-|tests/test_pay.py" Tests/Test_Pay.py; do
+  gmerge "$merge7" "7 fix/m aaaaaaa false main 0000000\n$d"; t "guard blocks an unapproved merge of a locked test: $d" [ $? = 2 ]
+done
+export FAKE_LOCK_TIP='tests/core/\ntests/test_*.py\nTests/X.py\nlib/checks\ntests/test_future.py' FAKE_LOCK_BASE=''
+for f in tests/core/a.py tests/test_any.py tests/x.py lib/checks/run.sh; do
+  gmerge "$merge7" "7 fix/m aaaaaaa false main 0000000\n$f"; t "guard blocks an unapproved merge of $f (locked at the tip only)" [ $? = 2 ]
+done
+gmerge "$merge7" '7 fix/m aaaaaaa false main 0000000\ntests/corex/a.py\ntests/other_test.py\nlib/checks2/x.sh\nadded|tests/test_future.py\nadded|tests/test_two.py'; t "guard allows unlocked tests and tests the PR adds" [ $? = 0 ]
+unset FAKE_LOCK_TIP; export FAKE_LOCK_BASE='tests/test_old.py'
+gmerge "$merge7" '7 fix/m aaaaaaa false main 0000000\ntests/test_old.py'; t "guard blocks a test locked at the PR's base only (no lock at the tip)" [ $? = 2 ]
+unset FAKE_LOCK_BASE
+gmerge "$merge7" '7 fix/m aaaaaaa false main 0000000\ntests/test_old.py'; t "guard allows a merge when GitHub has no lock (HTTP 404)" [ $? = 0 ]
+FAKE_LOCK_TIP=ERR; export FAKE_LOCK_TIP
+gmerge "$merge7" '7 fix/m aaaaaaa false main 0000000\nREADME.md'; t "guard blocks a merge when the lock at the tip cannot be read" [ $? = 2 ]
+unset FAKE_LOCK_TIP; FAKE_LOCK_BASE=ERR; export FAKE_LOCK_BASE
+gmerge "$merge7" '7 fix/m aaaaaaa false main 0000000\nREADME.md'; t "guard blocks a merge when the lock at the base cannot be read" [ $? = 2 ]
+unset FAKE_LOCK_BASE
+auth7='7 fix/m aaaaaaa false main 0000000\nsrc/auth/login.py'
 echo "2026-10-16 10:00 merge-pr 7 bbbbbbb" > "$m/.ai/approvals.log"
 gmerge "$merge7" "$auth7"; t "guard blocks when the approval is for another head (new push)" [ $? = 2 ]
 echo "2026-10-16 10:00 merge-pr 8 aaaaaaa" > "$m/.ai/approvals.log"
