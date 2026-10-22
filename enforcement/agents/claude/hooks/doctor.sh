@@ -121,10 +121,11 @@ codex_trust() {
 env_ok() {
   git ls-files 2>/dev/null | grep -qE '(^|/)\.env$' && return 1
   # Every .env (root or a part such as backend/) needs a .env.example next to it.
+  # -prune: do not walk node_modules at all (3.5 s of a 4 s run in a real app).
   local f
   while IFS= read -r f; do
     [ -f "$(dirname "$f")/.env.example" ] || return 1
-  done < <(find . -name .env -not -path '*/node_modules/*' -not -path './.git/*' -not -path '*/.venv/*')
+  done < <(find . \( -name node_modules -o -name .venv -o -path ./.git \) -prune -o -name .env -print)
 }
 ai_files() {
   local f; for f in invariants.md feedback-log.md tech-debt.md; do [ -f ".ai/$f" ] || return 1; done

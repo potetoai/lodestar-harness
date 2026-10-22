@@ -5,10 +5,12 @@
 #   (no args)  SessionStart: readiness, plus maintenance due (overdue, repeats).
 #   --prompt   UserPromptSubmit: readiness only, next to every owner message,
 #              because a single reminder at session start gets ignored.
+#              Skipped once doctor passed in this session at this commit.
 # Registered in ~/.claude/settings.json by install.sh.
 here=$(cd "$(dirname "$0")" && pwd)
 lodestar=$(cd "$here/../../../.." && { pwd -W 2>/dev/null || pwd; })
 mode=${1:-session}
+sid=; [ -t 0 ] || sid=$(jq -r '.session_id // empty' 2>/dev/null | tr -d '\r')   # none: nothing is remembered
 cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null || exit 0
 
 git rev-parse --git-dir >/dev/null 2>&1 || exit 0   # not a project
@@ -64,11 +66,20 @@ if [ ! -f .claude/hooks/doctor.sh ]; then
   gate "this project is not onboarded yet."
   exit 0
 fi
+# Doctor takes seconds on a big tree, and every owner message waited for it
+# (App01: 4.5 s each, some runs hit the 30 s hook timeout). The per-prompt
+# gate is for a project that is not ready, so once doctor passed in this
+# session at this commit, skip it until the next commit or session.
+mark="$(git rev-parse --git-dir)/lodestar-ready"
+key="$sid $(git rev-parse -q --verify HEAD)"
+[ "$mode" = --prompt ] && [ -n "$sid" ] && [ "$(cat "$mark" 2>/dev/null)" = "$key" ] && exit 0
 if ! out=$(bash .claude/hooks/doctor.sh --quiet 2>&1); then
+  rm -f "$mark" 2>/dev/null
   gate "this project is not ready. Missing items:"
   echo "$out"
   exit 0
 fi
+[ -n "$sid" ] && { echo "$key" > "$mark"; } 2>/dev/null
 [ "$mode" = --prompt ] && exit 0
 env=$(grep -E '^⚠️ +A12 ' <<<"$out")
 [ -n "$env" ] && echo "Lodestar: $env. Run make setup before anything that needs make verify."

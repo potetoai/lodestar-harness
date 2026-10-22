@@ -66,6 +66,10 @@ t "doctor fails on a nested .env without .env.example" [ $? = 1 ]
 echo X= > "$p/backend/.env.example"
 bash "$p/.claude/hooks/doctor.sh" "$p" >/dev/null
 t "doctor accepts a nested .env with .env.example" [ $? = 0 ]
+mkdir -p "$p/node_modules/pkg" "$p/web/.venv"; echo X=1 > "$p/node_modules/pkg/.env"; echo X=1 > "$p/web/.venv/.env"
+bash "$p/.claude/hooks/doctor.sh" "$p" >/dev/null
+t "doctor skips .env files inside node_modules and .venv" [ $? = 0 ]
+rm -rf "$p/node_modules" "$p/web"
 
 # 4. Existing settings.json keeps its config and gains the hooks.
 p=$tmp/existing; mkdir -p "$p/.claude"
@@ -323,7 +327,21 @@ t "gh sweep retry shows the failed project only, from its old time" bash -c 'gre
 out=$(sweep)
 t "gh sweep runs once a day" bash -c '! grep -q "GitHub sweep" <<<"$1"' _ "$out"
 rm "$tmp/py/.ai/handoff.md"
-rm "$tmp/py/.ai/invariants.md"
+# Per-prompt gate: once doctor passed in this session at this commit, later
+# prompts skip it (it took seconds on a big tree before every owner message).
+sess() { CLAUDE_PROJECT_DIR=$tmp/py bash "$g" "${@:2}" <<<"{\"session_id\":\"$1\"}"; }
+sess s1 >/dev/null
+cp "$tmp/py/.ai/invariants.md" "$tmp/inv.bak"; rm "$tmp/py/.ai/invariants.md"
+out=$(sess s1 --prompt)
+t "per-prompt gate skips doctor once this session passed" [ -z "$out" ]
+out=$(sess s2 --prompt)
+t "per-prompt gate checks in another session" grep -q "A8" <<<"$out"
+cp "$tmp/inv.bak" "$tmp/py/.ai/invariants.md"; sess s1 >/dev/null; rm "$tmp/py/.ai/invariants.md"
+git -C "$tmp/py" -c user.name=t -c user.email=t@t commit -q --no-verify --allow-empty -m next
+out=$(sess s1 --prompt)
+t "per-prompt gate checks again after a new commit" grep -q "A8" <<<"$out"
+out=$(sess s1 --prompt)
+t "per-prompt gate does not remember a failed check" grep -q "A8" <<<"$out"
 out=$(remind "$tmp/py"); rc=$?
 t "global hook lists missing items" bash -c '[ $1 = 0 ] && grep -q "A8" <<<"$2"' _ "$rc" "$out"
 
