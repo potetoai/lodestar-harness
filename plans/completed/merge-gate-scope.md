@@ -123,6 +123,8 @@ or fixed); template upgrade PRs; edits of locked tests (owner keeps them).
   approved, not checked by CI; a lock change with no diff is owner-only);
   tests for `.claude/docs-old/` and for `.claude/` listed in sensitive_paths.
   Deferred, see decision log.
+- 2026-10-22: PR #79 merged by the owner on GitHub (c70049b), CI green.
+  Plan closed. Ships in the next batched release (about 2026-10-30).
 
 ## 4. Decision log
 
