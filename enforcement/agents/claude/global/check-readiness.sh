@@ -10,7 +10,10 @@
 here=$(cd "$(dirname "$0")" && pwd)
 lodestar=$(cd "$here/../../../.." && { pwd -W 2>/dev/null || pwd; })
 mode=${1:-session}
-sid=; [ -t 0 ] || sid=$(jq -r '.session_id // empty' 2>/dev/null | tr -d '\r')   # none: nothing is remembered
+# Hook input arrives at once. Run by hand with stdin open but empty (a pipe
+# nobody writes), the read gives up after 2 s instead of hanging.
+in=; [ -t 0 ] || IFS= read -r -d '' -t 2 in
+sid=; [ -n "$in" ] && sid=$(jq -r '.session_id // empty' <<<"$in" 2>/dev/null | tr -d '\r')   # none: nothing is remembered
 cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null || exit 0
 
 git rev-parse --git-dir >/dev/null 2>&1 || exit 0   # not a project

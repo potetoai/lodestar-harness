@@ -1,3 +1,4 @@
 # Shell scripts and Makefiles break with CRLF line endings.
 *.sh text eol=lf
 Makefile text eol=lf
+enforcement/agents/claude/git-pre-push text eol=lf

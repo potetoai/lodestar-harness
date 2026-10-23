@@ -32,8 +32,8 @@ if [ "$1" = --record-pass ]; then
   exit 0
 fi
 
-# A prototype branch (proto/*) is thrown away, never pushed (guard-install
-# blocks it) or merged, so its work is not verified (workflows/prototype.md).
+# A prototype branch (proto/*) is thrown away, never pushed (the pre-push
+# hook blocks it) or merged, so its work is not verified (workflows/prototype.md).
 case $(git symbolic-ref --short -q HEAD 2>/dev/null) in proto/*) exit 0 ;; esac
 
 # Prevent an endless loop: if the agent was already sent back once, let it

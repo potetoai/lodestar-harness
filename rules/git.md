@@ -261,8 +261,8 @@ wait for a human instead:
 - verification did not pass,
 - merge conflicts exist,
 - the change is security-sensitive (see `rules/security.md`); a PR that changes
-  `sensitive_paths`, a locked test or a safety file is also blocked by
-  `guard-install.sh` until the owner types "duyệt merge PR <n>"
+  `sensitive_paths`, a locked test or a safety file is also refused by
+  `merge-pr.sh` until the owner types "duyệt merge PR <n>"
   (`rules/enforcement.md`, "Owner-only merge"; adding new tests to the lock
   and editing `.claude/docs/` are not owner-only). The hook knows only those
   file lists: a security change elsewhere still needs the worker to stop and
@@ -277,19 +277,18 @@ After an automatic merge, tell the owner in one line what was merged and which
 gates it passed. The owner stops automatic merges by saying so; record it in
 `.ai/project.md` as a project rule.
 
-Merge only when the CI wait itself exits 0: `if gh pr checks <n> --watch; then
-gh pr merge <n>; fi`. Never pipe the checks into `&& gh pr merge`
-(`gh pr checks | tail && gh pr merge`): the pipe returns the exit code of
-`tail`, so a red CI still merges. `gh pr view && gh pr merge` has the same
-flaw. The `guard-install.sh` hook blocks every ungated `gh pr merge`.
-Push in one command and merge in the next: the hook blocks a merge with a
-`git push` in the same command, since the PR would change after its check.
-Run the merge directly as a command, never from a script file: the hook
-cannot check a merge inside a script, so it blocks running a script that
-holds one (App01, 2026-10-17).
+Merge only with `bash .claude/hooks/merge-pr.sh <n>` (options `--squash`,
+`--rebase`, `--delete-branch`). It waits for CI and merges only when the wait
+itself exits 0, so give the command a long timeout or run it in the
+background. Hand-written forms failed: `gh pr checks | tail && gh pr merge`
+returns the exit code of `tail`, so a red CI still merged, and
+`gh pr view && gh pr merge` has the same flaw. The `guard-install.sh` hook
+blocks every other merge command, and the script checks state, not text.
 Push every commit before the merge: a commit left only on the local branch
-is not part of the merge and is lost without a warning (PR #36). The hook
-also blocks a merge while the PR's branch has local commits not pushed.
+is not part of the merge and is lost without a warning (PR #36). The script
+refuses while the PR's branch has local commits not pushed, and merges only
+the head it checked (`--match-head-commit`), so a push while CI runs means
+running it again.
 
 A project may forbid auto-merge entirely in its `.ai/project.md` (for example when
 the "done" check is run by a human, not CI). The project rule wins.

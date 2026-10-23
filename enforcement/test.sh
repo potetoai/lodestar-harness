@@ -402,40 +402,25 @@ used 1110000
 LODESTAR_STATE_DIR=$tmp/nudge-state bash "$here/agents/claude/global/context-nudge.sh" \
   <<<"{\"tool_input\":{\"agent_id\":\"a1\"},\"transcript_path\":\"$(native "$tr")\",\"session_id\":\"s1\"}" 2>/dev/null
 t "context nudge: an agent_id inside tool_input is not a subagent" [ $? = 2 ]
-# A finished task (PR merged, plan closed) asks for /clear once, at any context size.
+# A finished task asks for /clear once, at any context size: merge-pr.sh
+# leaves a marker in the git folder after a merge; command text counts for nothing.
 tr2=$tmp/done.jsonl; echo '{"type":"assistant","message":{"usage":{"input_tokens":5}}}' > "$tr2"
-fin() { jq -nc --arg t "$(native "$tr2")" --arg c "$1" --arg r "${2:-}" --arg a "${3:-}" \
-  '{transcript_path:$t,session_id:"s2",tool_name:"Bash",tool_input:{command:$c},tool_response:{stdout:$r}} + (if $a == "" then {} else {agent_id:$a} end)' |
-  LODESTAR_STATE_DIR=$tmp/done-state bash "$here/agents/claude/global/context-nudge.sh"; }
-out=$(fin 'cd x && gh pr merge 41 --merge' 2>&1); rc=$?
-t "task done: a merged PR asks for handoff and /clear" bash -c '[ $1 = 2 ] && grep -q "PR 41 merged" <<<"$2" && grep -q "handoff.md" <<<"$2" && grep -q "/clear" <<<"$2"' _ "$rc" "$out"
-fin 'gh pr merge 41 --merge' 2>/dev/null; t "task done: once per PR" [ $? = 0 ]
-fin 'gh pr view 42 --json state' 'MERGED' 2>/dev/null; t "task done: a merged PR this session did not open is not its task" [ $? = 0 ]
-fin 'gh pr create --fill' 'https://github.com/o/r/pull/420' 2>/dev/null; t "task done: opening a PR is not a finished task" [ $? = 0 ]
-fin 'gh pr view 42 --json state' 'MERGED' 2>/dev/null; t "task done: PR 420 opened here does not make PR 42 its task" [ $? = 0 ]
-fin 'gh pr view https://github.com/x/y/pull/420' 'state: MERGED url: https://github.com/x/y/pull/420' 2>/dev/null; t "task done: another repo's PR by link is not its task" [ $? = 0 ]
-fin 'gh pr view --repo x/y 420' 'state: MERGED' 2>/dev/null; t "task done: another repo's PR by --repo is not its task" [ $? = 0 ]
-out=$(fin 'gh pr view -R o/r 420' 'state: MERGED' 2>&1); t "task done: the owner's merge of a PR opened here, by -R and number" grep -q "PR 420 merged" <<<"$out"
-fin 'cd x && gh pr create --title t --body b' 'https://github.com/o/r/pull/42' 2>/dev/null
-fin 'gh pr view 42 --json state' 'MERGED' 2>/dev/null; t "task done: the owner's merge of a PR opened here, seen with gh pr view" [ $? = 2 ]
-fin 'gh pr create --fill' 'https://github.com/o/r/pull/43' 2>/dev/null
-out=$(fin 'gh pr view' 'state: MERGED' 2>&1); t "task done: a bare gh pr view counts once the session opened a PR" grep -q "PR 43 merged" <<<"$out"
-fin 'gh pr view 43 --json state' 'OPEN' 2>/dev/null; t "task done: an open PR is not done" [ $? = 0 ]
-fin 'gh pr merge 44' 'GraphQL: Merge already in progress' 2>/dev/null; t "task done: a failed merge is not done" [ $? = 0 ]
-fin 'gh pr merge 45 --auto --merge' 2>/dev/null; t "task done: --auto has not merged yet" [ $? = 0 ]
-out=$(fin 'if gh pr checks 48 --watch; then gh pr merge 48 --merge --match-head-commit abc; fi' $'verify\tpass\t1m' 2>&1)
-t "task done: the guard's checks-then-merge form" grep -q "PR 48 merged" <<<"$out"
-fin 'if gh pr checks 49 --watch; then gh pr merge 49 --merge; fi' $'verify\tfail\t1m' 2>/dev/null; t "task done: failed checks did not merge" [ $? = 0 ]
-jq -nc --arg t "$(native "$tr2")" '{transcript_path:$t,session_id:"s2",tool_name:"Bash",tool_input:{command:"if gh pr checks 50 --watch; then gh pr merge 50; fi"},tool_response:{stdout:"",interrupted:false,backgroundTaskId:"b1"}}' |
-  LODESTAR_STATE_DIR=$tmp/done-state bash "$here/agents/claude/global/context-nudge.sh" 2>/dev/null
-t "task done: a merge moved to the background has not finished" [ $? = 0 ]
-fin 'echo "then gh is fine"; echo "gh pr merge 51"' 2>/dev/null; t "task done: then inside quoted text is not a command" [ $? = 0 ]
-fin 'git commit -m "x; then gh pr merge 52"' 2>/dev/null; t "task done: a separator inside quotes is not a command" [ $? = 0 ]
-fin "$(printf '%s\n' "git commit -F - <<'EOF'" 'needs: if gh pr checks 53 --watch; then gh pr merge 53' 'EOF')" 2>/dev/null
-t "task done: a heredoc body is not a command" [ $? = 0 ]
-fin 'echo "then run gh pr merge 46"; grep -n "gh pr view" f' 'MERGED' 2>/dev/null; t "task done: quoted text is not a command" [ $? = 0 ]
-fin 'git mv .ai/plans/active/p.md .ai/plans/completed/' 2>/dev/null; t "task done: a plan moved to completed" [ $? = 2 ]
-fin 'gh pr merge 47' '' a9 2>/dev/null; t "task done: a subagent is not asked for /clear" [ $? = 0 ]
+d=$tmp/done-proj; mkdir -p "$d"; git -C "$d" init -q
+fin() { jq -nc --arg t "$(native "$tr2")" --arg c "${1:-ls}" --arg a "${2:-}" \
+  '{transcript_path:$t,session_id:"s2",tool_name:"Bash",tool_input:{command:$c}} + (if $a == "" then {} else {agent_id:$a} end)' |
+  CLAUDE_PROJECT_DIR=$d LODESTAR_STATE_DIR=$tmp/done-state bash "$here/agents/claude/global/context-nudge.sh"; }
+fin 'gh pr merge 41 --merge' 2>/dev/null; t "task done: a merge command alone is not a finished task" [ $? = 0 ]
+fin 'git mv .ai/plans/active/p.md .ai/plans/completed/' 2>/dev/null; t "task done: a command that names plans/completed is not one either" [ $? = 0 ]
+echo "PR 41 merged" > "$d/.git/lodestar-task-done"
+fin '' a9 2>/dev/null; t "task done: a subagent leaves the marker to its dispatcher" bash -c '[ $1 = 0 ] && [ -f "$2" ]' _ $? "$d/.git/lodestar-task-done"
+out=$(fin 2>&1); rc=$?
+t "task done: merge-pr's marker asks for handoff and /clear" bash -c '[ $1 = 2 ] && grep -q "PR 41 merged" <<<"$2" && grep -q "handoff.md" <<<"$2" && grep -q "/clear" <<<"$2"' _ "$rc" "$out"
+fin 2>/dev/null; t "task done: once per merge (the marker is taken)" bash -c '[ $1 = 0 ] && [ ! -e "$2" ]' _ $? "$d/.git/lodestar-task-done"
+w=$tmp/done-wt; git -C "$d" -c user.name=t -c user.email=t@t commit -q --allow-empty -m init; git -C "$d" worktree add -q "$w" -b fix/wt
+echo "PR 42 merged" > "$d/.git/lodestar-task-done"
+out=$(jq -nc --arg t "$(native "$tr2")" '{transcript_path:$t,session_id:"s2",tool_name:"Bash",tool_input:{command:"ls"}}' |
+  CLAUDE_PROJECT_DIR=$w LODESTAR_STATE_DIR=$tmp/done-state bash "$here/agents/claude/global/context-nudge.sh" 2>&1)
+t "task done: a session in another worktree leaves the main checkout's marker alone" bash -c '! grep -q "PR 42 merged" <<<"$1" && [ -f "$2" ]' _ "$out" "$d/.git/lodestar-task-done"
 
 # 8. Several parts: root Makefile runs targets in each part, routes lint-file.
 p=$tmp/multi; mkdir -p "$p"
@@ -1146,14 +1131,102 @@ for c in ".venv/Scripts/python.exe -m pip install ruff" "source .venv/bin/activa
          "python -m pip download --no-deps -d /tmp/x -r requirements.txt" "npm install" "npm install -D eslint" "pip list"; do
   gi "$c"; t "guard allows: $c" [ $? = 0 ]
 done
+# Guard: a PR is merged only by merge-pr.sh; git hooks stay on; a prototype
+# is never renamed. Pushes are pre-push.sh's job (21b), not the guard's.
 p=$tmp/gp; mkdir -p "$p"; git -C "$p" init -q -b main
-# Fake gh for merges: $FAKE_GH is "<n> <branch> <head> <fork> <base branch>
-# <base commit>", then the PR's files, one per line: "<path>" (modified) or
-# "<status>|<path>|<patch, ; for a new line>|<old path>" (status "-": none).
-# `gh pr view` prints the first line; `gh api .../files` the files as JSON,
-# one page each; `gh api .../contents/.ai/test-lock?ref=<r>` prints
-# $FAKE_LOCK_TIP (r = base branch) or $FAKE_LOCK_BASE (r = base commit):
-# unset is HTTP 404, "ERR" another error. Empty $FAKE_GH: every call fails.
+gp() { CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/guard-install.sh" 2>/dev/null <<<"$(jq -n --arg c "$1" '{tool_input:{command:$c}}')"; }
+for c in "gh pr merge 3 --merge" "cd x && gh pr merge 3" "if gh pr checks 3 --watch; then gh pr merge 3 --merge; fi" \
+         'gh pr checks 52 --watch; if ($LASTEXITCODE -eq 0) { gh pr merge 52 --merge }' "GH_TOKEN=x gh pr merge 5" \
+         "gh -R o/r pr merge 5" "gh.exe pr merge 5" "/usr/bin/gh pr merge 5" 'bash -c "gh pr merge 5"' 'eval "gh pr merge 5"' \
+         'x=`gh pr merge 5`' "gh api repos/o/r/pulls/5/merge -X PUT" "gh api -X 'PUT' repos/o/r/pulls/7/merge" \
+         'gh api --method "PUT" repos/o/r/pulls/7/merge' \
+         "gh api graphql -f query='mutation { mergePullRequest(input: {pullRequestId: \"x\"}) { clientMutationId } }'" \
+         "gh api graphql -f query='mutation { enablePullRequestAutoMerge(input: {pullRequestId: \"x\"}) { clientMutationId } }'" \
+         'gh pr create --body "never run gh pr merge alone"' \
+         'git commit --no-verify -m "x"' 'git commit -nm "x"' "git add . && git push --no-verify origin fix/a" \
+         "git -c core.hooksPath=/dev/null push origin main" "git config core.hooksPath .nohooks" "git config --unset core.hooksPath" \
+         "git branch -m proto/try fix/ship" "git branch -M fix/a proto/hide" "git branch --move proto/try main2"; do
+  gp "$c"; t "guard blocks: $c" [ $? = 2 ]
+done
+for c in "bash .claude/hooks/merge-pr.sh 7" "bash .claude/hooks/merge-pr.sh 7 --squash --delete-branch" \
+         "git push origin main" "git push -u origin fix/a" "gh pr view 52" "gh api repos/o/r/pulls/5" "gh pr checks 52 --watch" \
+         'git commit -m "merge only on green CI"' "git commit -m 'rename -n flag'" "git config --get core.hooksPath" \
+         "git branch -d proto/try" "git stash push -q a.txt && git switch -c fix/b"; do
+  gp "$c"; t "guard allows: $c" [ $? = 0 ]
+done
+# Text in a quoted heredoc fed to cat, tee or git commit is not run (ProjectS
+# session 74); a heredoc a shell or interpreter runs, unquoted, or piped on is.
+body=$'Merge: gh pr merge 5 --merge\ngit commit --no-verify\nEOF'
+for c in $'cat > .ai/handoff.md <<\'EOF\'\n'"$body" $'git commit -q -m "$(cat <<\'EOF\'\nfix: x\n\n'"$body"$'\n)"' \
+         $'git commit -F - <<"EOF"\n'"$body" $'tee -a log.md >/dev/null <<-\'EOF\'\n'"$body"; do
+  gp "$c"; t "guard allows heredoc text: ${c%%$'\n'*}" [ $? = 0 ]
+done
+for c in $'bash <<\'EOF\'\n'"$body" $'python - <<\'EOF\'\n'"$body" $'cat > x.md <<EOF\n'"$body" \
+         $'cat <<\'EOF\' | bash\n'"$body" $'bash -c "$(cat <<\'EOF\'\n'"$body"$'\n)"' \
+         $'cat > x.md <<\'EOF\'\n'"$body"$'\ngh pr merge 6'; do
+  gp "$c"; t "guard blocks run heredoc: ${c%%$'\n'*}" [ $? = 2 ]
+done
+LODESTAR_SKIP_HOOKS=1 bash "$here/agents/claude/hooks/guard-install.sh" 2>/dev/null <<<'{"tool_input":{"command":"pip install ruff"}}'
+t "LODESTAR_SKIP_HOOKS disables the install guard" [ $? = 0 ]
+
+# 21b. pre-push.sh: git names the pushed refs ("<local ref> <sha> <remote ref>
+# <sha>" on stdin). Main, master and the remote's default branch change only
+# by PR; proto/* never leaves the machine.
+r=$tmp/pp; mkdir -p "$r"; git -C "$r" init -q -b fix/a; git -C "$r" -c user.name=t -c user.email=t@t commit -q --allow-empty -m init
+s=$(git -C "$r" rev-parse HEAD); z=0000000000000000000000000000000000000000
+pp() { (cd "$r" && bash "$here/agents/claude/hooks/pre-push.sh" origin url 2>/dev/null <<<"$1"); }
+for l in "refs/heads/fix/a $s refs/heads/main $z" "refs/heads/fix/a $s refs/heads/master $s" "(delete) $z refs/heads/main $s" \
+         "refs/heads/fix/a $s refs/heads/Main $z" "refs/heads/proto/x $s refs/heads/fix/b $z" "refs/heads/fix/a $s refs/heads/proto/x $z" \
+         $'refs/heads/fix/a '"$s refs/heads/fix/a $z"$'\nrefs/heads/proto/x '"$s refs/heads/proto/x $z"; do
+  pp "$l"; t "pre-push blocks: ${l//$'\n'/ + }" [ $? = 1 ]
+done
+for l in "refs/heads/fix/a $s refs/heads/fix/a $z" "refs/heads/fix/a $s refs/heads/fix/main-page $z" \
+         "refs/tags/v1 $s refs/tags/main $z" "refs/heads/fix/proto-notes $s refs/heads/fix/proto-notes $z" ""; do
+  pp "$l"; t "pre-push allows: $l" [ $? = 0 ]
+done
+git -C "$r" symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/develop
+pp "refs/heads/fix/a $s refs/heads/develop $z"; t "pre-push blocks the remote's default branch (develop)" [ $? = 1 ]
+pp "refs/heads/fix/a $s refs/heads/develop-docs $z"; t "pre-push allows a branch that only starts with the default name" [ $? = 0 ]
+git -C "$r" symbolic-ref -d refs/remotes/origin/HEAD
+git -C "$r" symbolic-ref HEAD refs/heads/proto/try
+pp "HEAD $s refs/heads/fix/a $z"; t "pre-push blocks any push while a prototype is checked out" [ $? = 1 ]
+git -C "$r" symbolic-ref HEAD refs/heads/fix/a
+# End to end: bootstrap installs git's hook; a real push to main fails, to a
+# feature branch works; a prototype worktree is covered; doctor A4d checks it.
+b=$tmp/pp-remote.git; git init -q --bare "$b"
+bash "$here/bootstrap.sh" "$r" --stack python >/dev/null
+git -C "$r" remote add origin "$b"; git -C "$r" add -A; git -C "$r" -c user.name=t -c user.email=t@t commit -q -m setup
+t "bootstrap installs git's pre-push hook" grep -q 'pre-push\.sh' "$r/.git/hooks/pre-push"
+git -C "$r" push -q origin HEAD:main 2>/dev/null; t "a real git push to main is blocked" [ $? != 0 ]
+git -C "$r" push -q origin fix/a 2>/dev/null; t "a real git push of a feature branch works" [ $? = 0 ]
+w=$tmp/pp-proto; git -C "$r" worktree add -q "$w" -b proto/wt
+git -C "$w" push -q origin HEAD:fix/c 2>/dev/null; t "a real push from a prototype worktree is blocked" [ $? != 0 ]
+git -C "$r" worktree remove --force "$w"; git -C "$r" branch -q -D proto/wt
+out=$(bash "$r/.claude/hooks/doctor.sh" "$r" 2>&1); t "doctor A4d passes with the hook" grep -qE '✅ A4d ' <<<"$out"
+rm "$r/.git/hooks/pre-push"
+out=$(bash "$r/.claude/hooks/doctor.sh" "$r" 2>&1); t "doctor A4d fails without the hook (fresh clone)" grep -qE '❌ A4d ' <<<"$out"
+printf '#!/bin/sh\necho mine\n' > "$r/.git/hooks/pre-push"
+out=$(bash "$here/bootstrap.sh" "$r" --stack python --upgrade)
+t "bootstrap keeps a pre-push hook that is not Lodestar's and says what to add" bash -c 'grep -q mine "$1" && grep -q "not Lodestar" <<<"$2"' _ "$r/.git/hooks/pre-push" "$out"
+git -C "$r" config core.hooksPath .husky
+out=$(bash "$here/bootstrap.sh" "$r" --stack python --upgrade)
+t "bootstrap writes no hook under core.hooksPath, and says what to add" bash -c '[ ! -e "$1/.husky/pre-push" ] && grep -q "core.hooksPath is set" <<<"$2"' _ "$r" "$out"
+git -C "$r" config --unset core.hooksPath
+# C1: a private repo on GitHub Free gets the real reason, not "set it on GitHub".
+mkdir -p "$tmp/fakegh"; printf '#!/usr/bin/env bash\necho "gh: Upgrade to GitHub Pro or make this repository public to enable this feature. (HTTP 403)" >&2\nexit 1\n' > "$tmp/fakegh/gh"; chmod +x "$tmp/fakegh/gh"
+out=$(PATH="$tmp/fakegh:$PATH" bash "$here/agents/claude/hooks/doctor.sh" "$tmp/maint" 2>&1)
+t "doctor C1 names the GitHub Free limit" grep -q "C1  main cannot be locked: private repo on GitHub Free" <<<"$out"
+
+# 21c. merge-pr.sh: the one way to merge. Fake gh: $FAKE_GH is "<n> <branch>
+# <head> <fork> <base branch> <base commit> [state]", then the PR's files,
+# one per line: "<path>" (modified) or "<status>|<path>|<patch, ; for a new
+# line>|<old path>" (status "-": none). `gh pr view` prints the first line
+# (state OPEN when left out; once the checks ran, head $FAKE_NEWHEAD if set);
+# `gh api .../files` the files as JSON; `gh api .../contents/.ai/test-lock?
+# ref=<r>` prints $FAKE_LOCK_TIP (r = base branch) or $FAKE_LOCK_BASE (r =
+# base commit): unset is HTTP 404, "ERR" another error. `gh pr checks` exits
+# $FAKE_CHECKS (0; "none": no checks reported); `gh pr merge` writes its
+# arguments to $FAKE_DIR/merged. Empty $FAKE_GH: every call fails.
 mkdir -p "$tmp/ghpr"
 cat > "$tmp/ghpr/gh" <<'EOF'
 #!/bin/sh
@@ -1173,97 +1246,47 @@ case "$*" in
         {filename: .[1]} + (if .[0] == "-" then {} else {status: .[0]} end)
         + (if (.[2] // "") != "" then {patch: (.[2] | gsub(";"; "\n"))} else {} end)
         + (if (.[3] // "") != "" then {previous_filename: .[3]} else {} end) end | [.]' ;;
-  *) echo "$first" ;;
+  "pr checks"*) : > "$FAKE_DIR/checked"
+    [ "$FAKE_CHECKS" = none ] && { echo "no checks reported on the 'x' branch"; exit 1; }
+    echo "verify pass"; exit "${FAKE_CHECKS:-0}" ;;
+  "pr merge"*) echo "$*" > "$FAKE_DIR/merged" ;;
+  *) set -- $first
+    [ -n "$FAKE_NEWHEAD" ] && [ -f "$FAKE_DIR/checked" ] && set -- "$1" "$2" "$FAKE_NEWHEAD" "$4" "$5" "$6" "$7"
+    echo "$1 $2 $3 $4 $5 $6 ${7:-OPEN}" ;;
 esac
 EOF
 chmod +x "$tmp/ghpr/gh"
-ghok='7 fix/x 1111111 false main 0000000\nREADME.md'
-gp() { FAKE_GH=$ghok PATH="$tmp/ghpr:$PATH" CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/guard-install.sh" 2>/dev/null <<<"$(jq -n --arg c "$1" '{tool_input:{command:$c}}')"; }
-for c in "git push origin main" "git push -u origin HEAD:main" "git push origin --delete master" "git push" "git push -u origin" \
-         'git commit --no-verify -m "x"' 'git commit -nm "x"' "git add . && git push --no-verify origin fix/a" \
-         "git -C . push origin main" "git --no-pager push" "git -c push.default=current push"; do
-  gp "$c"; t "guard blocks: $c" [ $? = 2 ]
-done
-for c in "git push -u origin fix/a" "git push origin fix/main-page" "git pull origin main" "git log main" \
-         "git commit -m 'rename -n flag'" "if gh pr checks 3 --watch; then gh pr merge 3 --merge --delete-branch; fi" \
-         "git stash push -q a.txt && git switch -c fix/b" 'echo "git stash push, then switch"' "git log --grep push"; do
-  gp "$c"; t "guard allows: $c" [ $? = 0 ]
-done
-# Merge only on green CI: the merge must sit behind the CI wait's exit code.
-for c in "gh pr merge 3 --merge" "cd x && gh pr merge 3" \
-         "gh pr view 52 --json statusCheckRollup && gh pr merge 52 --merge" \
-         "gh pr checks 52 --watch | tail -3 && gh pr merge 52" \
-         "if gh pr checks 52 --watch | tail -3; then gh pr merge 52; fi" \
-         "if gh pr checks 52; then gh pr merge 52; fi" \
-         "if gh pr checks 5 --watch; then gh pr merge 5; fi; gh pr merge 6" \
-         'gh pr checks 52 --watch; gh pr merge 52'          "if gh pr checks 5 --watch; then :; else gh pr merge 5; fi" "GH_TOKEN=x gh pr merge 5"          "gh -R o/r pr merge 5" "gh.exe pr merge 5" "/usr/bin/gh pr merge 5" 'bash -c "gh pr merge 5"'          'eval "gh pr merge 5"' 'x=`gh pr merge 5`' "gh api repos/o/r/pulls/5/merge -X PUT"          'gh pr create --body "never run gh pr merge alone"'; do
-  gp "$c"; t "guard blocks: $c" [ $? = 2 ]
-done
-for c in "if gh pr checks 52 --watch --interval 20; then gh pr merge 52 --merge && gh pr view 52; fi" \
-         "cd /f/x && if gh pr checks 52 --watch 2>&1; then gh pr merge 52 --merge; fi" \
-         $'if gh pr checks 52 --watch\nthen\n  gh pr merge 52 --merge\nfi' \
-         'gh pr checks 52 --watch; if ($LASTEXITCODE -eq 0) { gh pr merge 52 --merge }' \
-         'gh pr checks 52 --watch; if ($?) { gh pr merge 52 }' \
-         'git commit -m "merge only on green CI"' "gh pr view 52" "gh api repos/o/r/pulls/5"; do
-  gp "$c"; t "guard allows: $c" [ $? = 0 ]
-done
-# Text in a quoted heredoc fed to cat, tee or git commit is not run (ProjectS
-# session 74); a heredoc a shell or interpreter runs, unquoted, or piped on is.
-body=$'Merge: gh pr merge 5 --merge\ngit push origin main\nEOF'
-for c in $'cat > .ai/handoff.md <<\'EOF\'\n'"$body" $'git commit -q -m "$(cat <<\'EOF\'\nfix: x\n\n'"$body"$'\n)"' \
-         $'git commit -F - <<"EOF"\n'"$body" $'tee -a log.md >/dev/null <<-\'EOF\'\n'"$body"; do
-  gp "$c"; t "guard allows heredoc text: ${c%%$'\n'*}" [ $? = 0 ]
-done
-for c in $'bash <<\'EOF\'\n'"$body" $'python - <<\'EOF\'\n'"$body" $'cat > x.md <<EOF\n'"$body" \
-         $'cat <<\'EOF\' | bash\n'"$body" $'bash -c "$(cat <<\'EOF\'\n'"$body"$'\n)"' \
-         $'cat > x.md <<\'EOF\'\n'"$body"$'\ngh pr merge 6'; do
-  gp "$c"; t "guard blocks run heredoc: ${c%%$'\n'*}" [ $? = 2 ]
-done
-# A merge inside a script the command runs is blocked, even behind a CI wait.
-mkdir -p "$p/scripts" "$p/enforcement"
-printf 'if gh pr checks 5 --watch; then\n  gh pr merge 5 --merge\nfi\n' > "$p/scripts/ship.sh"
-printf 'subprocess.run(["gh", "pr", "merge", "5"])\n' > "$p/ship.py"
-printf 'gh pr view 5\n' > "$p/scripts/look.sh"; printf 'gh pr merge 5\n' > "$p/enforcement/t.sh"
-printf '#!/usr/bin/env bash\n# Managed by lodestar-harness.\ngh pr merge 5\n' > "$p/scripts/managed.sh"
-for c in "bash scripts/ship.sh" "./scripts/ship.sh" "sh '$p/scripts/ship.sh'" "python ship.py" "cd . && bash scripts/ship.sh 5"; do
-  gp "$c"; t "guard blocks a merge in a script: $c" [ $? = 2 ]
-done
-for c in "bash scripts/look.sh" "bash enforcement/t.sh" "bash scripts/managed.sh" "bash scripts/missing.sh"; do
-  gp "$c"; t "guard allows a script without a merge: $c" [ $? = 0 ]
-done
-# Merge: a local commit never pushed would be left out of the merge (PR #36).
 m=$tmp/gm; mkdir -p "$m"; git -C "$m" init -q -b main
-gmerge() { FAKE_GH=$2 PATH="$tmp/ghpr:$PATH" CLAUDE_PROJECT_DIR=$m bash "$here/agents/claude/hooks/guard-install.sh" 2>/dev/null <<<"$(jq -n --arg c "$1" '{tool_input:{command:$c}}')"; }
+# mp ARGS GH: run merge-pr.sh. 0: merged; 1: refused and gh pr merge never
+# ran; 9: anything else (a crash, or a merge despite a refusal).
+mp() { rm -f "$tmp/merged" "$tmp/checked"; (cd "$m" && FAKE_DIR=$tmp FAKE_GH=$2 LODESTAR_CHECKS_RETRY=0 PATH="$tmp/ghpr:$PATH" CLAUDE_PROJECT_DIR=$m \
+  bash "$here/agents/claude/hooks/merge-pr.sh" $1 >/dev/null 2>&1); local rc=$?
+  [ $rc = 0 ] && [ -f "$tmp/merged" ] && return 0; [ $rc = 1 ] && [ ! -f "$tmp/merged" ] && return 1; return 9; }
 git -C "$m" checkout -q -b fix/m; git -C "$m" -c user.name=t -c user.email=t@t commit -q --allow-empty -m one
 git -C "$m" update-ref refs/remotes/origin/fix/m HEAD
-merge7="if gh pr checks 7 --watch; then gh pr merge 7 --merge; fi"
 pr7='7 fix/m aaaaaaa false main 0000000\nsrc/app.py'
-gmerge "$merge7" "$pr7"; t "guard allows a merge when the branch is fully pushed" [ $? = 0 ]
-gmerge "git stash push -q && $merge7" "$pr7"; t "guard allows a merge after git stash push" [ $? = 0 ]
-git -C "$m" -c user.name=t -c user.email=t@t commit -q --allow-empty -m two
-gmerge "$merge7" "$pr7"; t "guard blocks a merge while the PR's branch has an unpushed commit" [ $? = 2 ]
-gmerge 'gh pr checks 7 --watch; if ($LASTEXITCODE -eq 0) { gh pr merge 7 --merge }' "$pr7"; t "guard blocks the PowerShell merge with an unpushed commit" [ $? = 2 ]
-gmerge "if gh pr checks --watch; then gh pr merge --merge; fi" "$pr7"; t "guard blocks a merge of the current branch with an unpushed commit" [ $? = 2 ]
-gmerge "if gh pr checks 7 --watch; then gh pr merge --squash -d 7; fi" "$pr7"; t "guard blocks the unpushed merge with flags before the number" [ $? = 2 ]
-gmerge "if gh pr checks 7 --watch; then gh pr merge -b x fix/m; fi" "$pr7"; t "guard blocks the unpushed merge named by branch" [ $? = 2 ]
-gmerge "git push && $merge7" "$pr7"; t "guard blocks a merge with a push before it in the same command" [ $? = 2 ]
-gmerge "$merge7; git push" "$pr7"; t "guard blocks a merge that pushes only after it" [ $? = 2 ]
-gmerge "$merge7" '7 fix/m aaaaaaa true main 0000000\nsrc/app.py'; t "guard skips the unpushed check for a fork PR" [ $? = 0 ]
-git -C "$m" checkout -q -b side
-gmerge "$merge7" "$pr7"; t "guard blocks the unpushed PR branch when merging from another branch (PR #36)" [ $? = 2 ]
-git -C "$m" checkout -q fix/m
-gmerge "$merge7" ""; t "guard blocks a merge when gh cannot read the PR" [ $? = 2 ]
-gmerge "$merge7" '7 fix/m aaaaaaa false main 0000000'; t "guard blocks a merge when gh cannot list the PR's files" [ $? = 2 ]
-gmerge "if gh pr checks 7 -R o/r --watch; then gh pr merge 7 -R o/r; fi" "$pr7"; t "guard blocks a merge in another repo (-R)" [ $? = 2 ]
-gmerge "if GH_REPO=o/r gh pr checks 7 --watch; then GH_REPO=o/r gh pr merge 7; fi" "$pr7"; t "guard blocks a merge in another repo (GH_REPO)" [ $? = 2 ]
-for c in "gh api -X 'PUT' repos/o/r/pulls/7/merge" 'gh api --method "PUT" repos/o/r/pulls/7/merge' \
-         "gh api graphql -f query='mutation { mergePullRequest(input: {pullRequestId: \"x\"}) { clientMutationId } }'" \
-         "gh api graphql -f query='mutation { enablePullRequestAutoMerge(input: {pullRequestId: \"x\"}) { clientMutationId } }'"; do
-  gmerge "$c" "$pr7"; t "guard blocks: $c" [ $? = 2 ]
+mp 7 "$pr7"; t "merge-pr merges a pushed PR on green CI" [ $? = 0 ]
+t "merge-pr pins the checked head" grep -q -- "--merge --match-head-commit aaaaaaa" "$tmp/merged"
+t "merge-pr leaves the task-done marker" grep -qx "PR 7 merged" "$m/.git/lodestar-task-done"
+mp "7 --squash -d" "$pr7"; t "merge-pr passes --squash and --delete-branch" grep -q -- "--squash --delete-branch --match-head-commit" "$tmp/merged"
+for a in "" "x" "7 8" "7 --auto" "7 --admin"; do
+  mp "$a" "$pr7"; t "merge-pr refuses the arguments '$a'" [ $? = 1 ]
 done
-gmerge "$merge7" '7 fix/other aaaaaaa false main 0000000\nsrc/app.py'; t "guard allows a merge of a branch with no local copy" [ $? = 0 ]
+FAKE_CHECKS=1 mp 7 "$pr7"; t "merge-pr does not merge on a red CI" [ $? = 1 ]
+FAKE_CHECKS=none mp 7 "$pr7"; t "merge-pr does not merge when no checks are reported" [ $? = 1 ]
+FAKE_NEWHEAD=ccccccc mp 7 "$pr7"; t "merge-pr does not merge a head pushed while CI ran" [ $? = 1 ]
+mp 7 '7 fix/m aaaaaaa false main 0000000 MERGED\nsrc/app.py'; t "merge-pr refuses a PR that is not open" [ $? = 1 ]
+(export GH_REPO=o/r; mp 7 "$pr7"); t "merge-pr refuses GH_REPO (another repo)" [ $? = 1 ]
+git -C "$m" -c user.name=t -c user.email=t@t commit -q --allow-empty -m two
+mp 7 "$pr7"; t "merge-pr refuses while the PR's branch has an unpushed commit (PR #36)" [ $? = 1 ]
+mp 7 '7 fix/m aaaaaaa true main 0000000\nsrc/app.py'; t "merge-pr skips the unpushed check for a fork PR" [ $? = 0 ]
+git -C "$m" checkout -q -b side
+mp 7 "$pr7"; t "merge-pr sees the unpushed PR branch from another branch" [ $? = 1 ]
+git -C "$m" checkout -q fix/m
+mp 7 ""; t "merge-pr stops when gh cannot read the PR" [ $? = 1 ]
+mp 7 '7 fix/m aaaaaaa false main 0000000'; t "merge-pr stops when gh cannot list the PR's files" [ $? = 1 ]
+mp 7 '7 fix/other aaaaaaa false main 0000000\nsrc/app.py'; t "merge-pr merges a branch with no local copy" [ $? = 0 ]
 git -C "$m" update-ref refs/remotes/origin/fix/m HEAD
-gmerge "$merge7" "$pr7"; t "guard allows the merge once the commit is pushed" [ $? = 0 ]
 # Owner-only merge: sensitive code, locked tests and safety files need the
 # owner's "duyệt merge PR <n>" for the PR's current head.
 mkdir -p "$m/.ai"; printf 'name: x\nsensitive_paths:\n  - "src/auth/"\n  - "*.sql"\n  - ./app/pay  # money\n  - Keys\nowner_language: vi\n' > "$m/.ai/project.md"
@@ -1272,119 +1295,61 @@ for f in src/auth/login.py db/init.sql tests/test_pay.py .github/workflows/ci.ym
          .codex/hooks.json .ai/project.md .ai/test-lock enforcement/test.sh app/pay/card.py app/pay keys/prod.pem SRC/Auth/x.py \
          .claude/settings.json .claude/settings.local.json .claude/agents/reviewer.md .claude/skills/s/SKILL.md \
          .claude/commands/c.md .claude/new-folder/x.md .claude/docs-old/x.md .Claude/Settings.json added\|src/auth/new.py; do
-  gmerge "$merge7" "7 fix/m aaaaaaa false main 0000000\nREADME.md\n$f"; t "guard blocks an unapproved merge that changes $f" [ $? = 2 ]
+  mp 7 "7 fix/m aaaaaaa false main 0000000\nREADME.md\n$f"; t "merge-pr refuses an unapproved PR that changes $f" [ $? = 1 ]
 done
-gmerge "$merge7" '7 fix/m aaaaaaa false main 0000000\nsrc/authors.py\ndocs/sql.md\ntests/test_other.py\napp/payroll.py'; t "guard allows a merge of files outside the owner-only list" [ $? = 0 ]
-gmerge "$merge7" '7 fix/m aaaaaaa false main 0000000\n.claude/docs/data.md\n.Claude/Docs/Run.md\nREADME.md'; t "guard allows a merge whose .claude/ files are all in .claude/docs/" [ $? = 0 ]
+mp 7 '7 fix/m aaaaaaa false main 0000000\nsrc/authors.py\ndocs/sql.md\ntests/test_other.py\napp/payroll.py'; t "merge-pr merges files outside the owner-only list" [ $? = 0 ]
+mp 7 '7 fix/m aaaaaaa false main 0000000\n.claude/docs/data.md\n.Claude/Docs/Run.md\nREADME.md'; t "merge-pr merges .claude/ files that are all in .claude/docs/" [ $? = 0 ]
 sed -i 's#^sensitive_paths:#&\n  - .claude/#' "$m/.ai/project.md"
-gmerge "$merge7" '7 fix/m aaaaaaa false main 0000000\n.claude/docs/data.md'; t "guard blocks .claude/docs/ when sensitive_paths lists .claude/" [ $? = 2 ]
+mp 7 '7 fix/m aaaaaaa false main 0000000\n.claude/docs/data.md'; t "merge-pr refuses .claude/docs/ when sensitive_paths lists .claude/" [ $? = 1 ]
 sed -i '/^  - \.claude\/$/d' "$m/.ai/project.md"
-gmerge "$merge7" '7 fix/m aaaaaaa false main 0000000\nrenamed|docs/ci.yml||.github/workflows/ci.yml'; t "guard blocks a rename away from a safety file (old path listed)" [ $? = 2 ]
-gmerge "$merge7" '7 fix/m aaaaaaa false\nREADME.md'; t "guard blocks a merge when gh gives no base branch" [ $? = 2 ]
+mp 7 '7 fix/m aaaaaaa false main 0000000\nrenamed|docs/ci.yml||.github/workflows/ci.yml'; t "merge-pr refuses a rename away from a safety file (old path listed)" [ $? = 1 ]
+mp 7 '7 fix/m aaaaaaa false\nREADME.md'; t "merge-pr stops when gh gives no base branch" [ $? = 1 ]
 # The lock may grow without the owner. Removing or changing a line, deleting
 # or renaming the lock away, or a lock diff gh does not give: owner-only.
 lk='7 fix/m aaaaaaa false main 0000000\nadded|tests/test_new.py'
-gmerge "$merge7" "$lk\nmodified|.ai/test-lock|@@ -1,2 +1,3 @@; # locked; tests/test_pay.py;+tests/test_new.py"; t "guard allows a merge that only adds lines to the lock" [ $? = 0 ]
-gmerge "$merge7" "$lk\nmodified|.ai/test-lock|@@ -1,2 +1,3 @@; # locked;-tests/test_pay.py;\\\\ No newline at end of file;+tests/test_pay.py;+tests/test_new.py"; t "guard allows lock growth after a missing final newline" [ $? = 0 ]
-gmerge "$merge7" "$lk\nmodified|.ai/test-lock|@@ -1,3 +1,3 @@;-# locked;-; tests/test_pay.py;+tests/test_new.py"; t "guard allows lock growth that drops a comment or blank line" [ $? = 0 ]
-(unset FAKE_LOCK_TIP FAKE_LOCK_BASE; gmerge "$merge7" "$lk\nadded|.ai/test-lock|@@ -0,0 +1 @@;+tests/test_new.py"); t "guard allows a merge that creates the lock" [ $? = 0 ]
+mp 7 "$lk\nmodified|.ai/test-lock|@@ -1,2 +1,3 @@; # locked; tests/test_pay.py;+tests/test_new.py"; t "merge-pr merges a PR that only adds lines to the lock" [ $? = 0 ]
+mp 7 "$lk\nmodified|.ai/test-lock|@@ -1,2 +1,3 @@; # locked;-tests/test_pay.py;\\\\ No newline at end of file;+tests/test_pay.py;+tests/test_new.py"; t "merge-pr allows lock growth after a missing final newline" [ $? = 0 ]
+mp 7 "$lk\nmodified|.ai/test-lock|@@ -1,3 +1,3 @@;-# locked;-; tests/test_pay.py;+tests/test_new.py"; t "merge-pr allows lock growth that drops a comment or blank line" [ $? = 0 ]
+(unset FAKE_LOCK_TIP FAKE_LOCK_BASE; mp 7 "$lk\nadded|.ai/test-lock|@@ -0,0 +1 @@;+tests/test_new.py"); t "merge-pr merges a PR that creates the lock" [ $? = 0 ]
 for d in "modified|.ai/test-lock|@@ -1,2 +1,2 @@; # locked;-tests/test_pay.py;+tests/test_new.py" \
          "modified|.ai/test-lock|@@ -1,2 +1,2 @@; # locked;-tests/test_pay.py;+Tests/test_pay.py" \
          "modified|.ai/test-lock|@@ -1,2 +1,2 @@; # locked;-tests/test_pay.py;+# tests/test_pay.py" \
          "modified|.ai/test-lock" "removed|.ai/test-lock" "renamed|.ai/old-lock||.ai/test-lock" \
          "-|.ai/test-lock|@@ -1 +1,2 @@; tests/test_pay.py;+tests/test_new.py" \
          "modified|.ai/test-lock|@@ -1 +1,2 @@; tests/test_pay.py;+tests/test_new.py\nmodified|src/auth/login.py"; do
-  gmerge "$merge7" "$lk\n$d"; t "guard blocks an unapproved merge with: ${d//\\n/ + }" [ $? = 2 ]
+  mp 7 "$lk\n$d"; t "merge-pr refuses an unapproved PR with: ${d//\\n/ + }" [ $? = 1 ]
 done
 # Locked tests: the lock on GitHub at the target branch's tip and at the PR's
 # base; the local working-tree lock is not used; a file the PR adds is free.
 printf 'tests/test_local.py\n' > "$m/.ai/test-lock"
-gmerge "$merge7" '7 fix/m aaaaaaa false main 0000000\ntests/test_local.py'; t "guard ignores the local working-tree lock" [ $? = 0 ]
+mp 7 '7 fix/m aaaaaaa false main 0000000\ntests/test_local.py'; t "merge-pr ignores the local working-tree lock" [ $? = 0 ]
 for d in "removed|tests/test_pay.py" "renamed|tests/test_moved.py||tests/test_pay.py" "-|tests/test_pay.py" Tests/Test_Pay.py; do
-  gmerge "$merge7" "7 fix/m aaaaaaa false main 0000000\n$d"; t "guard blocks an unapproved merge of a locked test: $d" [ $? = 2 ]
+  mp 7 "7 fix/m aaaaaaa false main 0000000\n$d"; t "merge-pr refuses an unapproved PR touching a locked test: $d" [ $? = 1 ]
 done
 export FAKE_LOCK_TIP='tests/core/\ntests/test_*.py\nTests/X.py\nlib/checks\ntests/test_future.py' FAKE_LOCK_BASE=''
 for f in tests/core/a.py tests/test_any.py tests/x.py lib/checks/run.sh; do
-  gmerge "$merge7" "7 fix/m aaaaaaa false main 0000000\n$f"; t "guard blocks an unapproved merge of $f (locked at the tip only)" [ $? = 2 ]
+  mp 7 "7 fix/m aaaaaaa false main 0000000\n$f"; t "merge-pr refuses an unapproved PR touching $f (locked at the tip only)" [ $? = 1 ]
 done
-gmerge "$merge7" '7 fix/m aaaaaaa false main 0000000\ntests/corex/a.py\ntests/other_test.py\nlib/checks2/x.sh\nadded|tests/test_future.py\nadded|tests/test_two.py'; t "guard allows unlocked tests and tests the PR adds" [ $? = 0 ]
+mp 7 '7 fix/m aaaaaaa false main 0000000\ntests/corex/a.py\ntests/other_test.py\nlib/checks2/x.sh\nadded|tests/test_future.py\nadded|tests/test_two.py'; t "merge-pr merges unlocked tests and tests the PR adds" [ $? = 0 ]
 unset FAKE_LOCK_TIP; export FAKE_LOCK_BASE='tests/test_old.py'
-gmerge "$merge7" '7 fix/m aaaaaaa false main 0000000\ntests/test_old.py'; t "guard blocks a test locked at the PR's base only (no lock at the tip)" [ $? = 2 ]
+mp 7 '7 fix/m aaaaaaa false main 0000000\ntests/test_old.py'; t "merge-pr refuses a test locked at the PR's base only" [ $? = 1 ]
 unset FAKE_LOCK_BASE
-gmerge "$merge7" '7 fix/m aaaaaaa false main 0000000\ntests/test_old.py'; t "guard allows a merge when GitHub has no lock (HTTP 404)" [ $? = 0 ]
+mp 7 '7 fix/m aaaaaaa false main 0000000\ntests/test_old.py'; t "merge-pr merges when GitHub has no lock (HTTP 404)" [ $? = 0 ]
 FAKE_LOCK_TIP=ERR; export FAKE_LOCK_TIP
-gmerge "$merge7" '7 fix/m aaaaaaa false main 0000000\nREADME.md'; t "guard blocks a merge when the lock at the tip cannot be read" [ $? = 2 ]
+mp 7 '7 fix/m aaaaaaa false main 0000000\nREADME.md'; t "merge-pr stops when the lock at the tip cannot be read" [ $? = 1 ]
 unset FAKE_LOCK_TIP; FAKE_LOCK_BASE=ERR; export FAKE_LOCK_BASE
-gmerge "$merge7" '7 fix/m aaaaaaa false main 0000000\nREADME.md'; t "guard blocks a merge when the lock at the base cannot be read" [ $? = 2 ]
+mp 7 '7 fix/m aaaaaaa false main 0000000\nREADME.md'; t "merge-pr stops when the lock at the base cannot be read" [ $? = 1 ]
 unset FAKE_LOCK_BASE
 auth7='7 fix/m aaaaaaa false main 0000000\nsrc/auth/login.py'
 echo "2026-10-16 10:00 merge-pr 7 bbbbbbb" > "$m/.ai/approvals.log"
-gmerge "$merge7" "$auth7"; t "guard blocks when the approval is for another head (new push)" [ $? = 2 ]
+mp 7 "$auth7"; t "merge-pr refuses when the approval is for another head (new push)" [ $? = 1 ]
 echo "2026-10-16 10:00 merge-pr 8 aaaaaaa" > "$m/.ai/approvals.log"
-gmerge "$merge7" "$auth7"; t "guard blocks when the approval is for another PR" [ $? = 2 ]
+mp 7 "$auth7"; t "merge-pr refuses when the approval is for another PR" [ $? = 1 ]
 printf '2026-10-16 10:00 merge-pr 7 aaaaaaa\r\n' > "$m/.ai/approvals.log"
-gmerge "$merge7" "$auth7"; t "guard blocks an approved sensitive merge without --match-head-commit" [ $? = 2 ]
-gmerge "if gh pr checks 7 --watch; then gh pr merge 7 --auto --match-head-commit aaaaaaa; fi" "$auth7"; t "guard blocks an approved sensitive merge with --auto" [ $? = 2 ]
-gmerge "if gh pr checks 7 --watch; then gh pr merge 7 --merge --match-head-commit bbbbbbb; fi" "$auth7"; t "guard blocks an approved sensitive merge pinned to another head" [ $? = 2 ]
-gmerge "if gh pr checks 7 --watch; then gh pr merge 7 --merge --match-head-commit aaaaaaa; fi" "$auth7"; t "guard allows a sensitive merge the owner approved, pinned to that head" [ $? = 0 ]
-gmerge "if gh pr checks 7 --watch; then gh pr merge 7 --match-head-commit=aaaaaaa; fi" "$auth7"; t "guard allows --match-head-commit=<head>" [ $? = 0 ]
+mp 7 "$auth7"; t "merge-pr merges a sensitive PR the owner approved at its head" [ $? = 0 ]
+t "merge-pr pins the approved head" grep -q -- "--match-head-commit aaaaaaa" "$tmp/merged"
+FAKE_NEWHEAD=ccccccc mp 7 "$auth7"; t "merge-pr does not merge an approved PR that got a new push during CI" [ $? = 1 ]
 rm -rf "$m/.ai"
-git -C "$p" checkout -q -b fix/a; gp "git push -u origin"; t "guard allows a bare push from a feature branch" [ $? = 0 ]
-git -C "$p" symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/develop
-gp "git push origin develop"; t "guard blocks a push to the remote's default branch (develop)" [ $? = 2 ]
-gp "git push origin develop-docs"; t "guard allows a branch that only starts with the default name" [ $? = 0 ]
-# Prototype branches (proto/*) never leave the machine; any push from one is blocked.
-for c in "git push -u origin proto/try-ui" "git push origin HEAD:proto/x" "git push origin HEAD:refs/heads/proto/x"; do
-  gp "$c"; t "guard blocks: $c" [ $? = 2 ]
-done
-gp "git push origin fix/proto-notes"; t "guard allows a branch that only mentions proto" [ $? = 0 ]
-git -C "$p" checkout -q -b proto/try
-for c in "git push" "git push -u origin" "git push origin HEAD:fix/a" "git push origin fix/a"; do
-  gp "$c"; t "guard blocks on a prototype branch: $c" [ $? = 2 ]
-done
-gp "git status"; t "guard allows other git commands on a prototype branch" [ $? = 0 ]
-# Until now the repo had no commit; give fix/a one and make proto/try real.
-git -C "$p" symbolic-ref HEAD refs/heads/fix/a
-git -C "$p" -c user.name=t -c user.email=t@t commit -q --allow-empty -m init; git -C "$p" branch proto/try
-for c in 'git push origin "proto/x"' "git push origin 'proto/x'" "git push origin +proto/x" "git push origin Proto/X"          "git status && git push origin proto/x" "git push --all origin" "git push --mirror origin"          "git branch -m proto/try fix/ship" "git branch -M fix/a proto/hide" "git branch --move proto/try main2"; do
-  gp "$c"; t "guard blocks while a prototype branch exists: $c" [ $? = 2 ]
-done
-gp "git branch -d proto/try"; t "guard allows deleting a prototype branch" [ $? = 0 ]
-# The prototype lives in its own worktree: the push is judged from where it runs.
-w=$tmp/gp-proto; git -C "$p" worktree add -q "$w" -b proto/wt
-gpc() { CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/guard-install.sh" 2>/dev/null <<<"$(jq -n --arg c "$1" --arg d "$2" '{cwd:$d, tool_input:{command:$c}}')"; }
-gpc "git push -u origin" "$w"; t "guard blocks a bare push in a prototype worktree (cwd)" [ $? = 2 ]
-for c in "git -C $w push" "cd $w && git push -u origin" "cd $w; git push origin HEAD:fix/b"; do
-  gp "$c"; t "guard blocks a push run in a prototype worktree: $c" [ $? = 2 ]
-done
-gpc "git push -u origin" "$p"; t "guard allows a bare push from the main checkout on fix/a" [ $? = 0 ]
-git -C "$p" worktree remove --force "$w"; git -C "$p" branch -q -D proto/try proto/wt
-gp "git push --all origin"; t "guard allows --all once no prototype branch exists" [ $? = 0 ]
-# C1: a private repo on GitHub Free gets the real reason, not "set it on GitHub".
-mkdir -p "$tmp/fakegh"; printf '#!/usr/bin/env bash\necho "gh: Upgrade to GitHub Pro or make this repository public to enable this feature. (HTTP 403)" >&2\nexit 1\n' > "$tmp/fakegh/gh"; chmod +x "$tmp/fakegh/gh"
-out=$(PATH="$tmp/fakegh:$PATH" bash "$here/agents/claude/hooks/doctor.sh" "$tmp/maint" 2>&1)
-t "doctor C1 names the GitHub Free limit" grep -q "C1  main cannot be locked: private repo on GitHub Free" <<<"$out"
-LODESTAR_SKIP_HOOKS=1 bash "$here/agents/claude/hooks/guard-install.sh" 2>/dev/null <<<'{"tool_input":{"command":"pip install ruff"}}'
-t "LODESTAR_SKIP_HOOKS disables the install guard" [ $? = 0 ]
-# Tests-First commit: blocked unless a changed plan is owner-approved and staged.
-p=$tmp/tf; mkdir -p "$p/.claude/hooks" "$p/.ai/plans/active"; cp "$here/agents/claude/hooks/lodestar-lib.sh" "$p/.claude/hooks/"
-git -C "$p" init -q -b main; git -C "$p" config user.email t@t; git -C "$p" config user.name t; git -C "$p" commit -q --allow-empty -m init
-printf '# P
-
-## Acceptance criteria
-
-- It works.
-' > "$p/.ai/plans/active/a.md"
-gt() { CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/guard-install.sh" 2>/dev/null <<<"$(jq -n --arg c "$1" '{tool_input:{command:$c}}')"; }
-tfc='git commit -m "Tests-First: lock tests"'
-gt "$tfc"; t "guard blocks a Tests-First commit with an unapproved plan" [ $? = 2 ]
-gt 'git commit -m "feat: x"'; t "guard allows a normal commit" [ $? = 0 ]
-printf '0 %s
-' "$(. "$p/.claude/hooks/lodestar-lib.sh"; cd "$p"; criteria_hash < .ai/plans/active/a.md)" > "$p/.ai/approvals.log"
-gt "$tfc"; t "guard blocks a Tests-First commit when the plan and approvals.log are not staged" [ $? = 2 ]
-gt "git add -A && $tfc"; t "guard allows a Tests-First commit that stages everything" [ $? = 0 ]
-git -C "$p" add -A; gt "$tfc"; t "guard allows a Tests-First commit with the approved plan staged" [ $? = 0 ]
-git -C "$p" rm --cached -q .ai/approvals.log; echo .ai/approvals.log > "$p/.gitignore"; gt "git add -A && $tfc"; t "guard blocks a Tests-First commit when approvals.log is gitignored" [ $? = 2 ]
 
 # 12. Link checker (scripts/check-links.sh) catches a broken reference.
 p=$tmp/links; mkdir -p "$p/rules"; git -C "$p" init -q
@@ -1480,8 +1445,8 @@ cx Stop verify-before-stop '{"stop_hook_active":true}'; t "codex: stop hook lets
 rm "$p/fail"
 cx Stop verify-before-stop '{"stop_hook_active":false}'; t "codex: stop hook passes when verify passes" [ $? = 0 ]
 cxb=$(git -C "$p" symbolic-ref HEAD); git -C "$p" symbolic-ref HEAD refs/heads/proto/try; touch "$p/fail"
-cx PreToolUse guard-install '{"tool_name":"Bash","tool_input":{"command":"git push -u origin"}}'
-t "codex: install guard blocks a push from a prototype branch" [ $? = 2 ]
+cx PreToolUse guard-install '{"tool_name":"Bash","tool_input":{"command":"git branch -m proto/try fix/ship"}}'
+t "codex: install guard blocks renaming a prototype branch" [ $? = 2 ]
 cx Stop verify-before-stop '{"stop_hook_active":false}'; t "codex: stop hook lets a prototype branch stop" [ $? = 0 ]
 git -C "$p" symbolic-ref HEAD "$cxb"; rm "$p/fail"
 # Without jq the hooks would let everything through: the adapter blocks and

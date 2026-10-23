@@ -68,7 +68,7 @@ put() {
 }
 
 # [managed]
-for h in lodestar-lib lint-file verify-before-stop protect-tests sensitive-gate guard-install approval-record feedback-check ci-checks doctor; do
+for h in lodestar-lib lint-file verify-before-stop protect-tests sensitive-gate guard-install approval-record feedback-check ci-checks doctor merge-pr pre-push; do
   put "$here/agents/claude/hooks/$h.sh" ".claude/hooks/$h.sh" managed
 done
 # Helpers sourced by feedback-check.sh (reminder state, Codex owner messages).
@@ -175,6 +175,24 @@ if ! git rev-parse -q --verify HEAD >/dev/null 2>&1; then
   fi
 elif ! grep -qxF '*.sh text eol=lf' .gitattributes 2>/dev/null; then
   echo '*.sh text eol=lf' >> .gitattributes; say updated .gitattributes
+fi
+
+# git's pre-push hook runs .claude/hooks/pre-push.sh (main only by PR,
+# proto/* stays local). Git does not clone hooks, so a fresh clone needs
+# this run again (doctor A4d says so). A pre-push hook that is not ours is
+# left alone; the owner adds our line to it.
+# A core.hooksPath (a global hooks folder, husky) is not ours to write: a
+# hook there would run for other repos too, or be a tracked file.
+if hp=$(git config core.hooksPath 2>/dev/null) && [ -n "$hp" ]; then
+  echo "WARNING: core.hooksPath is set ($hp). Add this line to its pre-push hook: bash .claude/hooks/pre-push.sh \"\$@\" || exit 1"
+elif hooks=$(git rev-parse --git-common-dir 2>/dev/null)/hooks; then
+  pp=$hooks/pre-push
+  if [ ! -e "$pp" ] || { grep -q 'Managed by lodestar-harness' "$pp" && ! cmp -s <(tr -d '\r' < "$here/agents/claude/git-pre-push") "$pp"; }; then
+    act=$([ -e "$pp" ] && echo updated || echo created)
+    mkdir -p "$hooks"; copy "$here/agents/claude/git-pre-push" "$pp"; chmod +x "$pp"; say "$act" "$pp"
+  elif ! grep -q 'pre-push\.sh' "$pp"; then
+    echo "WARNING: $pp is not Lodestar's. Add this line to it: bash .claude/hooks/pre-push.sh \"\$@\" || exit 1"
+  fi
 fi
 
 # .claude/settings.json (Claude) and .codex/hooks.json (Codex, same format):
