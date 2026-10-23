@@ -74,6 +74,36 @@ task-done nudge in `global/context-nudge.sh`. A check CI already does well
 Done when: the table is in this plan, the owner has chosen per row, and
 each change is merged with `enforcement/test.sh` green, in the next batch.
 
+Finding (2026-10-23): App01 and ProjectS are private repos on GitHub Free;
+GitHub refuses branch protection (403). CI blocks nothing there by itself:
+a red CI stops a merge only because the guard's merge gate waits for it.
+So the merge gate and the push-to-main block are the only locks.
+
+Hook review table (2026-10-23). "Text" = reads the command or message
+words; "state" = git, files, GitHub API, exit codes. Fixes counted from
+`git log` since 2026-10-01; rows from the projects' feedback logs.
+
+| Hook (part) | Protects | Decides by | Fixes / rows | Proposal | Owner |
+|---|---|---|---|---|---|
+| `guard-install.sh` installs | pip/npm outside the project | text | 0 / `orca-install-outside-project` (fixed) | keep | keep |
+| `guard-install.sh` push to main, proto push | main changes only by PR; proto stays local | text (`push` word) | 2 / `lodestar-guard-false-positive` | move to git's pre-push hook (git names the pushed refs); keep the `--no-verify` text block | yes |
+| `guard-install.sh` merge gate | merge only on green CI, no unpushed commits, owner-only PRs | text + GitHub API | 6 / `lodestar-guard-merge-text-in-command` | a merge script `merge-pr.sh <n>` waits for CI and runs the checks itself (state); the guard blocks every other merge command | yes |
+| `guard-install.sh` Tests-First commit | plan and approvals.log in the commit | text + index | 1 / none | remove: `ci-checks.sh` check 3 fails it, and the merge waits for CI | yes |
+| `approval-record.sh` | only the owner approves | owner words (by design) | 3 / `orca-approval-false-positive`, `lodestar-approval-via-question`, `lodestar-relock-same-criteria` | keep | keep |
+| `protect-tests.sh` | locked tests, approvals.log | state | 2 / `lodestar-relock-preapproved-locked-test` | keep | keep |
+| `sensitive-gate.sh` | tests-first for sensitive code | state | 1 / `lodestar-sensitive-gate-bash-edit` (CI covers Bash edits) | keep | keep |
+| `lint-file.sh` | lint on each edit | state | 0 / none | keep | keep |
+| `verify-before-stop.sh` | no stop while `make verify` fails or commits are unpushed | state | 8 / `lodestar-verify-stop-tests-first` | keep; fixes were about when to rerun, not false reads | keep |
+| `feedback-check.sh` | mistakes get a log row | owner words | 0 / none | keep; phase 3 counts its rows | keep |
+| `ci-checks.sh` (CI) | tests-first order, suppressions, route line | state + PR text | 6 / `lodestar-ci-route-message-simple-review` | keep | keep |
+| `context-nudge.sh` 200k nudge | session size | state (token count) | 1 / none | keep | keep |
+| `context-nudge.sh` task-done nudge | `/clear` after a task | text | 4 in one day / none | the merge script marks the task done after a merge that succeeded; drop the command-text match | yes |
+| `check-readiness.sh` | project readiness, bug inbox | state (doctor) | 1 / `lodestar-readiness-hook-timeout` | keep; fix: hangs when run by hand without stdin | keep |
+| `gh-sweep.sh` | daily GitHub sweep | state (GitHub API) | 0 / none | keep | keep |
+
+Not hooks (libraries or tools): `doctor.sh`, `lodestar-lib.sh`,
+`reminder-lib.sh`, `codex-owner.jq`, `global/install.sh`.
+
 ### Phase 3: Quality numbers (after phase 2)
 
 Count, per project, from what already exists (feedback logs, `gh` PR data,
@@ -114,6 +144,7 @@ decided whether it becomes a maintenance step.
 |---|---|---|
 | 2026-10-19 | 1 | Plan written from the owner's review request; release cadence rule added to `enforcement/README.md` §3 |
 | 2026-10-23 | 2 | ProjectS report `lodestar-verify-stop-tests-first`: `verify-before-stop.sh` now allows a stop at a clean HEAD that is the valid Tests-First commit (red tests by design); ships in the ~2026-10-30 batch |
+| 2026-10-23 | 2 | Hook review table written (owner said start now); owner chose per row; four changes to build, shipping in the next batch |
 
 ## 7. Decision log
 
@@ -122,3 +153,5 @@ decided whether it becomes a maintenance step.
 | 2026-10-19 | Batch template releases, at most one per 7-14 days | Owner ("ok làm đi" on the review); at least 20 releases in 18 days, each an upgrade prompt per project, and projects fell behind |
 | 2026-10-19 | Hook review and quality numbers wait until about 2026-10-30 | Do not mix with `agent-pitfalls.md` phase 5; ride with `docs-tidy.md` phases 2-3 |
 | 2026-10-23 | Stop hook skips verify at a clean Tests-First HEAD, not on every "no file changed" turn | Narrow: a commit does not change the tree, so "nothing changed" alone would let a broken commit stop; the Tests-First commit is the one state where red is expected. Any edit verifies again; CI stays the gate |
+| 2026-10-23 | Q1: a hook may go when CI fails the same fault and the merge waits for CI; faults that cannot be undone keep a local block | Owner chose "remove, CI catches it" for the Tests-First commit check; push to main and the merge gate stay local because GitHub Free cannot lock main on these private repos |
+| 2026-10-23 | Merge through `merge-pr.sh <n>` (state), push checks in git's pre-push hook, Tests-First commit check removed, task-done nudge from the merge script | Owner picked all four (AskUserQuestion). Text matching caused 6+4 fixes since 2026-10-01; state checks do not need new forms taught |
