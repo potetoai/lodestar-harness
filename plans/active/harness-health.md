@@ -145,6 +145,7 @@ decided whether it becomes a maintenance step.
 | 2026-10-19 | 1 | Plan written from the owner's review request; release cadence rule added to `enforcement/README.md` §3 |
 | 2026-10-23 | 2 | ProjectS report `lodestar-verify-stop-tests-first`: `verify-before-stop.sh` now allows a stop at a clean HEAD that is the valid Tests-First commit (red tests by design); ships in the ~2026-10-30 batch |
 | 2026-10-23 | 2 | Hook review table written (owner said start now); owner chose per row; four changes to build, shipping in the next batch |
+| 2026-10-23 | 2 | Four changes built (one PR): `merge-pr.sh <n>` is the only merge (state: CI wait, unpushed commits, owner approval, pinned head), the guard blocks every other merge command; git pre-push hook `pre-push.sh` (bootstrap installs it, doctor A4d) replaces the guard's push checks; Tests-First commit check removed (CI check 3); task-done nudge reads the marker `merge-pr.sh` leaves. Also `check-readiness.sh` no longer hangs on an open empty stdin. `guard-install.sh` 358 -> 115 lines |
 
 ## 7. Decision log
 
@@ -155,3 +156,4 @@ decided whether it becomes a maintenance step.
 | 2026-10-23 | Stop hook skips verify at a clean Tests-First HEAD, not on every "no file changed" turn | Narrow: a commit does not change the tree, so "nothing changed" alone would let a broken commit stop; the Tests-First commit is the one state where red is expected. Any edit verifies again; CI stays the gate |
 | 2026-10-23 | Q1: a hook may go when CI fails the same fault and the merge waits for CI; faults that cannot be undone keep a local block | Owner chose "remove, CI catches it" for the Tests-First commit check; push to main and the merge gate stay local because GitHub Free cannot lock main on these private repos |
 | 2026-10-23 | Merge through `merge-pr.sh <n>` (state), push checks in git's pre-push hook, Tests-First commit check removed, task-done nudge from the merge script | Owner picked all four (AskUserQuestion). Text matching caused 6+4 fixes since 2026-10-01; state checks do not need new forms taught |
+| 2026-10-23 | Build notes: the guard also blocks changing `core.hooksPath` (it would turn off pre-push); pre-push blocks the owner's own pushes to main too (they can use `--no-verify`); the task-done nudge no longer fires for a plan moved to completed or the owner's merge on GitHub; a pre-push hook that is not Lodestar's is left alone with a warning | The hook must see the pushed refs from git, so it runs for every push; the nudge reads only state now, and every agent merge goes through the script |

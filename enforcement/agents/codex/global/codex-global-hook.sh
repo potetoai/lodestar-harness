@@ -8,11 +8,16 @@ export LODESTAR_RUNTIME=codex
 input=$(cat)
 command -v jq >/dev/null || unavailable 'jq missing'
 jq -e 'type == "object"' <<<"$input" >/dev/null 2>&1 || unavailable 'invalid event input'
+# Both hooks look at the project: readiness needs it; the task-done nudge
+# looks there for merge-pr.sh's marker (no cwd: where the hook runs).
+cwd=$(jq -er '.cwd | select(type == "string" and length > 0)' <<<"$input")
 if [ "$hook" = check-readiness ]; then
-  cwd=$(jq -er '.cwd | select(type == "string" and length > 0)' <<<"$input") || unavailable 'missing cwd'
+  [ -n "$cwd" ] || unavailable 'missing cwd'
   cd "$cwd" 2>/dev/null || unavailable 'cannot resolve cwd'
   root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
   export CLAUDE_PROJECT_DIR=$root
+elif [ -n "$cwd" ]; then
+  cd "$cwd" 2>/dev/null || unavailable 'cannot resolve cwd'
 fi
 script="$here/../../claude/global/$hook.sh"
 [ -r "$script" ] || unavailable 'missing shared script'

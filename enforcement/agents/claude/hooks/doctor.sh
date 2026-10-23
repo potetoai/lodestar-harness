@@ -65,12 +65,18 @@ registered() {
 }
 has_hooks() {
   local h f=.claude/settings.json
-  for h in lodestar-lib lint-file verify-before-stop protect-tests sensitive-gate guard-install approval-record feedback-check ci-checks; do [ -f ".claude/hooks/$h.sh" ] || return 1; done
+  for h in lodestar-lib lint-file verify-before-stop protect-tests sensitive-gate guard-install approval-record feedback-check ci-checks merge-pr pre-push; do [ -f ".claude/hooks/$h.sh" ] || return 1; done
   registered $f PreToolUse 'Edit|Write|MultiEdit|NotebookEdit' 'protect-tests\.sh' 'sensitive-gate\.sh' &&
     registered $f PreToolUse 'Bash|PowerShell' 'guard-install\.sh' &&
     registered $f PostToolUse 'Edit|Write|MultiEdit' 'lint-file\.sh' &&
     registered $f Stop '' 'verify-before-stop\.sh' 'feedback-check\.sh' &&
     registered $f UserPromptSubmit '' 'approval-record\.sh'
+}
+# git's pre-push hook (bootstrap.sh) runs pre-push.sh. Git does not clone
+# hooks: a fresh clone fails here until bootstrap runs again.
+git_pre_push() {
+  local pp; pp=$(git rev-parse --git-path hooks 2>/dev/null)/pre-push
+  [ -f "$pp" ] && grep -q 'pre-push\.sh' "$pp"
 }
 # Codex reads .codex/hooks.json and runs the same hooks through codex-hook.sh.
 codex_checks='protect-tests sensitive-gate guard-install lint-file verify-before-stop feedback-check approval-record'
@@ -188,6 +194,7 @@ check A2  ".ai/project.md filled in, no [placeholders]"  fail no_placeholders .a
 check A3  "Makefile has setup, lint, test, verify"       fail has_targets setup lint test verify
 check A4  ".claude/settings.json registers the hooks"    fail has_hooks
 check A4b ".codex/hooks.json registers the hooks (Codex)" fail has_codex_hooks
+check A4d "git pre-push hook runs .claude/hooks/pre-push.sh (else run bootstrap.sh --upgrade)" fail git_pre_push
 check A5  ".github/workflows/ci.yml exists"              fail test -f .github/workflows/ci.yml
 check A6a ".gitignore exists"                            fail test -f .gitignore
 check A6b "no committed .env; .env.example if .env used" fail env_ok
@@ -213,11 +220,11 @@ if [ $quiet = 0 ]; then
   fi
 fi
 # A private repo on GitHub Free cannot lock main: say so, since the usual
-# advice cannot be followed there. guard-install blocks agent pushes to main.
+# advice cannot be followed there. The git pre-push hook blocks pushes to main.
 if [ $quiet = 0 ]; then
   if main_protected; then ok C1 "main branch requires PR + checks"
   elif gh api "repos/{owner}/{repo}/branches/main/protection" 2>&1 | grep -qi 'upgrade to github pro'; then
-    warn C1 "main cannot be locked: private repo on GitHub Free (needs Pro). The guard-install hook blocks agent pushes to main; accepted unless the owner upgrades"
+    warn C1 "main cannot be locked: private repo on GitHub Free (needs Pro). The git pre-push hook blocks pushes to main; accepted unless the owner upgrades"
   else warn C1 "main branch requires PR + checks (else set it on GitHub)"
   fi
 fi

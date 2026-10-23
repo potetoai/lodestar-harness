@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Managed by lodestar-harness (bootstrap.sh installs it; doctor A4d checks it).
+# Runs .claude/hooks/pre-push.sh: main changes only through a PR, and
+# prototype branches stay local. A worktree on an older branch without that
+# file uses the main checkout's copy.
+s=$(git rev-parse --show-toplevel)/.claude/hooks/pre-push.sh
+[ -f "$s" ] || s=$(cd "$(git rev-parse --git-common-dir)/.." && pwd)/.claude/hooks/pre-push.sh
+[ -f "$s" ] || { echo "Lodestar pre-push: .claude/hooks/pre-push.sh is missing; run lodestar-harness bootstrap.sh --upgrade." >&2; exit 1; }
+exec bash "$s" "$@"

@@ -23,8 +23,9 @@ main checkout, and never on a branch that already holds real work.
 
 Machine guarantees (`enforcement/`, tested in `enforcement/test.sh`):
 
-- `guard-install.sh` blocks pushing or renaming a `proto/*` branch, and any
-  push run in its worktree, so it cannot reach a PR or main.
+- git's pre-push hook (`pre-push.sh`) blocks pushing a `proto/*` branch and
+  any push while one is checked out (its worktree too), and `guard-install.sh`
+  blocks renaming one, so it cannot reach a PR or main.
 - `verify-before-stop.sh` does not run `make verify` on `proto/*`: tests and
   lint are not required in a sketch.
 

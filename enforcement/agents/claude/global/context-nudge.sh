@@ -33,69 +33,24 @@ if [ -n "$agent" ]; then
   [ -r "$transcript" ] && [ -s "$transcript" ] || exit 0
 fi
 
-# A finished task is the natural point for a fresh session. Seen from the
-# command: the agent merged a PR (gh pr merge, also after `then` as the guard
-# requires; not --auto, no error or failed check printed, not moved to the
-# background),
-# saw the owner's merge of a PR this session opened (gh pr view printing
-# MERGED; reading an old or another project's PR is not a finished task), or
-# moved a plan to completed. Once per PR or plan. A subagent reports to its
-# dispatcher instead. jq runs only when the text appears at all.
-if [ -z "$agent" ] && [[ $input == *'gh pr '* || $input == *'plans/completed'* ]]; then
-  # A heredoc body is text (a commit message, a PR body), not commands; inside
-  # quotes, separators and then/do/else do not start a command.
-  finished=$(jq -r '(.tool_input.command // "" | strings
-      | gsub("<<-?\\s*[\"'\'']?(?<t>[A-Za-z_]+)[\"'\'']?[^\\n]*\\n(?:.*\\n)*?\\s*\\k<t>(?=\\n|$|\\))"; "")
-      | gsub("(?<q>'\''[^'\'']*'\''|\"(?:[^\"\\\\]|\\\\.)*\")"; .q | gsub("[;&|\\n]|\\b(?:then|do|else)\\b"; " "))) as $c
-    | ((.tool_response // "") | if type == "string" then . else tostring end) as $r
-    | def run($p): "(^|[;&|(\\n]|\\b(?:then|do|else)\\s)\\s*" + $p;  # only where a command starts, not quoted text
-      ($c | [match(run("gh pr (merge|view)\\s+#?([0-9]+)")).captures[2].string] | first // "") as $n
-    | if ($c | test(run("gh pr merge"))) and ($c | test("--auto") | not)
-         and ($r | test("GraphQL:|error|fail|not mergeable|\"backgroundTaskId\":\"|\"interrupted\":true"; "i") | not) then "PR \($n) merged"
-      elif ($c | test(run("gh pr create"))) then
-        ($r | [scan("github\\.com/[^/\\s\"\\\\]+/[^/\\s\"\\\\]+/pull/[0-9]+")] | first // empty | "opened \(.)")
-      elif ($c | test(run("gh pr view"))) and ($r | test("MERGED")) then
-        "view\t\($c | [match(run("gh pr view([^;&|\\n]*)")).captures[1].string] | first)"
-      elif ($c | test(run("(git )?mv [^;&|\\n]*plans/active/[^;&|\\n]*plans/completed"))) then
-        "plan closed: \($c | [scan("plans/active/[^ ;&|]+")] | first // "")"
-      else empty end' <<<"$input" 2>/dev/null | tr -d '\r')
-  # PRs this session opened, one owner/repo/pull/N per line. A view counts
-  # when it names one of them: by link, by -R repo and number, or by number
-  # alone (the same number in another repo is not told apart); a view with
-  # neither (the branch's PR) counts once the session opened any PR.
-  case $finished in
-    'opened '*)
-      if reminder_state && mkdir -p "$reminder_dir" 2>/dev/null; then
-        echo "${finished#opened github.com/}" >> "$reminder_dir/$reminder_key-opened"
-      fi
-      finished= ;;
-    view$'\t'*)
-      args=${finished#view$'\t'}; finished=
-      reminder_state && opened=$(cat "$reminder_dir/$reminder_key-opened" 2>/dev/null) && [ -n "$opened" ] || opened=
-      url=$(grep -oE 'github\.com/[^/ ]+/[^/ ]+/pull/[0-9]+' <<<"$args" | head -n1)
-      repo=$(grep -oE '(-R|--repo)[= ]+[^ ]+' <<<"$args" | head -n1 | sed -E 's/^(-R|--repo)[= ]+//; s#^(https?://)?github\.com/##')
-      n=$(grep -oE '(^| )#?[0-9]+( |$)' <<<"$args" | head -n1 | tr -dc '0-9')
-      if [ -n "$url" ]; then hit=$(grep -Fx "${url#github.com/}" <<<"$opened")
-      elif [ -n "$n" ] && [ -n "$repo" ]; then hit=$(grep -Fx "$repo/pull/$n" <<<"$opened")
-      elif [ -n "$n" ]; then hit=$(grep -E "/pull/$n\$" <<<"$opened")
-      elif [ -n "$repo" ]; then hit=
-      else hit=$opened; n=${opened##*/pull/}; fi
-      [ -n "$hit" ] && finished="PR ${n:-${url##*/}} merged" ;;
-  esac
-  if [ -n "$finished" ]; then
-    reminder_claim task-done "$finished"; claimed=$?
-    if [ "$claimed" = 0 ]; then
-      cat >&2 <<EOF
-A task just finished ($finished). This is the point for a fresh session: every turn re-reads the whole context.
+# A finished task is the natural point for a fresh session. Seen from state:
+# merge-pr.sh (the only way an agent merges) leaves a marker in the project's
+# git folder of its worktree after a merge. The first main-session hook there takes it,
+# so it speaks once; a subagent leaves it for its dispatcher.
+if [ -z "$agent" ] && gd=$(git -C "${CLAUDE_PROJECT_DIR:-.}" rev-parse --git-dir 2>/dev/null); then
+  [[ $gd == /* || $gd =~ ^[A-Za-z]: ]] || gd=${CLAUDE_PROJECT_DIR:-.}/$gd
+  mark=$gd/lodestar-task-done
+  if [ -f "$mark" ] && mv "$mark" "$mark.$$" 2>/dev/null; then
+    finished=$(head -c 200 "$mark.$$" | tr -d '\r\n'); rm -f "$mark.$$"
+    cat >&2 <<EOF
+A task just finished (${finished:-a PR merged}). This is the point for a fresh session: every turn re-reads the whole context.
 - Finish the step you are on; do not start a new task in this session.
 - A plan this PR finished leaves .ai/plans/active/: git mv it to completed/ (a small PR if not done in this one).
 - Overwrite .ai/handoff.md (short, English: state, open items, next step, do-not-do).
 - Tell the owner, in their language: the task is done; type /clear, then "continue" or the next task.
 If the owner already asked for more in this turn, finish that first, then say it.
 EOF
-      exit 2
-    fi
-    [ "$claimed" = 1 ] || advisory_unavailable 'cannot persist task-done reminder state'
+    exit 2
   fi
 fi
 
