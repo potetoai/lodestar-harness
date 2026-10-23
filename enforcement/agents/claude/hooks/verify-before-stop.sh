@@ -92,6 +92,14 @@ push_check() {
 }
 
 [ -f Makefile ] || { push_check; exit; }
+# Right after a valid Tests-First commit, with nothing changed since, its
+# tests fail by design until the builder step: do not run verify or hold.
+# Any edit (the builder starting) makes the stop check verify again.
+if [ -n "${c:-}" ] && [ "$c" = "$(git rev-parse HEAD 2>/dev/null)" ] &&
+   [ -z "$(git status --porcelain 2>/dev/null)" ]; then
+  echo "Lodestar: HEAD is the Tests-First commit and nothing changed since; its tests are expected to fail before the builder step." >&2
+  push_check; exit
+fi
 # Never skip silently: a Makefile that make cannot run (for example a folder
 # name with accents on Windows) must reach the agent.
 if ! err=$(make -n verify 2>&1 >/dev/null); then
