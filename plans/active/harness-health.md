@@ -113,6 +113,7 @@ decided whether it becomes a maintenance step.
 | Date | Phase | Note |
 |---|---|---|
 | 2026-10-19 | 1 | Plan written from the owner's review request; release cadence rule added to `enforcement/README.md` §3 |
+| 2026-10-23 | 2 | ProjectS report `lodestar-verify-stop-tests-first`: `verify-before-stop.sh` now allows a stop at a clean HEAD that is the valid Tests-First commit (red tests by design); ships in the ~2026-10-30 batch |
 
 ## 7. Decision log
 
@@ -120,3 +121,4 @@ decided whether it becomes a maintenance step.
 |---|---|---|
 | 2026-10-19 | Batch template releases, at most one per 7-14 days | Owner ("ok làm đi" on the review); at least 20 releases in 18 days, each an upgrade prompt per project, and projects fell behind |
 | 2026-10-19 | Hook review and quality numbers wait until about 2026-10-30 | Do not mix with `agent-pitfalls.md` phase 5; ride with `docs-tidy.md` phases 2-3 |
+| 2026-10-23 | Stop hook skips verify at a clean Tests-First HEAD, not on every "no file changed" turn | Narrow: a commit does not change the tree, so "nothing changed" alone would let a broken commit stop; the Tests-First commit is the one state where red is expected. Any edit verifies again; CI stays the gate |

@@ -1022,6 +1022,13 @@ echo 'def test_a(): assert 1' > tests/test_a.py
 stopl; t "stop hook: relock window after owner approves changed criteria" [ $? = 0 ]
 g add -A; g commit -qm "new round" -m "Tests-First: t v2"
 stopl; t "stop hook: the new approved round becomes the lock baseline" [ $? = 0 ]
+# Right after the Tests-First commit its tests are red by design: a stop with
+# nothing changed is allowed; any edit makes verify run again.
+printf 'verify:\n\t@exit 1\n' > Makefile; echo Makefile >> .git/info/exclude
+stopl; t "stop hook allows red verify at a clean Tests-First HEAD" [ $? = 0 ]
+echo 'x = 1' > app.py
+stopl; t "stop hook verifies again once the builder edits a file" [ $? = 2 ]
+rm app.py Makefile; rm -f "$(git rev-parse --absolute-git-dir)"/lodestar-verify-*
 mkdir -p .ai/plans/completed; g mv .ai/plans/active/t.md .ai/plans/completed/; g commit -qm "done"
 echo 'def test_a(): pass' > tests/test_a.py
 stopl; t "stop hook releases the lock when the task is completed" [ $? = 0 ]
