@@ -37,6 +37,9 @@ records nothing while this is empty or that line is missing or stale.
 
 ## Progress log
 
+One short line per step: done or what it waits for, and the PR number. What
+changed stays in the PR and git.
+
 | Date | Step | Done | Notes |
 |---|---|---|---|
 

@@ -43,3 +43,4 @@ Code alone, or Orca when present).
   removing blank lines or moving text, never by rewording rules without review.
 - Shell scripts keep LF line endings (`.gitattributes` enforces it).
 - Update the active plan's progress and decision logs when a phase moves.
+  A progress row is one short line with the PR number; details stay in the PR.
