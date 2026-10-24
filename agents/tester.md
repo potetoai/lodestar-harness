@@ -52,7 +52,7 @@ In high-risk tasks the tester works **before** the builder
 - If the brief is not enough, read only that section (Grep its heading,
   then Read with offset and limit), once.
 - Write the plan's progress log once, at the end, in one Edit, just before
-  the commit.
+  the commit: one short line, no repeat of what the commit says.
 
 ## Editing
 
