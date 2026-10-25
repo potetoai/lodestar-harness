@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/enforcement/agents/claude/hooks/approval-record.sh\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

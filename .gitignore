@@ -10,3 +10,6 @@ Thumbs.db
 
 # Python bytecode (scripts/usage-report.py)
 __pycache__/
+
+# Owner's merge approvals (local; read by merge-pr.sh, AGENTS.md)
+.ai/approvals.log

@@ -10,8 +10,6 @@
 # never recorded. Stdout goes into the agent's context.
 [ "$LODESTAR_SKIP_HOOKS" = "1" ] && exit 0
 cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
-[ -f .claude/hooks/lodestar-lib.sh ] || exit 0
-. .claude/hooks/lodestar-lib.sh || exit 0
 
 prompt=$(jq -r '.prompt // empty' | tr -d '\r')
 [ -n "$prompt" ] || exit 0
@@ -26,7 +24,7 @@ grep -qE '^(duyệt|duyet|approve|approved)([^[:alpha:]]|$)' <<<"$start" || exit
 grep -qE '(chưa|chua|không|khong|đừng|dung|not|don.t|do not)[[:space:]]+(duyệt|duyet|approve)' <<<"$low" && exit 0
 
 # "duyệt merge PR 52": the owner approves merging that PR as it is now (its
-# head commit). guard-install.sh lets a PR that changes sensitive code or a
+# head commit). merge-pr.sh lets a PR that changes sensitive code or a
 # safety file merge only with this line. It approves no plan; "merge"
 # without a PR number falls through to the plan approval below.
 # Only numbers right after "merge PR"/"merge #", or listed straight after one
@@ -36,6 +34,7 @@ nums=$(grep -oE '(^|[^[:alpha:]])merge[[:space:]]+(pr[[:space:]]*#?|#)[0-9]+([[:
   head -n1 | sed -E 's/^[^m]*merge//' | grep -oE '[0-9]+')
 if [ -n "$nums" ]; then
   now=$(date '+%Y-%m-%d %H:%M')
+  mkdir -p .ai
   for n in $nums; do
     oid=$(gh pr view "$n" --json headRefOid -q .headRefOid 2>/dev/null | tr -d '\r')
     if [ -z "$oid" ]; then
@@ -48,6 +47,11 @@ if [ -n "$nums" ]; then
   done
   exit 0
 fi
+
+# Plan approvals need the Lodestar library; the lodestar-harness source repo
+# has none and records only merge approvals (its AGENTS.md).
+[ -f .claude/hooks/lodestar-lib.sh ] || exit 0
+. .claude/hooks/lodestar-lib.sh || exit 0
 
 if ! ls .ai/plans/active/*.md >/dev/null 2>&1; then
   echo "Lodestar: the owner approved, but no plan exists in .ai/plans/active/, so nothing was recorded."
