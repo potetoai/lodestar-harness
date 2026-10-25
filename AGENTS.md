@@ -33,6 +33,10 @@ Code alone, or Orca when present).
   this file and `README.md` for context; verify with the two commands below.
   Missing `.claude/hooks/doctor.sh` or `.ai/project.md` here does not require
   onboarding or an owner waiver. Consuming projects still need readiness.
+- Merge with `bash enforcement/agents/claude/hooks/merge-pr.sh <n>`. A PR
+  that changes a safety file (`enforcement/`, `.claude/`, `.github/`) needs
+  the owner's typed "duyệt merge PR <n>"; `.claude/settings.json` runs the
+  approval hook, which records only merge approvals here.
 - Never build an orchestration system; use the runtime's (Claude Code
   subagents, or Orca when present). Hooks, CI and
   doctor only verify.

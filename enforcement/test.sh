@@ -810,6 +810,12 @@ rm "$p/.ai/approvals.log"
 recm "duyệt merge PR 5, xem issue #12, nhưng không merge PR 6 vội" def456 >/dev/null; t "a merge approval records only the PR named right after 'merge'" bash -c 'grep -q " merge-pr 5 def456$" "$1" && [ $(wc -l < "$1") = 1 ]' _ "$p/.ai/approvals.log"
 rm "$p/.ai/approvals.log"
 out=$(recm "duyệt merge PR 52" ""); t "a merge approval gh cannot read records nothing and says so" bash -c '[ ! -s "$2" ] && grep -q "could not read PR #52" <<<"$1"' _ "$out" "$p/.ai/approvals.log"
+# The lodestar-harness source repo has no .claude/hooks/ library: merge approvals only.
+q=$tmp/apprsrc; mkdir -p "$q"
+out=$(FAKE_OID=abc123 PATH="$tmp/ghoid:$PATH" CLAUDE_PROJECT_DIR=$q bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"duyệt merge PR 7"}')
+t "without the library, 'duyệt merge PR 7' still records the merge" bash -c 'grep -qE " merge-pr 7 abc123$" "$1/.ai/approvals.log" && grep -q "PR #7" <<<"$2"' _ "$q" "$out"
+out=$(CLAUDE_PROJECT_DIR=$q bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"duyệt"}')
+t "without the library, a bare 'duyệt' records nothing and says nothing" bash -c '[ -z "$1" ] && [ $(wc -l < "$2/.ai/approvals.log") = 1 ]' _ "$out" "$q"
 recm "chưa duyệt merge PR 52" abc123 >/dev/null; t "'chưa duyệt merge PR 52' records nothing" [ ! -s "$p/.ai/approvals.log" ]
 recm "merge PR 52" abc123 >/dev/null; t "'merge PR 52' without the approval word records nothing" [ ! -s "$p/.ai/approvals.log" ]
 recm "duyệt, merge xong thì làm tiếp" abc123 >/dev/null; t "'duyệt' with 'merge' but no PR number still approves the plan" grep -q "x.md" "$p/.ai/approvals.log"
