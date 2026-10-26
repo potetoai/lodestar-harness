@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Managed by lodestar-harness. Edit in lodestar-harness/enforcement, not by hand.
-# Stop: do not let the agent finish while `make verify` fails, or while
-# commits exist only on this machine (push them; rules/git.md section 12).
+# Stop: do not let the agent finish while `make verify` fails, while commits
+# exist only on this machine (push them; rules/git.md section 12), or while a
+# reviewed plan lacks its "- Reviewed criteria:" line (agents/critic.md, Output).
 [ "$LODESTAR_SKIP_HOOKS" = "1" ] && exit 0
 cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
 export NO_COLOR=1 FORCE_COLOR=0  # plain text for the agent
@@ -91,14 +92,49 @@ push_check() {
   return 2
 }
 
-[ -f Makefile ] || { push_check; exit; }
+# A plan the critic reviewed but whose review has no "- Reviewed criteria:"
+# line for its criteria as they are now: the approval hook would refuse the
+# owner's "duyệt", so they would type it twice. Send the agent back once per
+# plan and criteria, so it adds the line (or re-runs the critic) before asking.
+review_check() {
+  local p h gd mark out=""
+  [ -f .claude/hooks/lodestar-lib.sh ] && . .claude/hooks/lodestar-lib.sh || return 0
+  gd=$(git rev-parse --absolute-git-dir 2>/dev/null) && mark=$gd/lodestar-review-held
+  for p in .ai/plans/active/*.md; do
+    [ -f "$p" ] && h=$(criteria_hash < "$p") || continue
+    [ -f .ai/approvals.log ] && hash_approved "$h" < .ai/approvals.log && continue
+    criteria_reviewed < "$p" || continue
+    review_covers "$h" < "$p" && continue
+    [ -n "$mark" ] && grep -qxF "$p $h" "$mark" 2>/dev/null && continue
+    [ -n "$mark" ] && echo "$p $h" >> "$mark"
+    out+="  $p (criteria hash $h)"$'\n'
+  done
+  [ -n "$out" ] || return 0
+  echo "Not done yet: these plans have a '## Criteria review' but no '- Reviewed criteria:' line for" >&2
+  echo "their criteria as they are now, so the approval hook would refuse the owner's approval word:" >&2
+  printf '%s' "$out" >&2
+  echo "Before asking the owner to approve: if the last critic run covers these criteria, end the review" >&2
+  echo "with '- Reviewed criteria: <hash>'; if the criteria changed after it, re-run the critic first" >&2
+  echo "(lodestar-harness agents/critic.md, Output). Not asking for approval yet? Then just finish." >&2
+  return 2
+}
+
+# The checks every allowed stop runs; either one sends the agent back.
+finish() {
+  local r=0
+  review_check || r=2
+  push_check || r=2
+  exit $r
+}
+
+[ -f Makefile ] || finish
 # Right after a valid Tests-First commit, with nothing changed since, its
 # tests fail by design until the builder step: do not run verify or hold.
 # Any edit (the builder starting) makes the stop check verify again.
 if [ -n "${c:-}" ] && [ "$c" = "$(git rev-parse HEAD 2>/dev/null)" ] &&
    [ -z "$(git status --porcelain 2>/dev/null)" ]; then
   echo "Lodestar: HEAD is the Tests-First commit and nothing changed since; its tests are expected to fail before the builder step." >&2
-  push_check; exit
+  finish
 fi
 # Never skip silently: a Makefile that make cannot run (for example a folder
 # name with accents on Windows) must reach the agent.
@@ -108,7 +144,7 @@ if ! err=$(make -n verify 2>&1 >/dev/null); then
   exit 2
 fi
 if [ -n "$held" ] && [ -f "$passed" ] && [ "$(cat "$passed")" = "$(state "" | git hash-object --stdin)" ]; then
-  push_check; exit
+  finish
 fi
 if ! out=$(make --no-print-directory verify 2>&1); then
   rm -f "${passed:-/nonexistent}"
@@ -125,4 +161,4 @@ if ! out=$(make --no-print-directory verify 2>&1); then
   exit 2
 fi
 [ -n "$held" ] && { rm -f "$held"; state "" | git hash-object --stdin > "$passed"; }
-push_check
+finish
