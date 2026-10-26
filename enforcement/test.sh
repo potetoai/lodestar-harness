@@ -516,6 +516,8 @@ g add -A; g commit -qm "tests first"; echo 'x = 6' > app/money.py; g commit -qam
 check; t "PR: tests-first order holds with a non-ASCII plan name" [ $? = 0 ]
 newbranch b3; echo 'y = 2' > app/ui.py; g commit -qam "ui only"
 check; t "PR: non-sensitive change passes" [ $? = 0 ]
+newbranch b3d; printf 'sensitive_paths:\n  - app/db/\n' > .ai/project.md; echo 'x = 9' > app/money.py; g commit -qam "drop money from the list"
+check; t "PR: dropping a pattern from sensitive_paths does not skip its check" [ $? = 1 ]
 newbranch b4; echo 'import os  # noqa: F401' >> app/ui.py; g commit -qam "noqa"
 check; t "PR: suppression without reason fails" [ $? = 1 ]
 newbranch b5; echo 'import os  # noqa: F401 -- used by plugins' >> app/ui.py; echo 'Use `# noqa` rarely.' > README.md; g add -A; g commit -qm "noqa with reason"
