@@ -35,9 +35,10 @@ SUPPRESS='(#[[:space:]]*noqa|#[[:space:]]*type:[[:space:]]*ignore|#[[:space:]]*p
 
 changed=$(git -c core.quotepath=off diff --name-only "$from" HEAD)
 
-# 1. Sensitive paths need tests.
-patterns=$(sed -n '/^sensitive_paths:/,/^[^[:space:]-]/p' .ai/project.md 2>/dev/null |
-  sed -n 's/^[[:space:]]*-[[:space:]]*//p' | tr -d "\"'\r")
+# 1. Sensitive paths need tests. The patterns are the merge base's list plus
+#    this PR's, so a PR cannot drop a pattern to skip its check.
+patterns=$({ git show "$from:.ai/project.md" 2>/dev/null; echo .; cat .ai/project.md 2>/dev/null; } |
+  sed -n '/^sensitive_paths:/,/^[^[:space:]-]/p' | sed -n 's/^[[:space:]]*-[[:space:]]*//p' | tr -d "\"'\r" | sort -u)
 sensitive() {
   local f=$1 pat
   is_test "$f" && return 1   # tests may live in sensitive paths; they are not the risky change
