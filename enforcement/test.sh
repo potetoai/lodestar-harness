@@ -99,7 +99,9 @@ t "second upgrade adds nothing more" jq -e '[.hooks.PreToolUse[].hooks[].command
 echo "# edited" >> "$p/.claude/hooks/doctor.sh"
 echo "# edited" >> "$p/Makefile"
 echo "# 1.x" > "$p/.claude/hooks/orca-lib.sh"
+rm "$p/.ai/plans/completed.md"; mkdir -p "$p/.ai/plans/completed"; echo "# old" > "$p/.ai/plans/completed/old.md"
 bash "$here/bootstrap.sh" "$p" --stack node-ts --upgrade >/dev/null
+t "upgrade adds the completed-plans index and leaves an old completed/ alone" bash -c '[ -f "$1/completed.md" ] && [ -f "$1/completed/old.md" ]' _ "$p/.ai/plans"
 t "upgrade from 1.x removes the old orca-lib.sh" bash -c '[ ! -e "$1/orca-lib.sh" ] && [ -f "$1/lodestar-lib.sh" ]' _ "$p/.claude/hooks"
 t "upgrade restores managed file" cmp -s "$here/agents/claude/hooks/doctor.sh" "$p/.claude/hooks/doctor.sh"
 t "upgrade keeps project file" grep -q '# edited' "$p/Makefile"
@@ -279,7 +281,7 @@ echo '# old' > "$tmp/py/.ai/plans/active/old.md"; pc '2020-01-01T12:00:00'
 echo '# new' > "$tmp/py/.ai/plans/active/new.md"; pc "$(date +%FT%T)"
 echo '# draft' > "$tmp/py/.ai/plans/active/draft.md"
 out=$(remind "$tmp/py")
-t "global hook lists an active plan no commit touched for days" bash -c 'grep -q "active/old.md (last commit 2020-01-01)" <<<"$1" && grep -q "git mv it to .ai/plans/completed/" <<<"$1"' _ "$out"
+t "global hook lists an active plan no commit touched for days" bash -c 'grep -q "active/old.md (last commit 2020-01-01)" <<<"$1" && grep -q "git rm it and add a row to .ai/plans/completed.md" <<<"$1"' _ "$out"
 t "global hook skips a fresh or uncommitted active plan" bash -c '! grep -qE "new.md|draft.md" <<<"$1"' _ "$out"
 out=$(LODESTAR_STALE_PLAN_DAYS=99999 remind "$tmp/py")
 t "stale-plan age can be set" bash -c '! grep -q "plans in .ai/plans/active/" <<<"$1"' _ "$out"
@@ -508,6 +510,9 @@ check; t "PR: code committed before its plan and locked tests fails (tests-first
 newbranch b2t; mkplan money2 "money is exact"; approve; echo 'def test_c(): pass' >> tests/test_a.py; echo tests/test_a.py > .ai/test-lock
 g add -A; g commit -qm "tests first" -m "Tests-First: money2"; echo 'x = 4' > app/money.py; g commit -qam "money"
 check; t "PR: sensitive change after the approved plan and locked tests passes" [ $? = 0 ]
+g rm -q .ai/plans/active/money2.md .ai/test-lock; g commit -qm "close money2"
+out=$(bash "$here/agents/claude/hooks/ci-checks.sh" main 2>&1)
+t "PR: a sensitive PR that deletes its approved plan in the final commit passes and shows its criteria" bash -c '[ $1 = 0 ] && grep -q "Acceptance criteria: .*money2.md" <<<"$2" && grep -q "owner approved exactly" <<<"$2"' _ $? "$out"
 newbranch b2s; mkplan money3 "money is exact"; approve; echo 'def test_d(): pass' >> tests/test_a.py; echo tests/test_a.py > .ai/test-lock
 echo 'x = 5' > app/money.py; g add -A; g commit -qm "plan, tests and money at once"
 check; t "PR: plan, tests and sensitive code in one commit fails (no proof tests came first)" [ $? = 1 ]
@@ -791,7 +796,7 @@ guard tests/test_lock.py; t "guard: criteria put back to an earlier approved ver
 lockedit Write '{"content":"tests/test_new.py\n"}'; t "lock: criteria put back to an earlier approved version do not let a line be removed" [ $? = 2 ]
 g checkout -q -f b6base; g clean -qfd
 mkdir -p .ai/plans/completed; g mv .ai/plans/active/lock-demo.md .ai/plans/completed/
-guard tests/test_lock.py; t "guard: the lock expires when the task is completed" [ $? = 0 ]
+guard tests/test_lock.py; t "guard: the lock expires when the plan moves to completed/ (the old way)" [ $? = 0 ]
 mkplan other-task "something else"
 guard tests/test_lock.py; t "guard: a stale lock does not block the next task" [ $? = 0 ]
 # Two plans in one round: the lock gains lines only while both are approved.
@@ -1042,7 +1047,7 @@ stopl; t "stop hook allows red verify at a clean Tests-First HEAD" [ $? = 0 ]
 echo 'x = 1' > app.py
 stopl; t "stop hook verifies again once the builder edits a file" [ $? = 2 ]
 rm app.py Makefile; rm -f "$(git rev-parse --absolute-git-dir)"/lodestar-verify-*
-mkdir -p .ai/plans/completed; g mv .ai/plans/active/t.md .ai/plans/completed/; g commit -qm "done"
+g rm -q .ai/plans/active/t.md; g commit -qm "done"
 echo 'def test_a(): pass' > tests/test_a.py
 stopl; t "stop hook releases the lock when the task is completed" [ $? = 0 ]
 # A completed task's round is no baseline: a new lock being written must not
@@ -1052,7 +1057,7 @@ cp "$here/agents/claude/hooks/lodestar-lib.sh" .claude/hooks/
 g init -q -b main; echo 'def test_a(): assert True' > tests/test_a.py
 mkplan old "a works"; approve; echo tests/test_a.py > .ai/test-lock
 g add -A; g commit -qm "tests" -m "Tests-First: old"
-mkdir -p .ai/plans/completed; g mv .ai/plans/active/old.md .ai/plans/completed/; g commit -qm "done"
+g rm -q .ai/plans/active/old.md; g commit -qm "done"
 echo 'def test_a(): assert 1' > tests/test_a.py; g commit -qam "later merged change"
 mkplan new "n works"; echo tests/test_n.py > .ai/test-lock
 stopl; t "stop hook ignores a completed task's round while a new lock is written" [ $? = 0 ]
@@ -1064,7 +1069,7 @@ g init -q -b main; echo 'def test_a(): assert True' > tests/test_a.py; echo 'def
 mkplan pa "a works"; approve; echo tests/test_a.py > .ai/test-lock; g add -A; g commit -qm "a tests" -m "Tests-First: pa"
 mkplan pb "b works"; approve; echo tests/test_b.py >> .ai/test-lock; g add -A; g commit -qm "b tests" -m "Tests-First: pb"
 mkplan pa "a works" "a2 works"; approve; echo 'def test_a(): assert 2' > tests/test_a.py; g add -A; g commit -qm "a round 2" -m "Tests-First: pa v2"
-mkdir -p .ai/plans/completed; g mv .ai/plans/active/pa.md .ai/plans/completed/; g commit -qm "pa done"
+g rm -q .ai/plans/active/pa.md; g commit -qm "pa done"
 stopl; t "stop hook: a closed plan's later approved round is no edit of the tests" [ $? = 0 ]
 guard tests/test_b.py; t "guard: closing one plan keeps another active plan's tests locked" [ $? = 2 ]
 echo 'def test_b(): pass' > tests/test_b.py
@@ -1073,7 +1078,7 @@ g checkout -q -- tests/test_b.py; newbranch later; echo 'x = 1' > app.py; g add 
 check; t "PR: a branch that leaves a merged round's tests alone passes" [ $? = 0 ]
 echo 'def test_b(): pass' > tests/test_b.py; g commit -qam "weaken b"
 check; t "PR: a merged round still locks its tests while its plan is active" [ $? = 1 ]
-g checkout -q main; g mv .ai/plans/active/pb.md .ai/plans/completed/; g commit -qm "pb done"
+g checkout -q main; g rm -q .ai/plans/active/pb.md; g commit -qm "pb done"
 guard tests/test_b.py; t "guard: the lock expires when the last plan is completed" [ $? = 0 ]
 cd "$here"
 

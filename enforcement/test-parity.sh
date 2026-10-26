@@ -128,7 +128,7 @@ t 'C5 additive lock change needs current criteria approval' blocked
 mkplan 'fresh approved behavior'
 capture cx protect-tests "$(patch $'*** Begin Patch\n*** Update File: ../tests/old.py\n@@\n-assert True\n+assert False\n*** End Patch')"
 t 'C5 approved relock allows changed tests' [ "$rc" = 0 ]
-mv "$p/.ai/plans/active/parity.md" "$p/.ai/plans/completed/parity.md"
+rm "$p/.ai/plans/active/parity.md"
 capture cx protect-tests "$(patch $'*** Begin Patch\n*** Update File: ../tests/old.py\n@@\n-assert True\n+assert False\n*** End Patch')"
 t 'C5 completed plan expires lock' [ "$rc" = 0 ]
 capture cx sensitive-gate "$(patch $'*** Begin Patch\n*** Update File: good.txt\n*** Move to: ../app/money.py\n@@\n-ok\n+changed\n*** End Patch')"

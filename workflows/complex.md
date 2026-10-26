@@ -37,8 +37,9 @@ record; the file is, so later sessions and other workers can pick the task up.
 Update its progress log after each phase and its decision log whenever a
 choice is made. A progress row is one short line: the step, done or what it
 waits for, and the PR number. What changed stays in the PR and git; do not
-repeat it there. When the task is merged, move the file to
-`.ai/plans/completed/`. At session start the global hook `check-readiness.sh`
+repeat it there. When the task is merged, delete the file (`git rm`) and
+add one row to `.ai/plans/completed.md` (date, file, PR, outcome); the text
+stays in git. At session start the global hook `check-readiness.sh`
 lists active plans no commit has touched for 2 days, so a forgotten one
 gets closed or noted. High-risk tasks (tests-first mode) need this file too,
 even outside COMPLEX; CI checks it.

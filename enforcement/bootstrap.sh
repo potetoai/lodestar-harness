@@ -89,7 +89,7 @@ if [ -f CLAUDE.md ] && [ ! -e AGENTS.md ] && [ "$(tr -d '\r' < CLAUDE.md)" != "@
 fi
 put "$here/project/AGENTS.md" AGENTS.md project
 put "$lodestar/project/.ai/project.md" .ai/project.md project
-for f in invariants.md feedback-log.md tech-debt.md plans/TEMPLATE.md plans/active/.gitkeep plans/completed/.gitkeep; do
+for f in invariants.md feedback-log.md tech-debt.md plans/TEMPLATE.md plans/active/.gitkeep plans/completed.md; do
   put "$here/project/.ai/$f" ".ai/$f" project
 done
 for s in "${stacks[@]}"; do
