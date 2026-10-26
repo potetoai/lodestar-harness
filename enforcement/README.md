@@ -11,7 +11,7 @@ Machine checks that every Lodestar project must pass. The rules are in
 | `VERSION` | tool | Template version, recorded in each project's `.ai/enforcement.json` |
 | `agents/claude/` | [managed] | Claude Code hooks, `settings.json`, `doctor.sh`; `global/` holds the machine-wide reminder |
 | `agents/codex/` | [managed] | Codex project adapter/configuration and global installers that run shared Lodestar checks |
-| `github/ci.yml` | [managed] | GitHub Actions workflow; calls only `make` |
+| `github/ci.yml` | [managed] | GitHub Actions workflow; calls only `make`. Runs on PRs (a newer push cancels the older run; Markdown-only PRs skip setup and verify) and daily on main when main changed; not on every merge, to save private-repo minutes |
 | `stacks/<lang>/` | [project] | Starting `Makefile`, `.gitignore`, deps for one language |
 | `project/` | [project] | Starting `AGENTS.md` and `.ai/` files |
 

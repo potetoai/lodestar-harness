@@ -2,11 +2,22 @@
 # CI only calls `make`; language differences live in the project's Makefile.
 name: CI
 
+# Minutes matter on private repos (GitHub Free: 2000 a month). Main is not
+# re-run on every merge (the PR already ran the same code): a daily run checks
+# main when it changed in the last day, which catches two PRs that break each
+# other. A new push to a PR cancels its older run. A PR that changes only
+# Markdown skips setup and verify; the scans and PR checks still run.
 on:
-  push:
-    branches: [main]
   pull_request:
     types: [opened, synchronize, reopened, labeled] # labeled: the "test-mutation" label reruns CI
+  schedule:
+    - cron: '17 3 * * *' # daily, main only
+  workflow_dispatch: # run on demand (Actions tab, or gh workflow run CI)
+
+concurrency:
+  # One run per PR; a label other than test-mutation gets its own group, so it cancels nothing.
+  group: ci-${{ github.event.pull_request.number || github.ref }}-${{ github.event.action == 'labeled' && github.event.label.name != 'test-mutation' && github.run_id || 'run' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -20,24 +31,37 @@ jobs:
         with:
           fetch-depth: 0 # full history, for the secret scan
 
+      # SKIP=all: daily run, main has no commit in the last 25 hours.
+      # SKIP=verify: the PR changes only Markdown files.
+      - name: What to run
+        run: |
+          if [ "${{ github.event_name }}" = schedule ] && [ -z "$(git log -1 --since='25 hours ago' --format=%H)" ]; then
+            echo "SKIP=all" >> "$GITHUB_ENV"; echo "No commit on main in the last 25 hours; nothing to check."
+          elif [ "${{ github.event_name }}" = pull_request ] && ! git diff --name-only "origin/${{ github.base_ref }}...HEAD" | grep -qv '\.md$'; then
+            echo "SKIP=verify" >> "$GITHUB_ENV"; echo "Only Markdown files changed; setup and verify skipped."
+          fi
+
       # Toolchains: set up only what the project uses.
-      - if: hashFiles('**/package.json') != ''
+      - if: env.SKIP == '' && hashFiles('**/package.json') != ''
         uses: actions/setup-node@v7
         with:
           node-version: lts/*
-      - if: hashFiles('**/requirements*.txt', '**/pyproject.toml') != ''
+      - if: env.SKIP == '' && hashFiles('**/requirements*.txt', '**/pyproject.toml') != ''
         uses: actions/setup-python@v7
         with:
           python-version: 3.x
 
       - name: Setup
+        if: env.SKIP == ''
         run: make setup
 
       - name: Verify
+        if: env.SKIP == ''
         run: |
           if make -n verify-full >/dev/null 2>&1; then make verify-full; else make verify; fi
 
       - name: Secret scan (gitleaks)
+        if: env.SKIP != 'all'
         run: |
           curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz | tar xz gitleaks
           ./gitleaks git --redact --verbose .
@@ -54,4 +78,5 @@ jobs:
         run: bash .claude/hooks/ci-checks.sh "origin/${{ github.base_ref }}"
 
       - name: Readiness (doctor)
+        if: env.SKIP != 'all'
         run: bash .claude/hooks/doctor.sh
