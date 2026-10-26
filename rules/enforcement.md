@@ -50,6 +50,12 @@ allowed, no need to ask), or on the default branch move the commits to a
 feature branch. Local refs only, no network; skipped with no remote, a
 detached HEAD or a `proto/*` branch.
 
+It also holds once per plan and criteria while an active plan has a filled
+`## Criteria review`, is not approved, and has no `- Reviewed criteria:` line
+with the hash of its criteria as they are now: the agent adds the line (or
+re-runs the critic) before it asks the owner for the approval word, so the
+owner types it once.
+
 ## 2. Three layers
 
 1. `AGENTS.md` explains the rules (Claude and Codex both read it).
@@ -138,6 +144,7 @@ for one session. An agent must never set it. CI still enforces everything.
 | Route line in the PR | CI (`ci-checks.sh`) | The PR text has the line `Lodestar route: <WORKFLOW> risk=<level>` (`router/ROUTER.md`; the last one counts). SIMPLE and PROTOTYPE fail with risk high or critical; SIMPLE also fails with 3 or more changed files outside `.ai/`. BUILD_REVIEW, INDEPENDENT_COMPARE and COMPLEX need a line `Lodestar review: <verdict>, <who>, <commit>`. Read live from GitHub, so after `gh pr edit` a rerun of the job sees the fix. MAINTENANCE and ONBOARDING may change Lodestar's own files (`.claude/`, `.codex/`, `.github/`) without the review line, since those are safety files the owner approves with "duyệt merge PR <n>" (owner-only merge, above); 3 or more other files need the review line, as do 3 or more files for PROTOTYPE. PRs opened by bots are skipped; a PR the owner opens by hand needs the line too. The line is the agent's own word: it makes a skipped review visible, it does not prove one |
 | Mutation testing | CI (`ci-checks.sh`), report only, on request | Only with the PR label `test-mutation`: `make test-mutation` runs on the PR's changed files in `sensitive_paths`; the score and surviving mutants go to the PR summary; never fails the PR (`rules/testing.md`) |
 | Push before stopping | Stop hook (`verify-before-stop.sh`) | Once per HEAD, the agent cannot end its turn while the current branch has commits that exist on no remote branch; it pushes its own branch (or, on the default branch, moves the commits to a feature branch). Uncommitted edits are not checked: the agent may stop to wait for the owner |
+| Review line before asking | Stop hook (`verify-before-stop.sh`) | Once per plan and criteria, the agent cannot end its turn while an active, unapproved plan has a filled `## Criteria review` without a `- Reviewed criteria:` line for its current criteria; the approval hook would refuse the owner's approval word |
 | Locked tests | PreToolUse + Stop hooks + CI | Files in `.ai/test-lock` (tests-first mode) cannot be edited by the agent; CI fails if a later commit changes them. The lock itself may only gain lines, while the plan is approved |
 
 Tests-first mode and the levels-to-commands map: `rules/testing.md`.

@@ -235,6 +235,26 @@ pstop >/dev/null; t "push check: a branch whose upstream is gone is skipped" [ $
 git -C "$p" remote remove origin; gc eight
 pstop >/dev/null; t "push check: no remote is skipped" [ $? = 0 ]
 
+# 6d. Stop hook sends the agent back once per plan and criteria when a reviewed
+#     plan lacks the "- Reviewed criteria:" line, so the owner types "duyệt" once.
+p=$tmp/reviewstop; mkdir -p "$p/.claude/hooks" "$p/.ai/plans/active"; git -C "$p" init -q -b main
+cp "$here/agents/claude/hooks/lodestar-lib.sh" "$p/.claude/hooks/"
+rp=$p/.ai/plans/active/r.md
+printf '# Plan: r\n\n## Acceptance criteria\n- [ ] a\n\n## Criteria review\n- ...\n' > "$rp"
+pstop >/dev/null; t "review check: a plan not reviewed yet lets the stop end" [ $? = 0 ]
+sed -i 's/^- \.\.\.$/- No findings./' "$rp"
+out=$(pstop); t "review check: a review without the hash line holds" [ $? = 2 ]
+rh=$(. "$here/agents/claude/hooks/lodestar-lib.sh"; criteria_hash < "$rp")
+t "review check: names the plan and its hash" grep -q "r.md (criteria hash $rh)" <<<"$out"
+pstop >/dev/null; t "review check: holds once per plan and criteria" [ $? = 0 ]
+sed -i 's/^- \[ \] a$/- [ ] b/' "$rp"; rh=$(. "$here/agents/claude/hooks/lodestar-lib.sh"; criteria_hash < "$rp")
+pstop >/dev/null; t "review check: changed criteria hold again" [ $? = 2 ]
+printf -- '- Reviewed criteria: %s\n' "$rh" >> "$rp"
+pstop >/dev/null; t "review check: the hash line lets the stop end" [ $? = 0 ]
+sed -i 's/^- \[ \] b$/- [ ] c/' "$rp"; rh=$(. "$here/agents/claude/hooks/lodestar-lib.sh"; criteria_hash < "$rp")
+echo "2026-01-01 00:00 $rp $rh" > "$p/.ai/approvals.log"
+pstop >/dev/null; t "review check: approved criteria are skipped" [ $? = 0 ]
+
 # 7. Global reminder hook: speaks only in projects that are not ready; never blocks.
 g=$here/agents/claude/global/check-readiness.sh
 remind() { CLAUDE_PROJECT_DIR=$1 bash "$g" </dev/null; }
