@@ -20,6 +20,20 @@
 # Usage: ci-checks.sh <base-ref>     (for example origin/main)
 base=${1:?usage: ci-checks.sh <base-ref>}
 from=$(git merge-base "$base" HEAD) || { echo "ci-checks: cannot find merge base with $base" >&2; exit 1; }
+# Where to read a plan this PR changed: HEAD, or the commit before the one
+# that deleted it (a merged plan is deleted in its final commit).
+plan_ref() {
+  local c
+  [ -f "$1" ] && { echo HEAD; return 0; }
+  c=$(git log -1 --format=%H --diff-filter=D "$from..HEAD" -- "$1") && [ -n "$c" ] && echo "$c^"
+}
+# Plans this PR touched: changed at HEAD, or deleted on the way (a plan
+# added and deleted in one PR is not in the net diff).
+pr_plans() {
+  { grep '^\.ai/plans/.*\.md$' <<<"$changed"
+    git -c core.quotepath=off log --diff-filter=D --name-only --format= "$from..HEAD" -- .ai/plans/
+  } | sed '/^$/d' | sort -u
+}
 . "$(dirname "$0")/lodestar-lib.sh" || { echo "ci-checks: lodestar-lib.sh missing" >&2; exit 1; }
 fails=0
 fail() { echo "❌ $*"; fails=$((fails + 1)); }
@@ -72,8 +86,8 @@ if [ ${#hits[@]} -gt 0 ]; then
   # Tests-first mode: the owner-approved plan must be part of the PR.
   plan_ok=0
   while IFS= read -r f; do
-    [[ $f == .ai/plans/*.md ]] && [ -f "$f" ] && plan_approved_at HEAD "$f" && plan_ok=1
-  done <<<"$changed"
+    [[ $f == .ai/plans/*.md ]] && r=$(plan_ref "$f") && plan_approved_at "$r" "$f" && plan_ok=1
+  done < <(pr_plans)
   if [ $tests_changed = 0 ]; then
     fail "Sensitive paths changed without any test change:"
     printf '     %s\n' "${hits[@]}"
@@ -203,15 +217,15 @@ fi
 # 5. Owner-readable summary of the criteria in this PR (English, like all PR text).
 summary=""
 while IFS= read -r f; do
-  [[ $f == .ai/plans/*.md ]] && [ -f "$f" ] || continue
-  h=$(criteria_hash < "$f") || continue      # the template and empty plans have no criteria
-  crit=$(criteria_lines < "$f")
+  [[ $f == .ai/plans/*.md ]] && r=$(plan_ref "$f") || continue
+  h=$(git show "$r:$f" | criteria_hash) || continue      # the template and empty plans have no criteria
+  crit=$(git show "$r:$f" | criteria_lines)
   [ -n "$crit" ] || continue
   when=$(git show HEAD:.ai/approvals.log 2>/dev/null | tr -d '\r' | grep -E "[[:space:]]$h\$" | head -n1 | cut -d' ' -f1-2)
   if [ -n "$when" ]; then status="✅ The owner approved exactly these criteria at $when"
   else status="❌ Not approved by the owner, or changed after approval"; fi
   summary+=$(printf '### Acceptance criteria: `%s`\n%s\n\n%s\n\n' "$f" "$status" "$crit")$'\n\n'
-done <<<"$changed"
+done < <(pr_plans)
 if [ -n "$summary" ]; then
   printf '%s\n' "$summary"
   [ -n "${GITHUB_STEP_SUMMARY:-}" ] && printf '## Summary for the owner\n\n%s\n' "$summary" >> "$GITHUB_STEP_SUMMARY"

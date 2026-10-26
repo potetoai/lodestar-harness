@@ -135,7 +135,7 @@ env_ok() {
 }
 ai_files() {
   local f; for f in invariants.md feedback-log.md tech-debt.md; do [ -f ".ai/$f" ] || return 1; done
-  [ -d .ai/plans/active ] && [ -d .ai/plans/completed ]
+  [ -d .ai/plans/active ] && [ -f .ai/plans/completed.md ]
 }
 template_current() {
   local src ver
@@ -200,7 +200,7 @@ check A6a ".gitignore exists"                            fail test -f .gitignore
 check A6b "no committed .env; .env.example if .env used" fail env_ok
 check A7  "CI runs a secret scan (gitleaks)"             fail grep -q gitleaks .github/workflows/ci.yml
 check A7b "CI runs the PR checks (ci-checks.sh)"          fail grep -q ci-checks .github/workflows/ci.yml
-check A8  ".ai/ invariants, feedback-log, tech-debt, plans/" fail ai_files
+check A8  ".ai/ invariants, feedback-log, tech-debt, plans/active/, plans/completed.md" fail ai_files
 check A9  ".ai/enforcement.json records template version" fail jq -e .version .ai/enforcement.json
 check A9b "template is current (else bootstrap.sh --upgrade)" warn template_current
 check B5  "sensitive_paths declared in .ai/project.md"   fail grep -q '^sensitive_paths:' .ai/project.md

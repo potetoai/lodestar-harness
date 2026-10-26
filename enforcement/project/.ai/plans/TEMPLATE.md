@@ -2,8 +2,9 @@
 
 Copy to `.ai/plans/active/<yyyy-mm-dd>-<task>.md`. Required for COMPLEX and
 high-risk (tests-first) tasks. Write it in English and show the owner a
-translation in chat (lodestar-harness `rules/documentation.md`, section 5). Move
-it to `.ai/plans/completed/` when the task is merged.
+translation in chat (lodestar-harness `rules/documentation.md`, section 5). When
+the task is merged, delete it (`git rm`) and add one row to
+`.ai/plans/completed.md`.
 
 ## Goal
 

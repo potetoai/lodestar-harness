@@ -204,10 +204,10 @@ automatically; when unsure, select it.
    later commit that changes them.
 5. **Review.** The reviewer checks that every criterion has a test and the
    tests match the criteria.
-6. **Close.** Move the plan to `.ai/plans/completed/` and delete
-   `.ai/test-lock` in the final commit. The lock expires on its own once its
-   plan leaves `active/`, even if the file is forgotten; the owner never has
-   to unlock anything.
+6. **Close.** Delete the plan (`git rm`, one row in
+   `.ai/plans/completed.md`) and delete `.ai/test-lock` in the final commit.
+   The lock expires on its own once its plan leaves `active/`, even if the
+   file is forgotten; the owner never has to unlock anything.
    While another active plan still has a Tests-First round, keep
    `.ai/test-lock`: the lock stays in force until the last such plan closes.
 

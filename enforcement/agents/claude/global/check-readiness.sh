@@ -93,7 +93,7 @@ if [ -n "$due" ]; then
   echo "$due"
   echo "Tell the owner, and offer to run: $lodestar/workflows/maintenance.md"
 fi
-# A merged plan must move to completed/ (workflows/complex.md), but nothing
+# A merged plan must leave active/ (workflows/complex.md), but nothing
 # checked it: real projects kept done plans in active/ for weeks, and every
 # session reads them all. List active plans no commit has touched for
 # LODESTAR_STALE_PLAN_DAYS (2) days; an uncommitted plan is new and skipped.
@@ -107,7 +107,7 @@ done)
 if [ -n "$stale" ]; then
   echo "Lodestar: plans in .ai/plans/active/ with no commit since $cutoff:"
   echo "$stale"
-  echo "Check each against the merged PRs. Done: git mv it to .ai/plans/completed/ (a small PR)."
+  echo "Check each against the merged PRs. Done: git rm it and add a row to .ai/plans/completed.md (a small PR)."
   echo "Not done: write in its progress log what it waits for. Tell the owner which is which."
 fi
 exit 0
