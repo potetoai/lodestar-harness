@@ -43,6 +43,23 @@ review_covers() {
     grep -qE "^[[:space:]]*- Reviewed criteria:[[:space:]]*\`?$1\`?[[:space:]]*\$"
 }
 
+# Critic runs of a plan (plan on stdin): the "- Run <n> (full|narrowed, ...)"
+# lines under "## Criteria review" (lodestar-harness agents/critic.md, Output).
+critic_runs() {
+  tr -d '\r' | sed -n '/^## Criteria review/,/^## /p' |
+    grep -cE '^[[:space:]]*- Run [0-9]+ \((full|narrowed)' || true
+}
+
+# Critic runs a plan (path) may have: 3, plus one for each owner approval of
+# its criteria (a change during the build) and each "duyệt critic" the owner
+# typed for it (approval-record.sh), both in .ai/approvals.log.
+critic_limit() {
+  local extra=0
+  [ -f .ai/approvals.log ] && extra=$(tr -d '\r' < .ai/approvals.log |
+    awk -v p="$1" '$3 == p || ($3 == "critic-run" && $4 == p) { n++ } END { print n + 0 }')
+  echo $((3 + extra))
+}
+
 # Is this criteria hash approved in an approvals log (file content on stdin)?
 hash_approved() { [ -n "$1" ] && tr -d '\r' | grep -qE "[[:space:]]$1\$"; }
 

@@ -93,7 +93,7 @@ echo '{"hooks":{"PreToolUse":[{"matcher":"Edit|Write|MultiEdit|NotebookEdit","ho
 bash "$here/bootstrap.sh" "$p3" --stack python --upgrade >/dev/null
 t "upgrade adds a new hook next to an old one in the same group" jq -e '[.hooks.PreToolUse[].hooks[].command] | (map(select(test("sensitive-gate"))) | length == 1) and (map(select(test("protect-tests"))) | length == 1)' "$p3/.claude/settings.json"
 bash "$here/bootstrap.sh" "$p3" --stack python --upgrade >/dev/null
-t "second upgrade adds nothing more" jq -e '[.hooks.PreToolUse[].hooks[].command] | length == 3' "$p3/.claude/settings.json"
+t "second upgrade adds nothing more" jq -e '[.hooks.PreToolUse[].hooks[].command] | length == 4' "$p3/.claude/settings.json"
 
 # 5. --upgrade restores managed files, never touches project files.
 echo "# edited" >> "$p/.claude/hooks/doctor.sh"
@@ -1014,6 +1014,42 @@ echo 'def test_new(): pass' > tests/test_new.py; echo tests/test_new.py >> .ai/t
 gate app/money.py; t "gate allows a lock with a new (untracked) test on this branch" [ $? = 0 ]
 g add -A; g commit -qm "tests" -m "Tests-First: t"
 gate app/money.py; t "gate allows a lock with a test committed on this branch" [ $? = 0 ]
+cd "$here"
+
+# 16b. critic-limit hook: a plan gets 3 critic runs, plus one per owner
+#      approval of its criteria and per "duyệt critic".
+p=$tmp/critic; mkdir -p "$p/.claude/hooks"; cd "$p"
+cp "$here/agents/claude/hooks/lodestar-lib.sh" .claude/hooks/
+mkplan c "a works"; pl=.ai/plans/active/c.md
+runs() { local i; for i in $(seq "$1" "$2"); do sed -i "/^## Criteria review/a - Run $i (narrowed, 2026-10-27): read the plan." $pl; done; }
+crit() { CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/critic-limit.sh" 2>/dev/null \
+  <<<"$(jq -n --arg b "$1" --arg s "${2:-general-purpose}" '{tool_name:"Agent",tool_input:{subagent_type:$s,prompt:$b}}')"; }
+brief="You are the critic (role file: D:\\AI\\Lodestar-harness\\agents\\critic.md). Plan: $(native "$p")\\.ai\\plans\\active\\c.md"
+runs 1 2; crit "$brief"; t "critic hook allows the third run" [ $? = 0 ]
+runs 3 3; crit "$brief"; t "critic hook blocks a fourth run" [ $? = 2 ]
+crit "Attack the criteria. Plan: .ai/plans/active/c.md" critic; t "critic hook blocks by subagent type too" [ $? = 2 ]
+crit "Review the diff of .ai/plans/active/c.md"; t "critic hook ignores other subagents" [ $? = 0 ]
+crit "You are the tester. The criteria were reviewed (agents/critic.md); plan .ai/plans/active/c.md"
+t "critic hook lets a tester brief that cites critic.md through" [ $? = 0 ]
+crit "You are the critic (agents/critic.md). Plan: .ai/plans/active/other.md"; t "critic hook allows a brief naming no active plan" [ $? = 0 ]
+crit "You are the critic. Plan: D:/AI/Lodestar-harness/plans/active/c.md"; t "critic hook ignores a plan outside .ai/" [ $? = 0 ]
+LODESTAR_SKIP_HOOKS=1 crit "$brief"; t "LODESTAR_SKIP_HOOKS disables the critic hook" [ $? = 0 ]
+out=$(CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"duyệt critic"}')
+t "'duyệt critic' records one more run and no criteria" bash -c 'grep -q " critic-run .ai/plans/active/c.md$" .ai/approvals.log && [ $(wc -l < .ai/approvals.log) = 1 ] && grep -q "one more critic run" <<<"$1"' _ "$out"
+crit "$brief"; t "critic hook allows a run the owner approved" [ $? = 0 ]
+runs 4 4; crit "$brief"; t "critic hook blocks again after that run" [ $? = 2 ]
+approve; crit "$brief"; t "an owner approval of the criteria allows one more run" [ $? = 0 ]
+mkplan d "b works"
+out=$(CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"duyệt critic"}')
+t "'duyệt critic' with two plans and no name records nothing" bash -c '[ $(grep -c critic-run .ai/approvals.log) = 1 ] && grep -q "plans are active" <<<"$1"' _ "$out"
+CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"duyệt critic d"}' >/dev/null
+t "'duyệt critic d' records the named plan only" bash -c '[ $(grep -c " critic-run .ai/plans/active/d.md$" .ai/approvals.log) = 1 ] && [ $(grep -c critic-run .ai/approvals.log) = 2 ]'
+rm .ai/plans/active/c.md
+CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"duyệt, critic ổn rồi"}' >/dev/null
+t "'duyệt, critic ổn rồi' approves the criteria, not a critic run" bash -c 'grep -qE " .ai/plans/active/d.md [0-9a-f]{40}$" .ai/approvals.log && [ $(grep -c critic-run .ai/approvals.log) = 2 ]'
+mkplan critic-x "c works"; mkplan e "e works"
+CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"duyệt critic-x"}' >/dev/null
+t "'duyệt critic-x' approves the plan named critic-x" bash -c 'grep -qE " .ai/plans/active/critic-x.md [0-9a-f]{40}$" .ai/approvals.log && [ $(grep -c critic-run .ai/approvals.log) = 2 ]'
 cd "$here"
 
 # 17. Stop hook keeps locked tests unchanged while the task is active, even
