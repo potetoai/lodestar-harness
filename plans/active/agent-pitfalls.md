@@ -227,6 +227,9 @@ per phase: keep, change or revert, with the number. Then move this plan to
 | 2026-10-19 | 4 | Transcripts record `effort`: every subagent ran medium. Tester cost since 2026-10-13 (26 runs, App01 and ProjectS): 46.7% of subagent cost, about 11.5% of all cost. Split: start context re-sent 15.5%, plan-file reads 7.9% (whole plan read 2-8 times per run), cache rewrites after long waits about 8% (mostly 2-hour waits), writing tests about 5%; cache read 56%, cache write 31%, output 13% |
 | 2026-10-27 | 5 prep | `usage-report.py` takes the route line from a PR body when the session wrote none (sessions continued after `/clear`); Router: a continued session writes the line again. Routed cost 8.7% -> 42.8% (2026-10-17..27); PR #93 |
 | 2026-10-27 | 5 prep | Critic run limit hook `critic-limit.sh` (PR #95) |
+| 2026-10-27 | 5 | Rerun since 2026-10-17: 235 sessions, 12,456 turns, 244.7M units; policy reading 1.2% (was 1.9%), subagents 24.5% (27.9%), owner questions 0.40 per session (0.36), Read 55%; PR #99 |
+| 2026-10-27 | 5 | 1b: 176 Stop-hook holds = 125 `make verify` (1.0% of turns; first answers 0.84% of cost, was 1.2%) + 51 unpushed commits (0.27%). Of 54 holds equal to the one before, 48 followed an edit or shell command, 6 nothing (a background builder was editing); PR #99 |
+| 2026-10-27 | 5 | 1: App01 has the Domain Terms table, vn30 does not (missed at its 2026-10-19 maintenance). 2: no real PROTOTYPE route yet. 3: `--friction` ran in one maintenance (vn30); PR #99 |
 
 ## 8. Decision log
 
@@ -264,3 +267,8 @@ per phase: keep, change or revert, with the number. Then move this plan to
 | 2026-10-25 | Keep the tester plan-reads fix | Measured on tester runs since 2026-10-13 (same method both sides: plan-file read results, cache write once plus re-read by each later call): 24 runs before the fix, 9.8% of tester cost, median 4 plan reads per run; 28 runs after (2026-10-19..25, App01 and ProjectS), 3.3%, median 3. The bar was "revert if no drop" |
 | 2026-10-27 | Critic re-runs: a narrowed run raises nothing new on unchanged criteria (except data loss or security); stop after the third run, open findings go to the owner | Owner chose B. Since 2026-10-17: 220 critic runs, 85 were a third or later run, up to 16 on one App01 plan (each narrowed run found new nits on old text). Takes effect on merge (role files are read from this repo) |
 | 2026-10-27 | Hook `critic-limit.sh` blocks a critic run past the limit; "duyệt critic <plan>" allows one more (approves no criteria); each criteria approval allows one more. Claude Code only | Owner asked (App01 plan search-perf-p3 had 8 runs the same day the rule went live; runs 5-8 found only benchmark wording). A brief that names no `.ai/plans/active/` path passes (fail open) |
+| 2026-10-27 | Phase 1b: keep; the "near 0.5% of turns" bar is not chased (1.0%) | Repeat holds with nothing changed fell to 6 in 11 days; the rest follow a change, mostly tests-first red rounds; cost 1.2% -> 0.84%. Lower means skipping verify after a change |
+| 2026-10-27 | Unpushed-commit holds: keep | 0.27% of cost; owner wants commit, push, PR and merge automated |
+| 2026-10-27 | Phase 1: keep; vn30 adds the table at its next maintenance (owner tells its session) | Maintenance rule missed once; no naming mix-up rows either way, so no quality number yet |
+| 2026-10-27 | Item 4 drop stands | Owner questions 0.40 per session, was 0.36 |
+| 2026-10-27 | Phase 2, `--friction` use and the critic limit (PR #94, #95): wait, recount about 2026-11-05; plan stays active | Owner: decide where data is enough, wait elsewhere. No PROTOTYPE use yet, one `--friction` run, critic limit live since 2026-10-27 |
