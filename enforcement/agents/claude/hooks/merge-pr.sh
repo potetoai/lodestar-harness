@@ -6,6 +6,8 @@
 # It decides from state, never from command text:
 # 1. The PR is open, in this repo (no GH_REPO), and its branch has no local
 #    commit that was never pushed (the merge would leave it out, PR #36).
+#    Its text has the route line and, for BUILD_REVIEW and up, the review
+#    line (CI checks more; this still holds when CI cannot run).
 # 2. Owner-only merge: a PR that changes (or renames away) a file in
 #    sensitive_paths, a locked test, or a safety file (hooks, CI, project
 #    rules; under .claude/ all but .claude/docs/) needs the owner's typed
@@ -42,6 +44,21 @@ view() { gh pr view "$n" --json number,headRefName,headRefOid,isCrossRepository,
 read -r num h oid cross bname boid state <<<"$(view)"
 [ "$num" = "$n" ] && [ -n "$boid" ] || die "gh could not read PR #$n." "$cant"
 [ "$state" = OPEN ] || die "PR #$n is $state, not open."
+
+# Route and review lines, as ci-checks.sh reads them (the last route line
+# counts). PRs opened by bots are skipped, as in CI.
+pb=$(gh pr view "$n" --json author,body -q '.author.login + "\n" + (.body // "")' 2>/dev/null) || die "gh could not read the text of PR #$n." "$cant"
+pb=$(tr -d '\r' <<<"$pb"); who=${pb%%$'\n'*}
+if ! [[ $who == *'[bot]' || $who == app/* ]]; then
+  rl=$(grep -E '^Lodestar route: ' <<<"$pb" | tail -n1)
+  fix="Fix the PR text with 'gh pr edit $n --body-file <file>', then run this again."
+  [[ $rl =~ ^Lodestar\ route:\ (SIMPLE|BUILD_REVIEW|INDEPENDENT_COMPARE|COMPLEX|PROTOTYPE|ONBOARDING|MAINTENANCE)\ risk=(low|medium|high|critical)(\ escalated-from=[A-Z_]+)?[[:space:]]*$ ]] ||
+    die "PR #$n has no route line 'Lodestar route: <WORKFLOW> risk=<level>' (router/ROUTER.md); not merged." "$fix"
+  case ${BASH_REMATCH[1]} in BUILD_REVIEW|INDEPENDENT_COMPARE|COMPLEX)
+    grep -qE '^Lodestar review: [^[:space:]]' <<<"$pb" ||
+      die "PR #$n is ${BASH_REMATCH[1]} but has no line 'Lodestar review: <verdict>, <who>, <commit>'; not merged." "Run the independent review (workflows/build-review.md), fix its findings, add the line. $fix" ;;
+  esac
+fi
 
 # Local commits the PR's head lacks; compared with the head itself, else
 # with origin's copy. A local branch that cannot be compared stops the merge.
@@ -118,7 +135,10 @@ for try in 1 2 3 4 5 6; do
   grep -qi 'no checks reported' <<<"$out" || break
   [ $try = 6 ] || sleep "${LODESTAR_CHECKS_RETRY:-10}"
 done
-[ $rc = 0 ] || die "CI is not green on PR #$n (gh pr checks exit $rc); not merged." "$(tail -n 15 <<<"$out")"
+[ $rc = 0 ] || die "CI is not green on PR #$n (gh pr checks exit $rc); not merged." "$(tail -n 15 <<<"$out")
+If CI could not run at all (for example no Actions minutes left), run on the PR's branch:
+  make verify && PR_NUMBER=$n GITHUB_REPOSITORY=<owner>/<repo> bash .claude/hooks/ci-checks.sh origin/$bname
+Tell the owner both results; only the owner merges it, by hand on GitHub."
 # A push while CI ran: the checks above were for another head.
 read -r _ _ now _ <<<"$(view)"
 [ "$now" = "$oid" ] || die "PR #$n got a new push while CI ran ($oid -> ${now:-unreadable}); not merged." "Run this again${hit:+; the owner must approve the new head}."

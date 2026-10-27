@@ -37,6 +37,9 @@ Code alone, or Orca when present).
   that changes a safety file (`enforcement/`, `.claude/`, `.github/`) needs
   the owner's typed "duyệt merge PR <n>"; `.claude/settings.json` runs the
   approval hook, which records only merge approvals here.
+- PR text carries `Lodestar route: <WORKFLOW> risk=<level>` (exact case) and,
+  for BUILD_REVIEW and up, `Lodestar review: <verdict>, <who>, <commit>`;
+  `merge-pr.sh` refuses a PR without them.
 - Never build an orchestration system; use the runtime's (Claude Code
   subagents, or Orca when present). Hooks, CI and
   doctor only verify.

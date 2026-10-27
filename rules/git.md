@@ -238,7 +238,8 @@ its own feature branch and opens a pull request against the base branch, with th
 verification evidence in the PR body. The PR body also carries the task's route
 line (`Lodestar route: <WORKFLOW> risk=<level>`, `router/ROUTER.md`) and, for
 BUILD_REVIEW and up, `Lodestar review: <verdict>, <who>, <commit>`; CI fails
-without them (`ci-checks.sh`). Pushing the worker's own branch and opening
+without them (`ci-checks.sh`), and `merge-pr.sh` refuses without them even
+when CI cannot run. Pushing the worker's own branch and opening
 a PR is allowed by default. Pushing directly to a shared or base branch is not.
 Commit, push and open the PR without asking the owner; report it in one line.
 Push before stopping to wait for the owner too: a commit only on this machine
@@ -289,6 +290,11 @@ is not part of the merge and is lost without a warning (PR #36). The script
 refuses while the PR's branch has local commits not pushed, and merges only
 the head it checked (`--match-head-commit`), so a push while CI runs means
 running it again.
+
+When CI cannot run at all (for example the repo has no Actions minutes left),
+`merge-pr.sh` stops on the red checks. Run on the PR's branch `make verify` and
+`PR_NUMBER=<n> GITHUB_REPOSITORY=<owner>/<repo> bash .claude/hooks/ci-checks.sh origin/<base>`,
+tell the owner both results, and leave the merge to the owner, by hand on GitHub.
 
 A project may forbid auto-merge entirely in its `.ai/project.md` (for example when
 the "done" check is run by a human, not CI). The project rule wins.
