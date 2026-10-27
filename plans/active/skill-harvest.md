@@ -164,14 +164,18 @@ this plan to `plans/completed/`.
 
 - **Q1 (start):** start after `agent-pitfalls.md` phase 5 and `docs-tidy.md`
   phases 2-3 (about 2026-11-02), or now? Recommended: after; starting now
-  mixes their numbers.
+  mixes their numbers. **Answered 2026-10-27: after 2026-11-02.**
 - **Q2 (phase 1):** reply level for the owner. (a) Lite: full sentences,
   no filler. Recommended for a non-coder. (b) Full caveman: fragments.
+  **Answered 2026-10-27: (a).**
 - **Q3 (phase 4):** add the repo audit to maintenance? It costs one reviewer
   run per maintenance. Recommended: decide after phase 3 numbers.
+  **Answered 2026-10-27: decide after phase 3 numbers.**
 - **Q4 (phase 5):** which plugins stay. Recommended: keep ui-ux-pro-max (off,
   per project); expo only if a project builds an Expo app; remove the other
-  six.
+  six. **Answered 2026-10-27: as recommended; keep expo (App01
+  `apps/mobile` is Expo), on only for App01 via its gitignored
+  `.claude/settings.local.json` (App01's session sets it).**
 
 ## 6. Not in scope
 
@@ -192,3 +196,4 @@ this plan to `plans/completed/`.
 | Date | Decision | Why |
 |---|---|---|
 | 2026-10-27 | Harvest ideas into Lodestar files instead of turning plugins on | Owner; plugins add base context every session and their always-on rules conflict with the Router |
+| 2026-10-27 | Q1 after 2026-11-02; Q2 (a); Q3 after phase 3; Q4 keep ui-ux-pro-max and expo, remove superpowers, karpathy, caveman, ponytail, taste-skill, firecrawl | Owner; App01 builds an Expo app |
