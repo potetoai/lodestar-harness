@@ -111,11 +111,22 @@ Router), so no template release is needed. A phase that changes
 
 Start only after `agent-pitfalls.md` phase 5 and `docs-tidy.md` phases 2-3
 are recorded (Q1): phase 1 changes output length, phases 2-3 change roles
-that those plans measure or move.
+that those plans measure or move. Docs-tidy phases 2-3 run with the
+2026-11-05 recount, so the real start is about 2026-11-06. Write phase 3
+edits against the file layout docs-tidy phase 3 leaves (it moves text
+between `rules/testing.md` and `agents/reviewer.md`).
+
+Merge and measure in steps, not all at once: phase 2 shortens subagent
+reports while phases 3 and 3b give the reviewer more to report, so one
+combined count cannot tell which phase worked. Phase 1 and 2 numbers are
+taken (phase 6 bars) after about one week of use, before phase 3 merges.
 
 ### Phase 0 — Baseline (read only)
 
-- `python scripts/usage-report.py --since <14 days back>` for all projects:
+- Window: from the batch release (not before 2026-11-02) to the start day
+  only, so the release's own changes (critic run limit and the rest) do not
+  count as this plan's effect. A short window is accepted; say its length.
+- `python scripts/usage-report.py --since <release day>` for all projects:
   output share, subagent share, cost per owner-facing turn.
 - Throwaway script in the session scratchpad (not committed): per subagent
   role, the median and 90th percentile length (tokens) of the final report,
@@ -123,6 +134,8 @@ that those plans measure or move.
 - Reviewer findings in the last 20 BUILD_REVIEW PRs: count, how many named
   code to delete or simplify, how many the builder fixed.
 - Lines added per merged builder PR (median), as a rough code-size number.
+- Reviewer cost per run (median tokens) and explore-options runs per week,
+  for the phase 3 and 3b cost bars.
 
 Done when: the numbers are in the progress log.
 
@@ -174,6 +187,8 @@ Done when: merged; first 5 subagent runs checked by hand for lost meaning.
 - `rules/testing.md` and `agents/tester.md` (idea 30): one line against
   tautological tests.
 - No hook, no CI check: these are judgment rules a script cannot verify.
+- Two PRs: 3a the reviewer passes (ideas 4, 29); 3c builder, investigate
+  and testing lines (ideas 5-7, 28, 30).
 
 Done when: merged; a dry run on one recent App01 or vn30 diff (read only)
 shows the pass output.
@@ -184,7 +199,8 @@ shows the pass output.
   does the request fix it or a proxy; cost of doing nothing; smallest version
   that gives most of the value). The Router selects explore-options for a new
   user-facing feature even when the goal looks clear (one line in
-  `router/ROUTER.md`). It recommends; it never adds scope without the owner.
+  `router/ROUTER.md`), except a small change to an existing screen (copy,
+  one field, styling). It recommends; it never adds scope without the owner.
 - `agents/frontend.md`: a UI checklist of about 10 lines (idea 24), mobile
   rules included. The reviewer applies it when the diff touches UI files and
   reports a 0-10 rating with the gaps to a 10, as MINOR or SUGGESTION.
@@ -222,12 +238,14 @@ About two weeks after phase 3 merges, rerun phase 0. Keep a phase if:
   owner finds replies clear;
 - phase 2: median subagent report down 30% or more, with no rise in
   follow-ups to the same subagent;
-- phase 3: lines added per builder PR do not rise, and over half of the
-  `delete`/`shrink` findings are fixed (the rest are noise: tighten or drop);
+- phase 3: lines added per builder PR do not rise, over half of the
+  `delete`/`shrink` findings are fixed (the rest are noise: tighten or drop),
+  and median reviewer cost per run rises no more than 15%;
 - phase 3b: in the features it ran on, the owner took a smaller or no-build
   option at least once, or found the check useful; over half of the UI
   checklist findings in App01 are fixed; grilling rounds per task stay at
   3 or fewer (median) and the owner finds them easier than open questions;
+  the extra explore-options runs cost under 3% of the projects' total;
 - ideas 28-31: over half of the spec-check findings are fixed, and no
   owner complaint about PR text length.
 
@@ -267,6 +285,7 @@ this plan to `plans/completed/`.
 | 2026-10-27 | — | Ideas 23-26 added from gstack (owner asked) |
 | 2026-10-27 | — | Phase 3 guard: the over-engineering pass never cuts real error handling, tests or security checks |
 | 2026-10-27 | — | Ideas 27-35 added from Matt Pocock's skills (owner asked) |
+| 2026-10-27 | — | Review fixes: real start about 11-06, measure phases 1-2 before 3, cost bars, baseline after the release, phase 3 in two PRs |
 
 ## 8. Decision log
 
@@ -276,3 +295,4 @@ this plan to `plans/completed/`.
 | 2026-10-27 | Q1 after 2026-11-02; Q2 (a); Q3 after phase 3; Q4 keep ui-ux-pro-max and expo, remove superpowers, karpathy, caveman, ponytail, taste-skill, firecrawl | Owner; App01 builds an Expo app |
 | 2026-10-27 | From gstack take only the premise check and the UI checklist; no gstack install | Owner asked; the rest overlaps Lodestar, expands scope, or sends telemetry |
 | 2026-10-27 | From Matt Pocock's skills take grilling rounds, ranked hypotheses, the spec check, the tautological-test ban and the undo line in PRs; no install | Owner asked; the rest is covered, is orchestration, or is rare use |
+| 2026-10-27 | Measure phases 1-2 before phase 3 merges; add reviewer and explore-options cost bars; baseline only after the batch release | Plan review: phases 2 and 3 pull report length opposite ways; owner watches tokens; the release changes agent runs |
