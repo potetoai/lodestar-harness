@@ -138,6 +138,9 @@ Done when: merged; first 5 subagent runs checked by hand for lost meaning.
 - `agents/reviewer.md`: an over-engineering pass on every diff with the five
   tags (idea 4) and a closing `net: -N lines possible` (or "lean").
   Findings rate MINOR or SUGGESTION unless they hide a bug.
+  A `delete` or `shrink` finding never targets handling of errors that can
+  happen (network, empty data, bad input), tests, or security checks
+  (`rules/security.md`): missing those is unfinished code, not short code.
 - `agents/builder.md` Must Not / Responsibilities: every changed line traces
   to the request (idea 5); remove what your change made unused, report older
   dead code (idea 6); check each review finding against the code, ask about
@@ -227,6 +230,7 @@ this plan to `plans/completed/`.
 |---|---|---|
 | 2026-10-27 | — | Plan written; 22 ideas from 8 installed plugins and 2026 popular lists rated against main 2.8.0 |
 | 2026-10-27 | — | Ideas 23-26 added from gstack (owner asked) |
+| 2026-10-27 | — | Phase 3 guard: the over-engineering pass never cuts real error handling, tests or security checks |
 
 ## 8. Decision log
 
