@@ -84,6 +84,7 @@ def scan(path):
                     continue
                 if c.get("type") == "tool_use":
                     name, inp = c.get("name"), c.get("input") or {}
+                    inp = inp if isinstance(inp, dict) else {}
                     tools[c["id"]] = name
                     s["tool_calls"] += 1
                     tool_turns.add(m.get("id"))
