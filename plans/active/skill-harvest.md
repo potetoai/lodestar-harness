@@ -48,6 +48,15 @@ code, fewer tokens. Every hook, test lock, review and approval stays.
   whether the request fixes the real pain or a proxy. `agents/frontend.md`
   covers loading, error and empty states and accessibility; it has no rule
   on hierarchy, word count or mobile tap targets.
+- Matt Pocock's skills (github.com/mattpocock/skills, MIT, read 2026-10-27,
+  about 20 core skills of 35): `grilling` asks in numbered rounds, each
+  question with a recommended answer that "yes" accepts, and looks facts up
+  itself; `diagnosing-bugs` ranks 3-5 hypotheses before testing any, tags
+  temporary debug logs for one-grep cleanup, and names the confirmed cause in
+  the PR; `code-review` has a spec axis (missing, not asked for, done wrong);
+  `tdd` bans tautological tests; `pr` states one-way or two-way door and
+  blast radius. `skills/investigate.md` asks for one hypothesis; the reviewer
+  compares the diff to the criteria only in tests-first tasks.
 - Popular lists (2026) rank superpowers, karpathy, frontend-design,
   agent-browser, claude-mem, ui-ux-pro-max, everything-claude-code highest.
 
@@ -84,6 +93,15 @@ Rating: **Do** · **Check** (measure first, act only if the number says so) ·
 | 24 | gstack plan-design-review, design-review | UI checklist: screen hierarchy, cut words, conventions, visible tap targets (44px), every state designed; rate 0-10 and name what a 10 needs | `agents/frontend.md` states and accessibility | **Do**, phase 3b |
 | 25 | gstack | Scope expansion modes, "boil the ocean", 12-month dream state | Minimal change rules | **Drop**: against the short-code goal |
 | 26 | gstack | Mockup generation, own browser, telemetry, question tuning | Playwright capability; Router asks | **Drop**: heavy, sends usage data out |
+| 27 | pocock grilling | For a large or unclear task: questions in numbered rounds, each with a recommended answer worded so "yes" accepts it; ask only decisions the owner can make, look facts up | Intake gate asks once | **Do**, phase 3b |
+| 28 | pocock diagnosing-bugs | 3-5 ranked hypotheses, each with the observation that would disprove it; temporary debug logs carry one tag, removed by one grep; the confirmed cause goes in the PR text | `investigate.md` step 4: one hypothesis | **Do**, phase 3 |
+| 29 | pocock code-review | Reviewer spec check on every diff: what was asked and is missing, what was not asked for, what looks done but is wrong | Criteria check only in tests-first | **Do**, phase 3 |
+| 30 | pocock tdd | No tautological test: the expected value comes from the criteria or a known example, never computed the way the code does | Not covered | **Do**, phase 3 |
+| 31 | pocock pr | PR text says whether the change can be undone (one-way or two-way door) and what it can affect | Route and review lines only | **Do**, phase 1 |
+| 32 | pocock writing-for-agents | Cut rule lines that change no behaviour; state the wanted behaviour rather than only a ban | Rewording rules needs review; docs-tidy only moves text | **Optional**, owner's call after docs-tidy |
+| 33 | pocock prototype | Logic prototype as one HTML file the owner can click | `workflows/prototype.md` | **Check**: decide when PROTOTYPE use is counted (agent-pitfalls phase 5) |
+| 34 | pocock (rest) | Git guardrails, handoff, glossary and ADRs, wayfinder map, retro | `guard-install.sh`, `.ai/handoff.md`, Domain Terms, plans, maintenance | **Covered** |
+| 35 | pocock (rest) | Parallel implementers and merger agents, architecture HTML report, smell list, questionnaire, wizard, teach, re-pitch | Runtime dispatch; idea 8; idea 4 | **Drop**: orchestration, overlap, or rare use |
 
 ## 4. Phases
 
@@ -108,7 +126,7 @@ that those plans measure or move.
 
 Done when: the numbers are in the progress log.
 
-### Phase 1 — Reply style to the owner (idea 1)
+### Phase 1 — Reply style to the owner (ideas 1, 31)
 
 - New short section in `rules/documentation.md` (next to section 5,
   Language), about 10 lines: result first; short sentences, one idea each;
@@ -117,6 +135,8 @@ Done when: the numbers are in the progress log.
   "not", "only", "except" and numbers exact; plain words in the owner's
   language. Full sentences stay: the owner is a non-coder (Q2).
 - One pointer line in `router/ROUTER.md` where the final report is described.
+- `rules/git.md` PR body (idea 31): one plain line, can it be undone (and
+  how) and what it can affect. Text only; `merge-pr.sh` does not check it.
 
 Done when: merged; two live sessions read by the owner.
 
@@ -133,7 +153,7 @@ Done when: merged; two live sessions read by the owner.
 
 Done when: merged; first 5 subagent runs checked by hand for lost meaning.
 
-### Phase 3 — Shorter code (ideas 4-7)
+### Phase 3 — Shorter code and review checks (ideas 4-7, 28-30)
 
 - `agents/reviewer.md`: an over-engineering pass on every diff with the five
   tags (idea 4) and a closing `net: -N lines possible` (or "lean").
@@ -145,12 +165,20 @@ Done when: merged; first 5 subagent runs checked by hand for lost meaning.
   to the request (idea 5); remove what your change made unused, report older
   dead code (idea 6); check each review finding against the code, ask about
   unclear ones before fixing any, push back with a reason (idea 7).
+- `agents/reviewer.md` (idea 29): a spec check on every diff against the
+  request or plan: missing, not asked for, done wrong; findings quote the
+  request line.
+- `skills/investigate.md` (idea 28): step 4 lists 3-5 ranked hypotheses,
+  each with its disproving observation; debug lines carry one tag and are
+  removed by grep before the fix commit; the report's cause goes in the PR.
+- `rules/testing.md` and `agents/tester.md` (idea 30): one line against
+  tautological tests.
 - No hook, no CI check: these are judgment rules a script cannot verify.
 
 Done when: merged; a dry run on one recent App01 or vn30 diff (read only)
 shows the pass output.
 
-### Phase 3b — Product and UI checks (ideas 23, 24)
+### Phase 3b — Product, UI and intake checks (ideas 23, 24, 27)
 
 - `skills/explore-options.md` step 1: add the premise check (real problem;
   does the request fix it or a proxy; cost of doing nothing; smallest version
@@ -160,6 +188,10 @@ shows the pass output.
 - `agents/frontend.md`: a UI checklist of about 10 lines (idea 24), mobile
   rules included. The reviewer applies it when the diff touches UI files and
   reports a 0-10 rating with the gaps to a 10, as MINOR or SUGGESTION.
+- Router intake gate (idea 27): for COMPLEX tasks or requirements still
+  unclear after one question, ask in numbered rounds, each question with a
+  recommended answer that "yes" accepts; only decisions the owner can make,
+  facts are looked up. A small task keeps the single question.
 - ui-ux-pro-max stays an optional plugin for deep design work; Lodestar text
   carries only the checklist.
 
@@ -194,7 +226,10 @@ About two weeks after phase 3 merges, rerun phase 0. Keep a phase if:
   `delete`/`shrink` findings are fixed (the rest are noise: tighten or drop);
 - phase 3b: in the features it ran on, the owner took a smaller or no-build
   option at least once, or found the check useful; over half of the UI
-  checklist findings in App01 are fixed.
+  checklist findings in App01 are fixed; grilling rounds per task stay at
+  3 or fewer (median) and the owner finds them easier than open questions;
+- ideas 28-31: over half of the spec-check findings are fixed, and no
+  owner complaint about PR text length.
 
 Otherwise change or revert, with the number in the decision log. Then move
 this plan to `plans/completed/`.
@@ -231,6 +266,7 @@ this plan to `plans/completed/`.
 | 2026-10-27 | — | Plan written; 22 ideas from 8 installed plugins and 2026 popular lists rated against main 2.8.0 |
 | 2026-10-27 | — | Ideas 23-26 added from gstack (owner asked) |
 | 2026-10-27 | — | Phase 3 guard: the over-engineering pass never cuts real error handling, tests or security checks |
+| 2026-10-27 | — | Ideas 27-35 added from Matt Pocock's skills (owner asked) |
 
 ## 8. Decision log
 
@@ -239,3 +275,4 @@ this plan to `plans/completed/`.
 | 2026-10-27 | Harvest ideas into Lodestar files instead of turning plugins on | Owner; plugins add base context every session and their always-on rules conflict with the Router |
 | 2026-10-27 | Q1 after 2026-11-02; Q2 (a); Q3 after phase 3; Q4 keep ui-ux-pro-max and expo, remove superpowers, karpathy, caveman, ponytail, taste-skill, firecrawl | Owner; App01 builds an Expo app |
 | 2026-10-27 | From gstack take only the premise check and the UI checklist; no gstack install | Owner asked; the rest overlaps Lodestar, expands scope, or sends telemetry |
+| 2026-10-27 | From Matt Pocock's skills take grilling rounds, ranked hypotheses, the spec check, the tautological-test ban and the undo line in PRs; no install | Owner asked; the rest is covered, is orchestration, or is rare use |
