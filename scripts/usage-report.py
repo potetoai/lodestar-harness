@@ -48,11 +48,13 @@ def context(u):
 def scan(path):
     """One transcript -> usage per API call (deduped by message id) and counters.
     routes: (call index, workflow, risk, escalated-from); owner: call index of
-    each owner message (the next call answers it)."""
+    each owner message (the next call answers it). A session with no route
+    line in its own text but one in a PR body it writes (Bash command or Write
+    content; a session continued after /clear) takes that line from its start."""
     usage, ts, policy_ids, tools = {}, {}, {}, {}
-    routes, owner = [], []
+    routes, owner, pr_routes = [], [], []
     s = dict(date="", policy=0, hooks=0, asks=0, read_tok=0, tool_tok=0, off_format=0,
-             prompt=None, tool_calls=0)
+             prompt=None, tool_calls=0, pr_route=0)
     tool_turns = set()
     with open(path, encoding="utf-8", errors="ignore") as fh:
         for line in fh:
@@ -86,6 +88,8 @@ def scan(path):
                     s["tool_calls"] += 1
                     tool_turns.add(m.get("id"))
                     s["asks"] += name == "AskUserQuestion"
+                    if name in ("Bash", "Write"):
+                        pr_routes += ROUTE.findall(str(inp.get("command") or inp.get("content") or ""))
                     target = str(inp.get("file_path") or inp.get("command") or "")
                     if POLICY.search(target) and (name == "Read" or (name == "Bash" and SHELL_READ.search(target))):
                         policy_ids[c["id"]] = True
@@ -104,6 +108,8 @@ def scan(path):
                     if c.get("tool_use_id") in policy_ids:
                         s["policy"] += n
     s["usage"], s["ts"] = list(usage.values()), list(ts.values())
+    if not routes and pr_routes:
+        routes, s["pr_route"] = [(0,) + pr_routes[0][:3]], 1
     s["routes"], s["owner"] = routes, owner
     s["tool_turns"] = len(tool_turns)
     return s
@@ -173,8 +179,9 @@ def route_report(sessions, total):
                 esc[f"{old}->{wf}"] = esc.get(f"{old}->{wf}", 0) + 1
     unrouted = sum(1 for s in sessions if not s["routes"])
     off = sum(s["off_format"] for s in sessions)
-    print(f"Route lines: {sum(v[0] for v in stats.values())} ({off} off-format);"
-          f" sessions without one: {unrouted} of {len(sessions)}")
+    from_pr = sum(s["pr_route"] for s in sessions)
+    print(f"Route lines: {sum(v[0] for v in stats.values())} ({off} off-format,"
+          f" {from_pr} from a PR body only); sessions without one: {unrouted} of {len(sessions)}")
     print(f"  {'workflow':20} {'tasks':>5} {'cost':>6} {'per task':>9} {'owner msgs/task':>15}")
     for wf, (n, c, o) in sorted(stats.items(), key=lambda kv: -kv[1][1]):
         per = f"{int(c / n):9}" if n else f"{'-':>9}"

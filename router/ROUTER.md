@@ -529,7 +529,9 @@ task writes a new line ending in ` escalated-from=<previous WORKFLOW>`.
 The PR body repeats the last route line; CI checks it (`rules/git.md`, section 12).
 An operation that writes data (running an update job, a migration, a
 backfill) is a change and gets a line too, usually SIMPLE. Questions with no
-change need no line.
+change need no line. A session that continues a task (after `/clear`, from
+`.ai/handoff.md`) writes the task's last route line again before its first
+change.
 
 This gate is about the workflow choice. It is separate from, and earlier than:
 
