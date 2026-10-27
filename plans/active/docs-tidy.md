@@ -92,7 +92,7 @@ for any miss traced to a moved rule. None: move this plan to
   Recommended. (b) Keep them where they are; each already says at its top
   that it was merged. **Answered 2026-10-16: (a).**
 - **Q2 (phase 2-3):** run phases 2 and 3 now, or after
-  `agent-pitfalls.md` phase 5 (about 2026-10-30), so the moved text does not
+  `agent-pitfalls.md` phase 5 (about 2026-11-05, with its recount), so the moved text does not
   mix with that plan's measurements? Recommended: after. **Answered
   2026-10-16: after.**
 
@@ -119,3 +119,4 @@ for any miss traced to a moved rule. None: move this plan to
 | 2026-10-16 | Q1 (a): rated ideas live in `plans/completed/ideas/` | Owner; `plans/ideas/` then means "not yet rated" |
 | 2026-10-16 | Q2: phases 2-3 wait until `agent-pitfalls.md` phase 5 (about 2026-10-30) | Owner; moved text must not mix with that plan's measurements |
 | 2026-10-24 | Progress rows are one short line with the PR number; decision log and the move to `completed/` stay | Owner asked whether "done" notes can go; rows repeated the PR text, but a new session cannot tell done from half done without them, and CI needs the plan changed in a Tests-First round |
+| 2026-10-27 | Phases 2-3 run about 2026-11-05, with the agent-pitfalls phase 5 recount | Owner; phase 5 was only partly measured on 2026-10-27 (PR #99), the rest waits for more data |
