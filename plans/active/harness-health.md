@@ -146,8 +146,8 @@ decided whether it becomes a maintenance step.
 | 2026-10-23 | 2 | ProjectS report `lodestar-verify-stop-tests-first`: `verify-before-stop.sh` now allows a stop at a clean HEAD that is the valid Tests-First commit (red tests by design); ships in the ~2026-10-30 batch |
 | 2026-10-23 | 2 | Hook review table written (owner said start now); owner chose per row; four changes to build, shipping in the next batch |
 | 2026-10-23 | 2 | Four changes built (one PR): `merge-pr.sh <n>` is the only merge (state: CI wait, unpushed commits, owner approval, pinned head), the guard blocks every other merge command; git pre-push hook `pre-push.sh` (bootstrap installs it, doctor A4d) replaces the guard's push checks; Tests-First commit check removed (CI check 3); task-done nudge reads the marker `merge-pr.sh` leaves. Also `check-readiness.sh` no longer hangs on an open empty stdin. `guard-install.sh` 358 -> 115 lines |
-| 2026-10-27 | 2 | PR #92: `merge-pr.sh` refuses a PR without route/review lines (ProjectS merged 5 by hand while CI had no minutes); ships in the next batch |
 | 2026-10-26 | 1 | Release 2.8.0 (batch of PRs #75-#87, incl. #87 CI minute saving), released early on owner request; within cadence (7 days after 2.7.11) |
+| 2026-10-27 | 2 | PR #92: `merge-pr.sh` refuses a PR without route/review lines (ProjectS merged 5 by hand while CI had no minutes); ships in the next batch |
 
 ## 7. Decision log
 
