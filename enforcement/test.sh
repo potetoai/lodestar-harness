@@ -1259,7 +1259,9 @@ t "doctor C1 names the GitHub Free limit" grep -q "C1  main cannot be locked: pr
 # ref=<r>` prints $FAKE_LOCK_TIP (r = base branch) or $FAKE_LOCK_BASE (r =
 # base commit): unset is HTTP 404, "ERR" another error. `gh pr checks` exits
 # $FAKE_CHECKS (0; "none": no checks reported); `gh pr merge` writes its
-# arguments to $FAKE_DIR/merged. Empty $FAKE_GH: every call fails.
+# arguments to $FAKE_DIR/merged. `gh pr view --json author,body` prints
+# $FAKE_AUTHOR (me) and $FAKE_BODY (a reviewed BUILD_REVIEW route). Empty
+# $FAKE_GH: every call fails.
 mkdir -p "$tmp/ghpr"
 cat > "$tmp/ghpr/gh" <<'EOF'
 #!/bin/sh
@@ -1283,6 +1285,10 @@ case "$*" in
     [ "$FAKE_CHECKS" = none ] && { echo "no checks reported on the 'x' branch"; exit 1; }
     echo "verify pass"; exit "${FAKE_CHECKS:-0}" ;;
   "pr merge"*) echo "$*" > "$FAKE_DIR/merged" ;;
+  *"--json author,body"*) printf '%b
+' "${FAKE_AUTHOR:-me}
+${FAKE_BODY-Lodestar route: BUILD_REVIEW risk=low
+Lodestar review: pass, reviewer, aaaaaaa}" ;;
   *) set -- $first
     [ -n "$FAKE_NEWHEAD" ] && [ -f "$FAKE_DIR/checked" ] && set -- "$1" "$2" "$FAKE_NEWHEAD" "$4" "$5" "$6" "$7"
     echo "$1 $2 $3 $4 $5 $6 ${7:-OPEN}" ;;
@@ -1306,6 +1312,16 @@ for a in "" "x" "7 8" "7 --auto" "7 --admin"; do
   mp "$a" "$pr7"; t "merge-pr refuses the arguments '$a'" [ $? = 1 ]
 done
 FAKE_CHECKS=1 mp 7 "$pr7"; t "merge-pr does not merge on a red CI" [ $? = 1 ]
+out=$(cd "$m" && FAKE_DIR=$tmp FAKE_GH=$pr7 FAKE_CHECKS=1 LODESTAR_CHECKS_RETRY=0 PATH="$tmp/ghpr:$PATH" CLAUDE_PROJECT_DIR=$m bash "$here/agents/claude/hooks/merge-pr.sh" 7 2>&1)
+t "merge-pr on a red CI names the local checks for a CI that cannot run" bash -c 'grep -q "PR_NUMBER=7 .*ci-checks.sh origin/main" <<<"$1" && grep -q "only the owner merges" <<<"$1"' _ "$out"
+FAKE_BODY='' mp 7 "$pr7"; t "merge-pr refuses a PR with no text" [ $? = 1 ]
+FAKE_BODY='Lodestar route: bugfix' mp 7 "$pr7"; t "merge-pr refuses a route line that names no Lodestar workflow" [ $? = 1 ]
+FAKE_BODY='Lodestar route: BUILD_REVIEW risk=low\n- Independent review: no findings' mp 7 "$pr7"; t "merge-pr refuses BUILD_REVIEW without a 'Lodestar review:' line" [ $? = 1 ]
+FAKE_BODY='Lodestar route: COMPLEX risk=high' mp 7 "$pr7"; t "merge-pr refuses COMPLEX without a review line" [ $? = 1 ]
+FAKE_BODY='Lodestar route: SIMPLE risk=low\r\nDone.' mp 7 "$pr7"; t "merge-pr merges SIMPLE with no review line (CRLF text)" [ $? = 0 ]
+FAKE_BODY='Lodestar route: SIMPLE risk=low\nLodestar route: BUILD_REVIEW risk=low escalated-from=SIMPLE' mp 7 "$pr7"; t "merge-pr reads the last route line (escalated, no review: refused)" [ $? = 1 ]
+FAKE_BODY='' FAKE_AUTHOR='app/dependabot' mp 7 "$pr7"; t "merge-pr skips the route line for a bot's PR" [ $? = 0 ]
+FAKE_BODY='Lodestar route: BUILD_REVIEW risk=low' mp 7 "$pr7"; rc=$?; t "merge-pr refuses before waiting for CI" [ $rc = 1 ] && [ ! -f "$tmp/checked" ]
 FAKE_CHECKS=none mp 7 "$pr7"; t "merge-pr does not merge when no checks are reported" [ $? = 1 ]
 FAKE_NEWHEAD=ccccccc mp 7 "$pr7"; t "merge-pr does not merge a head pushed while CI ran" [ $? = 1 ]
 mp 7 '7 fix/m aaaaaaa false main 0000000 MERGED\nsrc/app.py'; t "merge-pr refuses a PR that is not open" [ $? = 1 ]
