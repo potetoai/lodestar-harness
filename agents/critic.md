@@ -38,10 +38,12 @@ does not touch: an earlier run already reviewed them. The one exception is a
 gap that could lose or corrupt stored data or open a security hole.
 
 Stop after the third run of a plan. When the third run still has findings,
-do not change the criteria again: write each finding with "left to the
-owner (run limit)", add the `- Reviewed criteria:` line, and show the owner
-the open findings with the criteria. The owner approves as written, or names
-the fixes; a change the owner asks for gets one more narrowed run.
+the author does not change the criteria again: they write each finding with
+"left to the owner (run limit)", add the `- Reviewed criteria:` line, and
+show the owner the open findings with the criteria. The owner approves as
+written, or names the fixes. A change the owner asks for or agrees to (also
+a criteria change during the build, `rules/testing.md`) gets one more
+narrowed run, whose findings also go to the owner.
 
 A full run, as if no review existed, is required when:
 
@@ -80,7 +82,7 @@ before approving.
 
 Write the findings into the plan under `## Criteria review`, one line each:
 the problem, the proposed fix, and what the author did ("fixed", or "kept,
-because ..."). With nothing to fix, write `- No findings.` The author then
+because ...", or at the run limit "left to the owner (run limit)"). With nothing to fix, write `- No findings.` The author then
 shows the owner the updated criteria and the review lines.
 
 Reviewed criteria. Once every finding is answered, the author ends the
