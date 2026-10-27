@@ -68,7 +68,7 @@ put() {
 }
 
 # [managed]
-for h in lodestar-lib lint-file verify-before-stop protect-tests sensitive-gate guard-install approval-record feedback-check ci-checks doctor merge-pr pre-push; do
+for h in lodestar-lib lint-file verify-before-stop protect-tests sensitive-gate guard-install approval-record critic-limit feedback-check ci-checks doctor merge-pr pre-push; do
   put "$here/agents/claude/hooks/$h.sh" ".claude/hooks/$h.sh" managed
 done
 # Helpers sourced by feedback-check.sh (reminder state, Codex owner messages).

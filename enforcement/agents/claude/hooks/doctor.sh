@@ -65,9 +65,10 @@ registered() {
 }
 has_hooks() {
   local h f=.claude/settings.json
-  for h in lodestar-lib lint-file verify-before-stop protect-tests sensitive-gate guard-install approval-record feedback-check ci-checks merge-pr pre-push; do [ -f ".claude/hooks/$h.sh" ] || return 1; done
+  for h in lodestar-lib lint-file verify-before-stop protect-tests sensitive-gate guard-install approval-record critic-limit feedback-check ci-checks merge-pr pre-push; do [ -f ".claude/hooks/$h.sh" ] || return 1; done
   registered $f PreToolUse 'Edit|Write|MultiEdit|NotebookEdit' 'protect-tests\.sh' 'sensitive-gate\.sh' &&
     registered $f PreToolUse 'Bash|PowerShell' 'guard-install\.sh' &&
+    registered $f PreToolUse 'Agent|Task' 'critic-limit\.sh' &&
     registered $f PostToolUse 'Edit|Write|MultiEdit' 'lint-file\.sh' &&
     registered $f Stop '' 'verify-before-stop\.sh' 'feedback-check\.sh' &&
     registered $f UserPromptSubmit '' 'approval-record\.sh'

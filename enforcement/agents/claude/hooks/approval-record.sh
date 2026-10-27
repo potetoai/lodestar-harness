@@ -61,6 +61,32 @@ if ! ls .ai/plans/active/*.md >/dev/null 2>&1; then
   exit 0
 fi
 
+# "duyệt critic <plan>": the owner allows one more critic run of a plan past
+# the run limit (agents/critic.md; critic-limit.sh counts it). It approves no
+# criteria. With several active plans the owner names the plan. Only
+# "critic" as the word right after the approval word counts: "duyệt, critic
+# ổn rồi" and "duyệt critic-limit" (a plan's name) approve criteria as usual.
+if grep -qE '^(duyệt|duyet|approve|approved)[[:space:]]+critic([^[:alnum:]-]|$)' <<<"$start"; then
+  all=() said=()
+  for p in .ai/plans/active/*.md; do
+    n=$(basename "$p" .md); n=${n,,}; n=${n#[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-}
+    all+=("$p"); grep -qE "(^|[^[:alnum:]-])$n([^[:alnum:]-]|\$)" <<<"$low" && said+=("$p")
+  done
+  [ ${#said[@]} = 0 ] && [ ${#all[@]} = 1 ] && said=("${all[@]}")
+  if [ ${#said[@]} = 0 ]; then
+    echo "Lodestar: the owner allowed another critic run, but ${#all[@]} plans are active, so nothing was recorded."
+    echo "Ask the owner to type \"duyệt critic\" followed by the plan's name. Active plans:"
+    for p in "${all[@]}"; do n=$(basename "$p" .md); echo "  ${n#[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-}"; done
+    exit 0
+  fi
+  now=$(date '+%Y-%m-%d %H:%M')
+  for p in "${said[@]}"; do
+    echo "$now critic-run $p" >> .ai/approvals.log
+    echo "Lodestar: recorded the owner's approval of one more critic run for $p (no criteria approved)."
+  done
+  exit 0
+fi
+
 # Plans whose current criteria are not approved yet. With several waiting, the
 # owner names each one ("approve my-plan"), so one word never approves a
 # plan they have not read.

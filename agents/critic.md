@@ -45,6 +45,15 @@ written, or names the fixes. A change the owner asks for or agrees to (also
 a criteria change during the build, `rules/testing.md`) gets one more
 narrowed run, whose findings also go to the owner.
 
+The `critic-limit.sh` hook enforces this: it counts the run lines (Output)
+of the plan the brief names and blocks a run past 3, plus one for each owner
+approval of the plan's criteria (the first one too: it covers the next
+change, whose run comes before the new approval) and each "duyệt critic
+<plan name>" the owner types in their own message (recorded by the approval
+hook; it approves no criteria). Ask for it only after a fix the owner asked
+for. The brief starts "You are the critic" and names the plan by its
+`.ai/plans/active/` path, so the hook sees the run.
+
 A full run, as if no review existed, is required when:
 
 - the plan has no earlier review;
@@ -57,7 +66,8 @@ full run follows.
 
 The run adds one line under `## Criteria review` that says which kind of run
 it was (full or narrowed) and what it did not read, so the owner sees it
-before approving.
+before approving. It starts `- Run <n> (full, <date>):` or
+`- Run <n> (narrowed, <date>):`; the run limit hook counts these lines.
 
 ## What to look for
 

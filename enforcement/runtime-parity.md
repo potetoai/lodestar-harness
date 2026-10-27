@@ -17,6 +17,7 @@ runtime adapters translate inputs rather than maintaining a second policy.
 | Readiness beside each owner prompt | Global `UserPromptSubmit` | Global `UserPromptSubmit` |
 | Context and handoff reminder | Global `PostToolUse`, all tools | Global `PostToolUse`, all tools |
 | Approval/test-lock and sensitive-path guards | `PreToolUse`, file edits | `PreToolUse`, `apply_patch` |
+| Critic run limit | `PreToolUse`, `Agent`/`Task` | Not covered: no hook on subagent dispatch (rule in `agents/critic.md` only) |
 | Install and Git command guard | `PreToolUse`, shell | `PreToolUse`, `Bash` |
 | Lint edited files | `PostToolUse`, file edits | `PostToolUse`, each affected `apply_patch` path |
 | Verify and feedback correction reminder | `Stop` | `Stop` |
