@@ -15,7 +15,7 @@ because it was not linked from the task.
 | `testing.md` | verification | Proportional verification levels (static → E2E), bug-fix regression tests, edge/error paths, determinism, verification report. |
 | `security.md` | security-sensitive tasks | Security-review gate, baseline checklist (validation, injection, authn/authz, secrets), never-simplify-away list, human approval. |
 | `principles.md` | specific moments | Attack-the-premise (fix-thrash), make-operations-idempotent (retries), migrate-callers-then-delete-legacy-apis. Apply only at trigger. |
-| `documentation.md` | completion | Update `.ai/project.md` and user-facing docs when structure/decisions/commands change; ADR for significant decisions; talk to the owner in `owner_language`, write files, commits and PRs in English. |
+| `documentation.md` | completion | Update `.ai/project.md` and user-facing docs when structure/decisions/commands change; ADR for significant decisions; talk to the owner in `owner_language`, write files, commits and PRs in English; plan waits name a data gate (measure, minimum, check and stop days). |
 | `enforcement.md` | every project | `make` command contract (`setup`, `lint`, `test`, `verify`), hook + CI layers, Project Readiness Standard checked by `doctor.sh`, managed vs project files, risk-scaled checks, invariant → machine rule, learning from mistakes. |
 | `golden-principles.md` | every project | The principles every project keeps (G1, G2, ...), each with the check that enforces it; maintenance scans for the rest. |
 | `git.md` | any git state change | Inspect-before-change, worktree isolation, commit/diff hygiene, no unauthorized destructive ops, human approval gates. |
