@@ -54,7 +54,7 @@ it lives in `agents/` and the Router, which projects read from here.
 
 Done when: the rule is merged.
 
-### Phase 2: Hook review (about 2026-10-30)
+### Phase 2: Hook review (done, PR #83)
 
 For each project hook in `enforcement/agents/claude/hooks/` and the global
 ones in `enforcement/agents/claude/global/`, write one table row:
@@ -126,7 +126,7 @@ PRs that ran CI (both private repos had no Actions minutes from 2026-10-25 to
 
 | Gate | Measure (source) | Minimum | Check | Stop | Status |
 |---|---|---|---|---|---|
-| HH-3 Quality numbers | Merged PRs since 2026-10-01 whose CI ran, per project (`gh pr list`, `gh-sweep.sh`); PRs merged with no CI run left out and counted apart | 20 per project (App01, vn30) | 2026-11-05 | 2026-11-26 | waiting |
+| HH-3 Quality numbers | Merged PRs since 2026-10-01 whose CI ran, per project (`gh pr list --state merged --search "merged:>=2026-10-01" --json number,statusCheckRollup`); PRs merged with no CI run left out and counted apart | 20 per project (App01, vn30) | 2026-11-05 | 2026-11-26 | waiting (0) |
 
 Done when: one report per project is in the progress log, and the owner has
 decided whether it becomes a maintenance step.

@@ -54,7 +54,7 @@ measured (PR #99), so only files that phase 5 still counts wait:
 
 | Gate | Measure (source) | Minimum | Check | Stop | Status |
 |---|---|---|---|---|---|
-| DT-1 Start phases 2-3 | `agent-pitfalls.md` gates P5-a..c (PROTOTYPE workflow, maintenance `--friction` step, critic role) | Edits to `workflows/prototype.md`, `workflows/maintenance.md`, `agents/critic.md`: after those gates are met or stopped. Other files: no wait | 2026-11-05 | 2026-11-26 (P5 stop) | waiting |
+| DT-1 Start phases 2-3 | `agent-pitfalls.md` gates P5-a..c (PROTOTYPE workflow, maintenance `--friction` step, critic role) | Edits to `workflows/prototype.md`, `workflows/maintenance.md`, `agents/critic.md`: after those gates are met or stopped. Other files: no wait | 2026-11-05 | 2026-11-26 (P5 stop) | waiting (0) |
 
 ### Phase 2: Padding (item 9, blank lines only)
 
@@ -103,7 +103,8 @@ for any miss traced to a moved rule. None: move this plan to
 - **Q2 (phase 2-3):** run phases 2 and 3 now, or after
   `agent-pitfalls.md` phase 5 (about 2026-11-05, with its recount), so the moved text does not
   mix with that plan's measurements? Recommended: after. **Answered
-  2026-10-16: after.**
+  2026-10-16: after.** The start now rests on gate DT-1
+  (2026-10-28).
 
 ## 5. Not in scope
 

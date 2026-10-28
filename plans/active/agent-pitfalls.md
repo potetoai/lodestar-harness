@@ -183,9 +183,9 @@ Data gates for the parts not yet decided (`rules/documentation.md`, section
 
 | Gate | Measure (source) | Minimum | Check | Stop | Status |
 |---|---|---|---|---|---|
-| P5-a Phase 2 (PROTOTYPE) | Sessions routed PROTOTYPE in all projects (`usage-report.py` route lines, PR route lines) | 3 uses | 2026-11-05 | 2026-11-26 | waiting (0 so far) |
-| P5-b `--friction` | Maintenance runs that ran `usage-report.py --friction`, and fixes that came from its output (feedback rows, PRs) | 3 runs, from 2 projects | 2026-11-05 | 2026-11-26 | waiting (1 run) |
-| P5-c Critic limit (#94, #95) | Plans with critic runs since 2026-10-27: runs per plan, findings per narrowed run (transcripts, plan `## Criteria review`) | 8 plans from 2 projects, 3 of them with `critic-limit.sh` installed (batch release) | 2026-11-05 | 2026-11-26 | waiting (vn30: 2 plans, no hook) |
+| P5-a Phase 2 (PROTOTYPE) | Sessions routed PROTOTYPE in all projects (`usage-report.py` route lines, PR route lines) | 3 uses | 2026-11-05 | 2026-11-26 | waiting (0) |
+| P5-b `--friction` | Maintenance runs that ran `usage-report.py --friction` (grep transcripts for the command), and fixes that came from its output (feedback rows, PRs, read by hand) | 3 runs, from 2 projects | 2026-11-05 | 2026-11-26 | waiting (1) |
+| P5-c Critic limit (#94, #95) | Plans with critic runs since 2026-10-27: runs per plan, findings per narrowed run (`- Run <n>` lines in plan `## Criteria review`; findings counted by hand in critic reports) | 8 plans from 2 projects, 3 of them with `critic-limit.sh` installed (batch release) | 2026-11-05 | 2026-11-26, or release + 21 days if the batch ships after 2026-11-05 | waiting (2: vn30, no hook) |
 
 Phase 5 is done when all three are met or stopped. At the stop day, P5-a and
 P5-b below the minimum mean the feature is not used as built: propose to drop

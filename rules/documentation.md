@@ -103,7 +103,8 @@ Write the gates in a `Data gates` table in the plan, one row each:
   say what was left out.
 - **Check:** the first day to count. **Stop:** the last day to wait; default
   three weeks after the check.
-- **Status:** `waiting`, `met <date>: <count>`, or `stopped <date>: <count>`.
+- **Status:** `waiting (<count so far>)`, `met <date>: <count>`, or
+  `stopped <date>: <count>`.
 
 On the check day, count. Minimum met: decide. Not met: decide nothing; write
 the count and the next check day in the progress log. At the stop day with the
