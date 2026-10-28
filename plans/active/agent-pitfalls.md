@@ -230,6 +230,7 @@ per phase: keep, change or revert, with the number. Then move this plan to
 | 2026-10-27 | 5 | Rerun since 2026-10-17: 235 sessions, 12,456 turns, 244.7M units; policy reading 1.2% (was 1.9%), subagents 24.5% (27.9%), owner questions 0.40 per session (0.36), Read 55%; PR #99 |
 | 2026-10-27 | 5 | 1b: 176 Stop-hook holds = 125 `make verify` (1.0% of turns; first answers 0.84% of cost, was 1.2%) + 51 unpushed commits (0.27%). Of 54 holds equal to the one before, 48 followed an edit or shell command, 6 nothing (a background builder was editing); PR #99 |
 | 2026-10-27 | 5 | 1: App01 has the Domain Terms table, vn30 does not (missed at its 2026-10-19 maintenance). 2: no real PROTOTYPE route yet. 3: `--friction` ran in one maintenance (vn30); PR #99 |
+| 2026-10-28 | 5 data | Critic limit, for the 11-05 recount: vn30 `rsi-force-filter` 6 runs (3 full, then 3 narrowed, each after an owner fix and "duyệt critic", as the rule allows); narrowed runs 16% of its critic cache reads; run 4 found a live-DB write, run 5 three minors, run 6 none. vn30 `intraday-write-changed-only` 4 runs. vn30 has no `critic-limit.sh` yet (batch); PR #103 |
 
 ## 8. Decision log
 
