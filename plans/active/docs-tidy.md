@@ -47,6 +47,15 @@ update the links in `AGENTS.md`, `plans/completed/token-efficiency.md` and
 
 Done when: `plans/ideas/` holds no rated plan; links pass.
 
+Data gate for phases 2-3 (`rules/documentation.md`, section 6; set
+2026-10-28). The wait was so moved text does not mix with
+`agent-pitfalls.md` phase 5 numbers; the policy-reading part is already
+measured (PR #99), so only files that phase 5 still counts wait:
+
+| Gate | Measure (source) | Minimum | Check | Stop | Status |
+|---|---|---|---|---|---|
+| DT-1 Start phases 2-3 | `agent-pitfalls.md` gates P5-a..c (PROTOTYPE workflow, maintenance `--friction` step, critic role) | Edits to `workflows/prototype.md`, `workflows/maintenance.md`, `agents/critic.md`: after those gates are met or stopped. Other files: no wait | 2026-11-05 | 2026-11-26 (P5 stop) | waiting (0) |
+
 ### Phase 2: Padding (item 9, blank lines only)
 
 In the six files above: remove blank lines inside lists, arrow chains
@@ -94,7 +103,8 @@ for any miss traced to a moved rule. None: move this plan to
 - **Q2 (phase 2-3):** run phases 2 and 3 now, or after
   `agent-pitfalls.md` phase 5 (about 2026-11-05, with its recount), so the moved text does not
   mix with that plan's measurements? Recommended: after. **Answered
-  2026-10-16: after.**
+  2026-10-16: after.** The start now rests on gate DT-1
+  (2026-10-28).
 
 ## 5. Not in scope
 
@@ -120,3 +130,4 @@ for any miss traced to a moved rule. None: move this plan to
 | 2026-10-16 | Q2: phases 2-3 wait until `agent-pitfalls.md` phase 5 (about 2026-10-30) | Owner; moved text must not mix with that plan's measurements |
 | 2026-10-24 | Progress rows are one short line with the PR number; decision log and the move to `completed/` stay | Owner asked whether "done" notes can go; rows repeated the PR text, but a new session cannot tell done from half done without them, and CI needs the plan changed in a Tests-First round |
 | 2026-10-27 | Phases 2-3 run about 2026-11-05, with the agent-pitfalls phase 5 recount | Owner; phase 5 was only partly measured on 2026-10-27 (PR #99), the rest waits for more data |
+| 2026-10-28 | Phases 2-3 start on gate DT-1: only files that agent-pitfalls P5-a..c still measure wait for those gates | Owner: plans start on data, not only a date; the policy-reading numbers are already taken, so the other files need no wait |

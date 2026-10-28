@@ -36,6 +36,16 @@ records nothing while this is empty or that line is missing or stale.
 
 - [ ] ...
 
+## Data gates
+
+Only when a step waits for data (to start, decide, keep or revert): what is
+counted and from where, the minimum that is enough, the first day to count and
+the last day to wait (lodestar-harness `rules/documentation.md`, section 6).
+Below the minimum, decide nothing; write the count and the next check day.
+
+| Gate | Measure (source) | Minimum | Check | Stop | Status |
+|---|---|---|---|---|---|
+
 ## Progress log
 
 One short line per step: done or what it waits for, and the PR number. What

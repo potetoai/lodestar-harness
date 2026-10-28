@@ -40,8 +40,8 @@ does not read code. Prefer removing to adding.
 - Changes under `enforcement/` pass `bash enforcement/test.sh`; docs pass
   `bash scripts/check-links.sh`.
 - Hook changes ship in a batched release (phase 1), not one release each.
-- Do not mix with `agent-pitfalls.md` phase 5 measurements: phases 2-3 start
-  after it, about 2026-10-30, together with `docs-tidy.md` phases 2-3.
+- Do not mix with `agent-pitfalls.md` phase 5 measurements: phase 2 is done
+  (PR #83); phase 3 starts on its data gate (gate HH-3).
 
 ## 3. Phases
 
@@ -54,7 +54,7 @@ it lives in `agents/` and the Router, which projects read from here.
 
 Done when: the rule is merged.
 
-### Phase 2: Hook review (about 2026-10-30)
+### Phase 2: Hook review (done, PR #83)
 
 For each project hook in `enforcement/agents/claude/hooks/` and the global
 ones in `enforcement/agents/claude/global/`, write one table row:
@@ -119,6 +119,15 @@ Count, per project, from what already exists (feedback logs, `gh` PR data,
 Add the count to the maintenance workflow (every 14 days) as a few lines,
 not a new tool, if the numbers can be read from data that exists.
 
+Data gate (`rules/documentation.md`, section 6; set 2026-10-28). Phase 3
+only reads data, so it does not wait for other plans; it waits for enough
+PRs that ran CI (both private repos had no Actions minutes from 2026-10-25 to
+2026-11-01; hand-merged PRs then cannot show "CI red then fixed"):
+
+| Gate | Measure (source) | Minimum | Check | Stop | Status |
+|---|---|---|---|---|---|
+| HH-3 Quality numbers | Merged PRs since 2026-10-01 whose CI ran, per project (`gh pr list --state merged --search "merged:>=2026-10-01" --json number,statusCheckRollup`); PRs merged with no CI run left out and counted apart | 20 per project (App01, vn30) | 2026-11-05 | 2026-11-26 | waiting (0) |
+
 Done when: one report per project is in the progress log, and the owner has
 decided whether it becomes a maintenance step.
 
@@ -160,3 +169,4 @@ decided whether it becomes a maintenance step.
 | 2026-10-23 | Merge through `merge-pr.sh <n>` (state), push checks in git's pre-push hook, Tests-First commit check removed, task-done nudge from the merge script | Owner picked all four (AskUserQuestion). Text matching caused 6+4 fixes since 2026-10-01; state checks do not need new forms taught |
 | 2026-10-23 | Build notes: the guard also blocks changing `core.hooksPath` (it would turn off pre-push); pre-push blocks the owner's own pushes to main too (they can use `--no-verify`); the task-done nudge no longer fires for a plan moved to completed or the owner's merge on GitHub; a pre-push hook that is not Lodestar's is left alone with a warning | The hook must see the pushed refs from git, so it runs for every push; the nudge reads only state now, and every agent merge goes through the script |
 | 2026-10-25 | This source repo records the owner's "duyệt merge PR <n>": `.claude/settings.json` runs `approval-record.sh`, whose merge part no longer needs the Lodestar library (plan approvals still do); `.ai/approvals.log` is gitignored here | Owner wants the most automation; before, `merge-pr.sh` never saw an approval here, so every safety PR needed the owner on GitHub. The template file change ships in the batch; projects behave the same |
+| 2026-10-28 | Phase 3 starts on gate HH-3 (20 merged PRs with a CI run per project), not on a date or on other plans | Owner: plans start on data; phase 3 only reads data, and PRs hand-merged without CI cannot show caught faults |

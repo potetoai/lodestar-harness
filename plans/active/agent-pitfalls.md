@@ -178,6 +178,19 @@ About two weeks after phase 3 merges, rerun the phase 0 commands. Record
 per phase: keep, change or revert, with the number. Then move this plan to
 `plans/completed/`.
 
+Data gates for the parts not yet decided (`rules/documentation.md`, section
+6; set 2026-10-28, owner asked that waits rest on data, not a date):
+
+| Gate | Measure (source) | Minimum | Check | Stop | Status |
+|---|---|---|---|---|---|
+| P5-a Phase 2 (PROTOTYPE) | Sessions routed PROTOTYPE in all projects (`usage-report.py` route lines, PR route lines) | 3 uses | 2026-11-05 | 2026-11-26 | waiting (0) |
+| P5-b `--friction` | Maintenance runs that ran `usage-report.py --friction` (grep transcripts for the command), and fixes that came from its output (feedback rows, PRs, read by hand) | 3 runs, from 2 projects | 2026-11-05 | 2026-11-26 | waiting (1) |
+| P5-c Critic limit (#94, #95) | Plans with critic runs since 2026-10-27: runs per plan, findings per narrowed run (`- Run <n>` lines in plan `## Criteria review`; findings counted by hand in critic reports) | 8 plans from 2 projects, 3 of them with `critic-limit.sh` installed (batch release) | 2026-11-05 | 2026-11-26, or release + 21 days if the batch ships after 2026-11-05 | waiting (2: vn30, no hook) |
+
+Phase 5 is done when all three are met or stopped. At the stop day, P5-a and
+P5-b below the minimum mean the feature is not used as built: propose to drop
+or change it.
+
 ## 5. Open questions
 
 - **Q1 (phase 2):** where a prototype lives. (a) A `proto/<name>` branch in
@@ -273,3 +286,4 @@ per phase: keep, change or revert, with the number. Then move this plan to
 | 2026-10-27 | Phase 1: keep; vn30 adds the table at its next maintenance (owner tells its session) | Maintenance rule missed once; no naming mix-up rows either way, so no quality number yet |
 | 2026-10-27 | Item 4 drop stands | Owner questions 0.40 per session, was 0.36 |
 | 2026-10-27 | Phase 2, `--friction` use and the critic limit (PR #94, #95): wait, recount about 2026-11-05; plan stays active | Owner: decide where data is enough, wait elsewhere. No PROTOTYPE use yet, one `--friction` run, critic limit live since 2026-10-27 |
+| 2026-10-28 | The phase 5 waits become data gates P5-a..c (minimum, check 2026-11-05, stop 2026-11-26) | Owner: plans fix their start on data, not only a date; a recount on a fixed day could decide on a thin count |

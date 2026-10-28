@@ -111,21 +111,30 @@ Router), so no template release is needed. A phase that changes
 
 Start only after `agent-pitfalls.md` phase 5 and `docs-tidy.md` phases 2-3
 are recorded (Q1): phase 1 changes output length, phases 2-3 change roles
-that those plans measure or move. Docs-tidy phases 2-3 run with the
-2026-11-05 recount, so the real start is about 2026-11-06. Write phase 3
+that those plans measure or move. The start and each measure rest on data
+gates (`rules/documentation.md`, section 6; set 2026-10-28), not on a date:
+
+| Gate | Measure (source) | Minimum | Check | Stop | Status |
+|---|---|---|---|---|---|
+| SH-0 Start | `agent-pitfalls.md` P5-a..c met or stopped; `docs-tidy.md` phases 2-3 merged | Both recorded | 2026-11-05 | 2026-11-26 (P5 stop) | waiting (0) |
+| SH-base Phase 0 baseline | Days since the batch release; reviewer and critic runs in that window, all projects (`usage-report.py`, transcripts) | 7 days and 10 runs of each role | Start day | Start + 14 days | waiting (0) |
+| SH-12 Phases 1-2, before phase 3 merges | Owner-facing turns and subagent reports after phases 1-2 merge (phase 6 bars) | 7 days, 50 owner-facing turns, 10 reports of each of reviewer, tester, critic | Merge + 7 days | Merge + 21 days | waiting (0) |
+| SH-6 Phase 6 | Phase 0 measures after phase 3 merges (phase 6 bars) | 14 days, 10 builder PRs, 10 reviewer runs | Merge + 14 days | Merge + 35 days | waiting (0) |
+
+Write phase 3
 edits against the file layout docs-tidy phase 3 leaves (it moves text
 between `rules/testing.md` and `agents/reviewer.md`).
 
 Merge and measure in steps, not all at once: phase 2 shortens subagent
 reports while phases 3 and 3b give the reviewer more to report, so one
 combined count cannot tell which phase worked. Phase 1 and 2 numbers are
-taken (phase 6 bars) after about one week of use, before phase 3 merges.
+taken (phase 6 bars) when gate SH-12 is met, before phase 3 merges.
 
 ### Phase 0 — Baseline (read only)
 
 - Window: from the batch release (not before 2026-11-02) to the start day
   only, so the release's own changes (critic run limit and the rest) do not
-  count as this plan's effect. A short window is accepted; say its length.
+  count as this plan's effect. Enough data: gate SH-base.
 - `python scripts/usage-report.py --since <release day>` for all projects:
   output share, subagent share, cost per owner-facing turn.
 - Throwaway script in the session scratchpad (not committed): per subagent
@@ -232,7 +241,7 @@ Done when: `installed_plugins.json` matches Q4.
 
 ### Phase 6 — Measure and close
 
-About two weeks after phase 3 merges, rerun phase 0. Keep a phase if:
+When gate SH-6 is met, rerun phase 0. Keep a phase if:
 
 - phase 1: output tokens per owner-facing turn down 20% or more, and the
   owner finds replies clear;
@@ -256,7 +265,8 @@ this plan to `plans/completed/`.
 
 - **Q1 (start):** start after `agent-pitfalls.md` phase 5 and `docs-tidy.md`
   phases 2-3 (about 2026-11-02), or now? Recommended: after; starting now
-  mixes their numbers. **Answered 2026-10-27: after 2026-11-02.**
+  mixes their numbers. **Answered 2026-10-27: after 2026-11-02.** The start now
+  rests on gate SH-0 (2026-10-28).
 - **Q2 (phase 1):** reply level for the owner. (a) Lite: full sentences,
   no filler. Recommended for a non-coder. (b) Full caveman: fragments.
   **Answered 2026-10-27: (a).**
@@ -296,3 +306,4 @@ this plan to `plans/completed/`.
 | 2026-10-27 | From gstack take only the premise check and the UI checklist; no gstack install | Owner asked; the rest overlaps Lodestar, expands scope, or sends telemetry |
 | 2026-10-27 | From Matt Pocock's skills take grilling rounds, ranked hypotheses, the spec check, the tautological-test ban and the undo line in PRs; no install | Owner asked; the rest is covered, is orchestration, or is rare use |
 | 2026-10-27 | Measure phases 1-2 before phase 3 merges; add reviewer and explore-options cost bars; baseline only after the batch release | Plan review: phases 2 and 3 pull report length opposite ways; owner watches tokens; the release changes agent runs |
+| 2026-10-28 | Start and measures on data gates SH-0, SH-base, SH-12, SH-6 instead of "about 11-06", "a short window" and "about one week" | Owner: plans start on data, not only a date; a baseline or a bar on a few runs cannot tell a change from noise |

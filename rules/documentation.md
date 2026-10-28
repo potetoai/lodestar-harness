@@ -82,3 +82,36 @@ none were required.
   chat; an answer picked in AskUserQuestion is not recorded.
 - Files written before this rule may stay in another language. Do not
   translate an approved plan's criteria: that voids the approval.
+
+---
+
+# 6. Waiting for data
+
+A plan step that waits for data (to start, decide, keep or revert) names a
+data gate, not only a date. A date alone lets a thin count pass as an answer.
+Write the gates in a `Data gates` table in the plan, one row each:
+
+| Gate | Measure (source) | Minimum | Check | Stop | Status |
+|---|---|---|---|---|---|
+
+- **Measure (source):** what is counted, and the command or file it is read
+  from, so every count uses the same method.
+- **Minimum:** the sample that is enough to decide, for example "8 plans with
+  critic runs, from 2 projects". Count only data made under the condition
+  measured (after the change reached that project). Leave out what cannot be
+  trusted (a time when the check did not run, such as CI out of minutes) and
+  say what was left out.
+- **Check:** the first day to count. **Stop:** the last day to wait; default
+  three weeks after the check.
+- **Status:** `waiting (<count so far>)`, `met <date>: <count>`, or
+  `stopped <date>: <count>`.
+
+On the check day, count. Minimum met: decide. Not met: decide nothing; write
+the count and the next check day in the progress log. At the stop day with the
+minimum still not met: when the gate measures use, no use is the answer (the
+thing is not needed as built); otherwise the owner chooses to wait longer,
+drop the step, or go on with thin data, and the decision log says the data was
+thin.
+
+A plan that waits for another plan starts when that plan's gates are met or
+stopped, not on a guessed date.
