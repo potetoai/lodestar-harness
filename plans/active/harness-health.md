@@ -131,6 +131,21 @@ PRs that ran CI (both private repos had no Actions minutes from 2026-10-25 to
 Done when: one report per project is in the progress log, and the owner has
 decided whether it becomes a maintenance step.
 
+### Rated idea: enforced vs written (2026-10-29)
+
+`plans/completed/ideas/enforced-vs-written.md` lists rules a machine checks
+and rules only written. Rating:
+
+| Finding | Rating | Action |
+|---|---|---|
+| F1 review line accepts any text | defect; do now, smaller than written | `ci-checks.sh` and `merge-pr.sh`: verdict starts with `approve`/`pass`, and the line names a commit of this PR. Commits after the reviewed one are not failed (decision log). Ships with the batch |
+| F2 hand merges skip the checks | already covered | `gh-sweep.sh` already lists merged PRs with no route or review line (it found ProjectS #157-#170); #92 ships with the batch |
+| F3 security review unchecked | drop for now | No cheap way to count security tasks; reopen on a feedback-log row where one merged without it |
+| F4 no `permissions.deny` | drop for now | No incident; deny rules can block the owner's work; reopen on an incident row |
+| F5 learning from mistakes | covered | Gate HH-3 above |
+
+Done when: F1 is merged with `enforcement/test.sh` green.
+
 ## 4. Open questions
 
 - **Q1 (phase 2):** may a hook be removed when CI checks the same thing,
@@ -157,6 +172,7 @@ decided whether it becomes a maintenance step.
 | 2026-10-23 | 2 | Four changes built (one PR): `merge-pr.sh <n>` is the only merge (state: CI wait, unpushed commits, owner approval, pinned head), the guard blocks every other merge command; git pre-push hook `pre-push.sh` (bootstrap installs it, doctor A4d) replaces the guard's push checks; Tests-First commit check removed (CI check 3); task-done nudge reads the marker `merge-pr.sh` leaves. Also `check-readiness.sh` no longer hangs on an open empty stdin. `guard-install.sh` 358 -> 115 lines |
 | 2026-10-26 | 1 | Release 2.8.0 (batch of PRs #75-#87, incl. #87 CI minute saving), released early on owner request; within cadence (7 days after 2.7.11) |
 | 2026-10-27 | 2 | PR #92: `merge-pr.sh` refuses a PR without route/review lines (ProjectS merged 5 by hand while CI had no minutes); ships in the next batch |
+| 2026-10-29 | idea | Idea enforced-vs-written rated; F1 built (review line: pass verdict + a commit of this PR), PR #106; ships in the next batch |
 
 ## 7. Decision log
 
@@ -170,3 +186,4 @@ decided whether it becomes a maintenance step.
 | 2026-10-23 | Build notes: the guard also blocks changing `core.hooksPath` (it would turn off pre-push); pre-push blocks the owner's own pushes to main too (they can use `--no-verify`); the task-done nudge no longer fires for a plan moved to completed or the owner's merge on GitHub; a pre-push hook that is not Lodestar's is left alone with a warning | The hook must see the pushed refs from git, so it runs for every push; the nudge reads only state now, and every agent merge goes through the script |
 | 2026-10-25 | This source repo records the owner's "duyệt merge PR <n>": `.claude/settings.json` runs `approval-record.sh`, whose merge part no longer needs the Lodestar library (plan approvals still do); `.ai/approvals.log` is gitignored here | Owner wants the most automation; before, `merge-pr.sh` never saw an approval here, so every safety PR needed the owner on GitHub. The template file change ships in the batch; projects behave the same |
 | 2026-10-28 | Phase 3 starts on gate HH-3 (20 merged PRs with a CI run per project), not on a date or on other plans | Owner: plans start on data; phase 3 only reads data, and PRs hand-merged without CI cannot show caught faults |
+| 2026-10-29 | F1: the review line counts only with a verdict starting `approve`/`pass` and a commit id of this PR; a review of an older commit of the PR still passes; `gh-sweep.sh` keeps its loose check | Owner "làm đi". Last 60 merged PRs per repo, 78 review lines: 56 start with approve/pass, 69 name a commit, 43 name the PR head. So 26 of 69 reviews had fix commits after them; "reviewed commit = head" would force a reviewer re-run on about a third of PRs (token budget). The 22 other verdicts ("no BLOCKER/MAJOR", "changes then pass") get a clear message and a one-word change. The sweep has no commit list and would flag old-format lines in projects before they upgrade |

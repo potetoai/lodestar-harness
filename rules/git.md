@@ -239,8 +239,11 @@ verification evidence in the PR body. The PR body also carries the task's route
 line (`Lodestar route: <WORKFLOW> risk=<level>`, `router/ROUTER.md`) and, for
 BUILD_REVIEW and up, `Lodestar review: <verdict>, <who>, <commit>`; CI fails
 without them (`ci-checks.sh`), and `merge-pr.sh` refuses without them even
-when CI cannot run. Pushing the worker's own branch and opening
-a PR is allowed by default. Pushing directly to a shared or base branch is not.
+when CI cannot run. The review line counts only when its verdict starts with
+`approve` or `pass` (the review passed, after its findings were fixed) and it
+names a commit of this PR (7 or more hex characters), e.g.
+`Lodestar review: pass (2 minor fixed), reviewer subagent, 1a2b3c4`.
+Pushing the worker's own branch and opening a PR is allowed by default. Pushing directly to a shared or base branch is not.
 Commit, push and open the PR without asking the owner; report it in one line.
 Push before stopping to wait for the owner too: a commit only on this machine
 is lost with it. The Stop hook (`verify-before-stop.sh`) holds a stop once per

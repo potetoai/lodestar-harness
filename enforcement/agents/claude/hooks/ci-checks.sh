@@ -254,8 +254,24 @@ echo "Mutation testing (report only):"; sed 's/^/     /' <<<"$mut"
 # 7. The PR text names its route (router/ROUTER.md, "Lodestar route:") and,
 #    for a reviewed workflow, the review. Read live from GitHub, so a rerun
 #    after `gh pr edit` sees the fixed text. Tests pass LODESTAR_PR_BODY.
+# review_problem BODY COMMITS: why the last 'Lodestar review:' line does not
+# count, or nothing. It counts when it starts with a pass verdict and names a
+# commit of this PR (a hex id of 7 to 64, matched as a prefix). Same rule
+# in merge-pr.sh.
+review_problem() {
+  local line v tok c
+  line=$(grep -E '^Lodestar review: ' <<<"$1" | tail -n1)
+  [ -n "$line" ] || { echo none; return; }
+  v=$(tr '[:upper:]' '[:lower:]' <<<"${line#Lodestar review: }")
+  [[ $v =~ ^(approve|approved|pass|passed)([^a-z]|$) ]] ||
+    { echo "The 'Lodestar review:' line must start with the verdict 'approve' or 'pass' (the review passed, after its findings were fixed). A review with open findings is not a pass: fix them and review again."; return; }
+  for tok in $(tr -c '0-9a-z' '\n' <<<"$v" | grep -xE '[0-9a-f]{7,64}'); do
+    for c in $2; do [[ $c == "$tok"* ]] && return; done
+  done
+  echo "The 'Lodestar review:' line names no commit of this PR. Name the commit the reviewer read (git rev-parse --short HEAD at review time), e.g. 'Lodestar review: pass, reviewer subagent, 1a2b3c4'. After a rebase or amend the old id is gone: review the new head."
+}
 route_check() {
-  local body line wf risk n reviewed
+  local body line wf risk n reviewed rp why
   body=$(tr -d '\r' <<<"$1")
   line=$(grep -E '^Lodestar route: ' <<<"$body" | tail -n1)
   if ! [[ $line =~ ^Lodestar\ route:\ (SIMPLE|BUILD_REVIEW|INDEPENDENT_COMPARE|COMPLEX|PROTOTYPE|ONBOARDING|MAINTENANCE)\ risk=(low|medium|high|critical)(\ escalated-from=[A-Z_]+)?[[:space:]]*$ ]]; then
@@ -264,7 +280,9 @@ route_check() {
     return
   fi
   wf=${BASH_REMATCH[1]}; risk=${BASH_REMATCH[2]}
-  grep -qE '^Lodestar review: [^[:space:]]' <<<"$body" && reviewed=1 || reviewed=0
+  rp=$(review_problem "$body" "$(git rev-list "$from..HEAD")")
+  [ -z "$rp" ] && reviewed=1 || reviewed=0
+  why=$rp; [ "$rp" = none ] && why="Add a line: 'Lodestar review: <verdict>, <who>, <commit>'."
   # Bookkeeping under .ai/ (approvals, plans) is not part of the change; for
   # MAINTENANCE and ONBOARDING neither are the files Lodestar manages.
   case $wf in
@@ -278,11 +296,11 @@ route_check() {
       elif [ "$n" -ge 3 ] && [ $wf = SIMPLE ]; then
         fail "SIMPLE, but $n files changed (outside .ai/): 3 or more need at least BUILD_REVIEW with a review (router/ROUTER.md, SIMPLE). A 'Lodestar review:' line does not make SIMPLE pass; change the route line."; return
       elif [ "$n" -ge 3 ] && [ $reviewed = 0 ]; then
-        fail "$wf, but $n files changed (outside .ai/ and, for MAINTENANCE and ONBOARDING, Lodestar's own files): 3 or more need a review. Add a line: 'Lodestar review: <verdict>, <who>, <commit>'."; return
+        fail "$wf, but $n files changed (outside .ai/ and, for MAINTENANCE and ONBOARDING, Lodestar's own files): 3 or more need a review. $why"; return
       fi ;;
     *)
       if [ $reviewed = 0 ]; then
-        fail "$wf needs an independent review (workflows/build-review.md). Fix its findings and add a line: 'Lodestar review: <verdict>, <who>, <commit>'."; return
+        fail "$wf needs an independent review (workflows/build-review.md). Fix its findings. $why"; return
       fi ;;
   esac
   echo "✅ route: $wf risk=$risk"

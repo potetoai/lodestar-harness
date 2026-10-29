@@ -700,20 +700,25 @@ g checkout -q -- Makefile; unset LODESTAR_TEST_MUTATION
 # 7. Route line in the PR text.
 # Each branch is compared with its own start (rbase), not with main.
 route() { LODESTAR_PR_BODY=$1 bash "$here/agents/claude/hooks/ci-checks.sh" rbase 2>&1; }
-newbranch r1; g tag -f rbase >/dev/null; echo 'y = 5' > app/ui.py; echo 'a = 1' > app/a.py; echo 'b = 1' > app/b.py; g add -A; g commit -qm "three files"
+newbranch r1; g tag -f rbase >/dev/null; echo 'y = 5' > app/ui.py; echo 'a = 1' > app/a.py; echo 'b = 1' > app/b.py; g add -A; g commit -qm "three files"; rc1=$(g rev-parse --short HEAD); nl=$'\n'
 route 'Fix.' >/dev/null; t "PR: no route line fails" [ $? = 1 ]
 route '**Lodestar route: BUILD_REVIEW risk=low**' >/dev/null; t "PR: a route line with markup fails" [ $? = 1 ]
 out=$(route $'Fix.\nLodestar route: SIMPLE risk=low'); rc=$?
 t "PR: SIMPLE with 3 files fails" bash -c '[ $1 = 1 ] && grep -q "3 files changed" <<<"$2"' _ "$rc" "$out"
-out=$(route $'Lodestar route: SIMPLE risk=low
-Lodestar review: APPROVE, fresh reviewer, abc123'); rc=$?
+out=$(route "Lodestar route: SIMPLE risk=low${nl}Lodestar review: APPROVE, fresh reviewer, $rc1"); rc=$?
 t "PR: SIMPLE with 3 files and a review line still fails, and says to change the route" bash -c '[ $1 = 1 ] && grep -q "change the route line" <<<"$2"' _ "$rc" "$out"
 route $'Lodestar route: BUILD_REVIEW risk=low\nFix.' >/dev/null; t "PR: BUILD_REVIEW without a review line fails" [ $? = 1 ]
-route $'Lodestar route: BUILD_REVIEW risk=low\r\nLodestar review: APPROVE, fresh reviewer, abc123\r\n' >/dev/null; t "PR: BUILD_REVIEW with a review line passes (CRLF text)" [ $? = 0 ]
-route $'Lodestar route: SIMPLE risk=low\nLodestar route: BUILD_REVIEW risk=low escalated-from=SIMPLE\nLodestar review: APPROVE' >/dev/null; t "PR: the last route line counts (escalation)" [ $? = 0 ]
+route "Lodestar route: BUILD_REVIEW risk=low"$'\r\n'"Lodestar review: APPROVE, fresh reviewer, $rc1"$'\r\n' >/dev/null; t "PR: BUILD_REVIEW with a review line passes (CRLF text)" [ $? = 0 ]
+route "Lodestar route: SIMPLE risk=low${nl}Lodestar route: BUILD_REVIEW risk=low escalated-from=SIMPLE${nl}Lodestar review: APPROVE ($rc1)" >/dev/null; t "PR: the last route line counts (escalation)" [ $? = 0 ]
+out=$(route "Lodestar route: BUILD_REVIEW risk=low${nl}Lodestar review: changes requested, reviewer, $rc1"); rc=$?
+t "PR: a review line whose verdict is not a pass fails, and names the words" bash -c '[ $1 = 1 ] && grep -q "verdict .approve. or .pass." <<<"$2"' _ "$rc" "$out"
+out=$(route "Lodestar route: BUILD_REVIEW risk=low${nl}Lodestar review: pass, reviewer, $(g rev-parse --short rbase)"); rc=$?
+t "PR: a review of a commit before the PR fails" bash -c '[ $1 = 1 ] && grep -q "names no commit of this PR" <<<"$2"' _ "$rc" "$out"
+route "Lodestar route: BUILD_REVIEW risk=low${nl}Lodestar review: pass, reviewer, abc123" >/dev/null; t "PR: a review naming no real commit fails" [ $? = 1 ]
+route "Lodestar route: COMPLEX risk=high${nl}Lodestar review: Passed (2 minor fixed in $rc1/abcdef12), reviewer subagent" >/dev/null; t "PR: 'Passed' naming a PR commit among other ids passes" [ $? = 0 ]
 route 'Lodestar route: MAINTENANCE risk=low' >/dev/null; t "PR: MAINTENANCE with 3 project files and no review fails" [ $? = 1 ]
-route $'Lodestar route: MAINTENANCE risk=low
-Lodestar review: APPROVE' >/dev/null; t "PR: MAINTENANCE with 3 project files and a review passes" [ $? = 0 ]
+route "Lodestar route: MAINTENANCE risk=low${nl}Lodestar review: APPROVE, reviewer, $rc1" >/dev/null; t "PR: MAINTENANCE with 3 project files and a review passes" [ $? = 0 ]
+route "Lodestar route: MAINTENANCE risk=low${nl}Lodestar review: request changes, reviewer, $rc1" >/dev/null; t "PR: MAINTENANCE with 3 project files and a failed review fails" [ $? = 1 ]
 route 'Lodestar route: PROTOTYPE risk=high' >/dev/null; t "PR: PROTOTYPE with high risk fails" [ $? = 1 ]
 PR_AUTHOR='dependabot[bot]' route '' >/dev/null; t "PR: a bot's PR skips the route line" [ $? = 0 ]
 newbranch r2; g tag -f rbase >/dev/null; echo 'y = 6' > app/ui.py; mkdir -p .ai/plans/active; echo x >> .ai/approvals.log; echo '# p' > .ai/plans/active/p.md; g add -A; g commit -qm "one file + bookkeeping"
@@ -1295,8 +1300,9 @@ t "doctor C1 names the GitHub Free limit" grep -q "C1  main cannot be locked: pr
 # ref=<r>` prints $FAKE_LOCK_TIP (r = base branch) or $FAKE_LOCK_BASE (r =
 # base commit): unset is HTTP 404, "ERR" another error. `gh pr checks` exits
 # $FAKE_CHECKS (0; "none": no checks reported); `gh pr merge` writes its
-# arguments to $FAKE_DIR/merged. `gh pr view --json author,body` prints
-# $FAKE_AUTHOR (me) and $FAKE_BODY (a reviewed BUILD_REVIEW route). Empty
+# arguments to $FAKE_DIR/merged. `gh pr view --json author,body,commits`
+# prints $FAKE_AUTHOR (me), $FAKE_COMMITS (the PR's commit ids; one starting
+# aaaaaaa) and $FAKE_BODY (a BUILD_REVIEW route reviewed at aaaaaaa). Empty
 # $FAKE_GH: every call fails.
 mkdir -p "$tmp/ghpr"
 cat > "$tmp/ghpr/gh" <<'EOF'
@@ -1322,7 +1328,7 @@ case "$*" in
     echo "verify pass"; exit "${FAKE_CHECKS:-0}" ;;
   "pr merge"*) echo "$*" > "$FAKE_DIR/merged" ;;
   *"--json author,body"*) printf '%b
-' "${FAKE_AUTHOR:-me}
+' "${FAKE_AUTHOR:-me} ${FAKE_COMMITS-aaaaaaa0000000000000000000000000000000000}
 ${FAKE_BODY-Lodestar route: BUILD_REVIEW risk=low
 Lodestar review: pass, reviewer, aaaaaaa}" ;;
   *) set -- $first
@@ -1354,6 +1360,13 @@ FAKE_BODY='' mp 7 "$pr7"; t "merge-pr refuses a PR with no text" [ $? = 1 ]
 FAKE_BODY='Lodestar route: bugfix' mp 7 "$pr7"; t "merge-pr refuses a route line that names no Lodestar workflow" [ $? = 1 ]
 FAKE_BODY='Lodestar route: BUILD_REVIEW risk=low\n- Independent review: no findings' mp 7 "$pr7"; t "merge-pr refuses BUILD_REVIEW without a 'Lodestar review:' line" [ $? = 1 ]
 FAKE_BODY='Lodestar route: COMPLEX risk=high' mp 7 "$pr7"; t "merge-pr refuses COMPLEX without a review line" [ $? = 1 ]
+FAKE_BODY='Lodestar route: BUILD_REVIEW risk=low\nLodestar review: changes requested, reviewer, aaaaaaa' mp 7 "$pr7"; t "merge-pr refuses a review line whose verdict is not a pass" [ $? = 1 ]
+FAKE_BODY='Lodestar route: BUILD_REVIEW risk=low\nLodestar review: pass, reviewer, bbbbbbb' mp 7 "$pr7"; t "merge-pr refuses a review of a commit not in the PR" [ $? = 1 ]
+FAKE_BODY='Lodestar route: BUILD_REVIEW risk=low\nLodestar review: pass, reviewer' mp 7 "$pr7"; t "merge-pr refuses a review line with no commit" [ $? = 1 ]
+FAKE_COMMITS='' mp 7 "$pr7"; t "merge-pr refuses a review when gh lists no commits" [ $? = 1 ]
+FAKE_COMMITS='ccccccc0 aaaaaaa0' FAKE_BODY='Lodestar route: COMPLEX risk=high\nLodestar review: APPROVE with minors (fixed in ccccccc0/dddddddd), reviewer subagent, aaaaaaa' mp 7 "$pr7"; t "merge-pr takes 'APPROVE ...' naming a PR commit among other ids" [ $? = 0 ]
+out=$(cd "$m" && FAKE_DIR=$tmp FAKE_GH=$pr7 FAKE_BODY='Lodestar route: BUILD_REVIEW risk=low\nLodestar review: no BLOCKER, reviewer, aaaaaaa' LODESTAR_CHECKS_RETRY=0 PATH="$tmp/ghpr:$PATH" CLAUDE_PROJECT_DIR=$m bash "$here/agents/claude/hooks/merge-pr.sh" 7 2>&1)
+t "merge-pr says which verdict words count" grep -q "'approve' or 'pass'" <<<"$out"
 FAKE_BODY='Lodestar route: SIMPLE risk=low\r\nDone.' mp 7 "$pr7"; t "merge-pr merges SIMPLE with no review line (CRLF text)" [ $? = 0 ]
 FAKE_BODY='Lodestar route: SIMPLE risk=low\nLodestar route: BUILD_REVIEW risk=low escalated-from=SIMPLE' mp 7 "$pr7"; t "merge-pr reads the last route line (escalated, no review: refused)" [ $? = 1 ]
 FAKE_BODY='' FAKE_AUTHOR='app/dependabot' mp 7 "$pr7"; t "merge-pr skips the route line for a bot's PR" [ $? = 0 ]
