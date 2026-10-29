@@ -442,7 +442,7 @@ fin '' a9 2>/dev/null; t "task done: a subagent leaves the marker to its dispatc
 out=$(fin 2>&1); rc=$?
 t "task done: merge-pr's marker asks for handoff and /clear" bash -c '[ $1 = 2 ] && grep -q "PR 41 merged" <<<"$2" && grep -q "handoff.md" <<<"$2" && grep -q "/clear" <<<"$2"' _ "$rc" "$out"
 fin 2>/dev/null; t "task done: once per merge (the marker is taken)" bash -c '[ $1 = 0 ] && [ ! -e "$2" ]' _ $? "$d/.git/lodestar-task-done"
-t "task done: a project without completed.md is told to move the plan to completed/" grep -q "git mv it to .ai/plans/completed/" <<<"$out"
+t "task done: a project without completed.md is told to move the plan to completed/" bash -c 'grep -q "git mv it to .ai/plans/completed/" <<<"$1" && ! grep -q "completed.md" <<<"$1"' _ "$out"
 mkdir -p "$d/.ai/plans"; touch "$d/.ai/plans/completed.md"; echo "PR 43 merged" > "$d/.git/lodestar-task-done"
 out=$(fin 2>&1); rm -r "$d/.ai"
 t "task done: a project with completed.md is told to git rm the plan and add a row" bash -c 'grep -q "PR 43 merged" <<<"$1" && grep -q "git rm it, one row in .ai/plans/completed.md" <<<"$1"' _ "$out"

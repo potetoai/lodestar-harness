@@ -44,7 +44,7 @@ if [ -z "$agent" ] && gd=$(git -C "${CLAUDE_PROJECT_DIR:-.}" rev-parse --git-dir
     finished=$(head -c 200 "$mark.$$" | tr -d '\r\n'); rm -f "$mark.$$"
     # A project on a template before completed.md still moves plans to completed/.
     close="git rm it, one row in .ai/plans/completed.md"
-    [ -f "${CLAUDE_PROJECT_DIR:-.}/.ai/plans/completed.md" ] || close="git mv it to .ai/plans/completed/ with a Closed row in its progress log"
+    [ -f "${CLAUDE_PROJECT_DIR:-.}/.ai/plans/completed.md" ] || close="git mv it to .ai/plans/completed/"
     cat >&2 <<EOF
 A task just finished (${finished:-a PR merged}). This is the point for a fresh session: every turn re-reads the whole context.
 - Finish the step you are on; do not start a new task in this session.
