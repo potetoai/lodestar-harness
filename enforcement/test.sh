@@ -283,6 +283,10 @@ echo '# draft' > "$tmp/py/.ai/plans/active/draft.md"
 out=$(remind "$tmp/py")
 t "global hook lists an active plan no commit touched for days" bash -c 'grep -q "active/old.md (last commit 2020-01-01)" <<<"$1" && grep -q "git rm it and add a row to .ai/plans/completed.md" <<<"$1"' _ "$out"
 t "global hook skips a fresh or uncommitted active plan" bash -c '! grep -qE "new.md|draft.md" <<<"$1"' _ "$out"
+# A project on a template before completed.md: its doctor does not ask for the file.
+dr=$tmp/py/.claude/hooks/doctor.sh; cp "$dr" "$tmp/dr.bak"; sed -i 's| \&\& \[ -f .ai/plans/completed.md \]||' "$dr"
+mv "$tmp/py/.ai/plans/completed.md" "$tmp/py/c.md"; out=$(remind "$tmp/py"); mv "$tmp/py/c.md" "$tmp/py/.ai/plans/completed.md"; cp "$tmp/dr.bak" "$dr"
+t "global hook gives the old close step to a project without completed.md" bash -c 'grep -q "git mv it to .ai/plans/completed/" <<<"$1" && ! grep -q "row to .ai/plans/completed.md" <<<"$1"' _ "$out"
 out=$(LODESTAR_STALE_PLAN_DAYS=99999 remind "$tmp/py")
 t "stale-plan age can be set" bash -c '! grep -q "plans in .ai/plans/active/" <<<"$1"' _ "$out"
 git -C "$tmp/py" rm -q .ai/plans/active/old.md .ai/plans/active/new.md; rm "$tmp/py/.ai/plans/active/draft.md"; pc "$(date +%FT%T)"
@@ -438,6 +442,10 @@ fin '' a9 2>/dev/null; t "task done: a subagent leaves the marker to its dispatc
 out=$(fin 2>&1); rc=$?
 t "task done: merge-pr's marker asks for handoff and /clear" bash -c '[ $1 = 2 ] && grep -q "PR 41 merged" <<<"$2" && grep -q "handoff.md" <<<"$2" && grep -q "/clear" <<<"$2"' _ "$rc" "$out"
 fin 2>/dev/null; t "task done: once per merge (the marker is taken)" bash -c '[ $1 = 0 ] && [ ! -e "$2" ]' _ $? "$d/.git/lodestar-task-done"
+t "task done: a project without completed.md is told to move the plan to completed/" grep -q "git mv it to .ai/plans/completed/" <<<"$out"
+mkdir -p "$d/.ai/plans"; touch "$d/.ai/plans/completed.md"; echo "PR 43 merged" > "$d/.git/lodestar-task-done"
+out=$(fin 2>&1); rm -r "$d/.ai"
+t "task done: a project with completed.md is told to git rm the plan and add a row" bash -c 'grep -q "PR 43 merged" <<<"$1" && grep -q "git rm it, one row in .ai/plans/completed.md" <<<"$1"' _ "$out"
 w=$tmp/done-wt; git -C "$d" -c user.name=t -c user.email=t@t commit -q --allow-empty -m init; git -C "$d" worktree add -q "$w" -b fix/wt
 echo "PR 42 merged" > "$d/.git/lodestar-task-done"
 out=$(jq -nc --arg t "$(native "$tr2")" '{transcript_path:$t,session_id:"s2",tool_name:"Bash",tool_input:{command:"ls"}}' |

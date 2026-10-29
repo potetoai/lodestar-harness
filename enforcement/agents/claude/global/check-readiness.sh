@@ -107,7 +107,11 @@ done)
 if [ -n "$stale" ]; then
   echo "Lodestar: plans in .ai/plans/active/ with no commit since $cutoff:"
   echo "$stale"
-  echo "Check each against the merged PRs. Done: git rm it and add a row to .ai/plans/completed.md (a small PR)."
+  # Global hooks run from source before a project gets the template that
+  # brought completed.md; give the close step the project uses today.
+  if [ -f .ai/plans/completed.md ]; then close="git rm it and add a row to .ai/plans/completed.md"
+  else close="git mv it to .ai/plans/completed/ with a Closed row in its progress log"; fi
+  echo "Check each against the merged PRs. Done: $close (a small PR)."
   echo "Not done: write in its progress log what it waits for. Tell the owner which is which."
 fi
 exit 0
