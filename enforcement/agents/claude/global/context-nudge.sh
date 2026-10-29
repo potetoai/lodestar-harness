@@ -42,10 +42,13 @@ if [ -z "$agent" ] && gd=$(git -C "${CLAUDE_PROJECT_DIR:-.}" rev-parse --git-dir
   mark=$gd/lodestar-task-done
   if [ -f "$mark" ] && mv "$mark" "$mark.$$" 2>/dev/null; then
     finished=$(head -c 200 "$mark.$$" | tr -d '\r\n'); rm -f "$mark.$$"
+    # A project on a template before completed.md still moves plans to completed/.
+    close="git rm it, one row in .ai/plans/completed.md"
+    [ -f "${CLAUDE_PROJECT_DIR:-.}/.ai/plans/completed.md" ] || close="git mv it to .ai/plans/completed/"
     cat >&2 <<EOF
 A task just finished (${finished:-a PR merged}). This is the point for a fresh session: every turn re-reads the whole context.
 - Finish the step you are on; do not start a new task in this session.
-- A plan this PR finished leaves .ai/plans/active/: git rm it, one row in .ai/plans/completed.md (a small PR if not done in this one).
+- A plan this PR finished leaves .ai/plans/active/: $close (a small PR if not done in this one).
 - Overwrite .ai/handoff.md (short, English: state, open items, next step, do-not-do).
 - Tell the owner, in their language: the task is done; type /clear, then "continue" or the next task.
 If the owner already asked for more in this turn, finish that first, then say it.
