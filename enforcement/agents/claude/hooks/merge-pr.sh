@@ -54,15 +54,15 @@ review_problem() {
   v=$(tr '[:upper:]' '[:lower:]' <<<"${line#Lodestar review: }")
   [[ $v =~ ^(approve|approved|pass|passed)([^a-z]|$) ]] ||
     { echo "The 'Lodestar review:' line must start with the verdict 'approve' or 'pass' (the review passed, after its findings were fixed). A review with open findings is not a pass: fix them and review again."; return; }
-  for tok in $(tr -c '0-9a-z' '\n' <<<"$v" | grep -xE '[0-9a-f]{7,40}'); do
+  for tok in $(tr -c '0-9a-z' '\n' <<<"$v" | grep -xE '[0-9a-f]{7,64}'); do
     for c in $2; do [[ $c == "$tok"* ]] && return; done
   done
-  echo "The 'Lodestar review:' line names no commit of this PR. Name the commit the reviewer read (git rev-parse --short HEAD at review time), e.g. 'Lodestar review: pass, reviewer subagent, 1a2b3c4'."
+  echo "The 'Lodestar review:' line names no commit of this PR. Name the commit the reviewer read (git rev-parse --short HEAD at review time), e.g. 'Lodestar review: pass, reviewer subagent, 1a2b3c4'. After a rebase or amend the old id is gone: review the new head."
 }
 
 # Route and review lines, as ci-checks.sh reads them (the last route line
 # counts). PRs opened by bots are skipped, as in CI. First line: the author
-# and the PR's commits; then the text.
+# and the PR's commits (gh lists the first 100); then the text.
 pb=$(gh pr view "$n" --json author,body,commits -q '([.author.login] + [.commits[]?.oid] | join(" ")) + "\n" + (.body // "")' 2>/dev/null) || die "gh could not read the text of PR #$n." "$cant"
 pb=$(tr -d '\r' <<<"$pb"); l1=${pb%%$'\n'*}; who=${l1%% *}; commits=${l1#"$who"}
 if ! [[ $who == *'[bot]' || $who == app/* ]]; then

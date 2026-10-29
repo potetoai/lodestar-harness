@@ -256,7 +256,7 @@ echo "Mutation testing (report only):"; sed 's/^/     /' <<<"$mut"
 #    after `gh pr edit` sees the fixed text. Tests pass LODESTAR_PR_BODY.
 # review_problem BODY COMMITS: why the last 'Lodestar review:' line does not
 # count, or nothing. It counts when it starts with a pass verdict and names a
-# commit of this PR (a hex id of 7 or more, matched as a prefix). Same rule
+# commit of this PR (a hex id of 7 to 64, matched as a prefix). Same rule
 # in merge-pr.sh.
 review_problem() {
   local line v tok c
@@ -265,10 +265,10 @@ review_problem() {
   v=$(tr '[:upper:]' '[:lower:]' <<<"${line#Lodestar review: }")
   [[ $v =~ ^(approve|approved|pass|passed)([^a-z]|$) ]] ||
     { echo "The 'Lodestar review:' line must start with the verdict 'approve' or 'pass' (the review passed, after its findings were fixed). A review with open findings is not a pass: fix them and review again."; return; }
-  for tok in $(tr -c '0-9a-z' '\n' <<<"$v" | grep -xE '[0-9a-f]{7,40}'); do
+  for tok in $(tr -c '0-9a-z' '\n' <<<"$v" | grep -xE '[0-9a-f]{7,64}'); do
     for c in $2; do [[ $c == "$tok"* ]] && return; done
   done
-  echo "The 'Lodestar review:' line names no commit of this PR. Name the commit the reviewer read (git rev-parse --short HEAD at review time), e.g. 'Lodestar review: pass, reviewer subagent, 1a2b3c4'."
+  echo "The 'Lodestar review:' line names no commit of this PR. Name the commit the reviewer read (git rev-parse --short HEAD at review time), e.g. 'Lodestar review: pass, reviewer subagent, 1a2b3c4'. After a rebase or amend the old id is gone: review the new head."
 }
 route_check() {
   local body line wf risk n reviewed rp why
