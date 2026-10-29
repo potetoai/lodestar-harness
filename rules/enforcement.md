@@ -33,8 +33,10 @@ such as CI.
 
 The Stop hook holds a failed `verify` once per state: when neither the files
 nor the failure changed since the last hold, the stop ends (for example while
-the agent waits for a tests-first tester). Any change holds again. CI stays
-the gate.
+the agent waits for a tests-first tester). After that, stops on the same
+files do not run `verify` again (the agent waiting for the owner's approval
+or answering questions), even if the failure would now differ; a file change
+runs it and can hold again. CI stays the gate.
 
 A pass is remembered the same way: when the files did not change since
 `verify` last passed (the agent only answered a question), the Stop hook does
