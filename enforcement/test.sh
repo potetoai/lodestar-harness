@@ -138,9 +138,9 @@ printf 'verify:\n\t@[ -z "$$MSG" ] || { echo "$$MSG"; echo "took 0.$$N s"; exit 
 echo a > "$p/a.txt"; git -C "$p" add -A; git -C "$p" -c user.name=t -c user.email=t@t commit -qm init
 hold() { N=$RANDOM MSG=$1 CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/verify-before-stop.sh" 2>/dev/null <<<'{"stop_hook_active":false}'; }
 hold "test_a failed"; t "stop hook holds the first failed stop" [ $? = 2 ]
-hold "test_a failed"; t "stop hook lets a stop end when nothing changed" [ $? = 0 ]
-hold "test_a failed"; t "stop hook keeps letting it end while nothing changes" [ $? = 0 ]
 hold "test_b failed"; t "stop hook holds a different failure" [ $? = 2 ]
+hold "test_b failed"; t "stop hook lets a stop end when nothing changed" [ $? = 0 ]
+hold "test_b failed"; t "stop hook keeps letting it end while nothing changes" [ $? = 0 ]
 echo b > "$p/new.txt"
 hold "test_b failed"; t "stop hook holds after a new untracked file" [ $? = 2 ]
 hold "test_b failed"; t "stop hook lets go again once that state was held" [ $? = 0 ]
@@ -170,6 +170,8 @@ printf 'verify:
 	@echo run >> "$$RUNS"; exit 1
 ' > "$c/Makefile"
 cstop; t "stop hook: a failing run after a change still holds" [ $? = 2 ]
+cstop; cstop; cstop; t "stop hook: once a failure was let go, later stops do not rerun verify" [ $? = 0 -a "$(runs)" = 5 ]
+echo d > "$c/a.txt"; cstop; t "stop hook: a change after that runs verify again and holds" [ $? = 2 -a "$(runs)" = 6 ]
 # make verify records its own pass (top-level make only): the stop right
 # after the agent's passing run does not repeat it.
 printf 'verify:\n\t@echo run >> "$$RUNS"\n\t@[ "$(MAKELEVEL)" != 0 ] || bash "$$HOOK" --record-pass\nsub:\n\t@$(MAKE) -s verify\n' > "$c/Makefile"
@@ -195,7 +197,7 @@ holdq; t "stop hook in a subfolder project holds after a tracked edit" [ $? = 2 
 # A prototype branch (proto/*) is thrown away, never merged: no verify there.
 git -C "$p" checkout -q -b proto/try
 hold "test_c failed"; t "stop hook lets a prototype branch stop while verify fails" [ $? = 0 ]
-git -C "$p" checkout -q -
+git -C "$p" checkout -q -; echo e > "$p/a.txt"
 hold "test_c failed"; t "stop hook holds that failure again off the prototype branch" [ $? = 2 ]
 
 # 6c. Stop hook sends the agent back once per HEAD while commits exist only on

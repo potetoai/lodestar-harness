@@ -26,10 +26,14 @@ state() { # the working files (tracked and untracked, not ignored) as a tree, th
 # last passed (for example the agent only answered a question), do not run
 # it again. The full run takes minutes in real projects.
 passed=${held%held}passed
+# Files whose failure was already let go once: later stops on them (the agent
+# waiting for the owner, answering questions) do not run verify again only to
+# get the same failure. Any change runs it again.
+released=${held%held}released
 # 'make verify' ends with this script --record-pass (top-level make only), so
 # a run the agent made itself counts: the stop right after does not repeat it.
 if [ "$1" = --record-pass ]; then
-  [ -n "$held" ] && { rm -f "$held"; state "" | git hash-object --stdin > "$passed"; }
+  [ -n "$held" ] && { rm -f "$held" "$released"; state "" | git hash-object --stdin > "$passed"; }
   exit 0
 fi
 
@@ -146,12 +150,17 @@ fi
 if [ -n "$held" ] && [ -f "$passed" ] && [ "$(cat "$passed")" = "$(state "" | git hash-object --stdin)" ]; then
   finish
 fi
+if [ -n "$held" ] && [ -f "$released" ] && [ "$(cat "$released")" = "$(state "" | git hash-object --stdin)" ]; then
+  echo "Lodestar: 'make verify' failed on these same files and the stop was let go; not run again until a file changes." >&2
+  exit 0
+fi
 if ! out=$(make --no-print-directory verify 2>&1); then
   rm -f "${passed:-/nonexistent}"
   if [ -n "$held" ]; then
     now=$(state "$out" | git hash-object --stdin)
     if [ -n "$now" ] && [ "$(cat "$held" 2>/dev/null)" = "$now" ]; then
       echo "Lodestar: 'make verify' still fails, nothing changed since the last hold; stop allowed." >&2
+      state "" | git hash-object --stdin > "$released"
       exit 0
     fi
     echo "$now" > "$held"
@@ -160,5 +169,5 @@ if ! out=$(make --no-print-directory verify 2>&1); then
   echo "$out" | tail -n 60 >&2
   exit 2
 fi
-[ -n "$held" ] && { rm -f "$held"; state "" | git hash-object --stdin > "$passed"; }
+[ -n "$held" ] && { rm -f "$held" "$released"; state "" | git hash-object --stdin > "$passed"; }
 finish
