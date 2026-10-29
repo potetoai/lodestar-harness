@@ -1,8 +1,8 @@
 # Idea: which rules a machine checks, and which are only written
 
-Not rated. An active plan rates it before any work (`plans/ideas/README.md`);
-`plans/active/harness-health.md` is the natural one, since it asks whether
-Lodestar catches bugs.
+> **Idea plan, rated.** Rated in `plans/active/harness-health.md`
+> (2026-10-29, section "Rated idea: enforced vs written"); F1 built there in
+> a smaller form than written below.
 
 ## 1. Why
 
