@@ -364,6 +364,25 @@ The workflow determines the role.
 
 The available agent determines who performs the role.
 
+## Session Model and Effort
+
+The main session cannot change its own model; only the owner can (`/model`).
+A project whose work is mostly small may start on a cheaper model: in its
+gitignored `.claude/settings.local.json`, add `"model": "sonnet"` (or
+`"opus"`). It applies to new sessions in that project; remove the line to undo.
+After routing, compare the session's model with this table (Routing Rule 18):
+
+| Task | Model tier | Effort |
+|---|---|---|
+| Questions, lookups, SIMPLE with low risk | fast tier (e.g. Sonnet) | low to medium |
+| BUILD_REVIEW with low or medium risk | strong tier (e.g. Opus) | medium |
+| High or critical risk, `sensitive_paths`, tests-first, COMPLEX | strong tier | high |
+| Large plans or architecture | strong or top tier | high |
+
+Raise effort to xhigh or max only after high has failed on the same task.
+Subagent roles keep the model their definition sets; this table is for the
+main session only.
+
 ---
 
 # Parallelism
@@ -445,6 +464,7 @@ there instead of keeping their own copy.
     The Lodestar source repository is exempt; its `AGENTS.md` says how to verify it.
 16. Tests-first for high risk (`rules/testing.md`, "Tests-first mode"). When risk is high or critical, or the task touches `sensitive_paths` or a high-risk invariant: write plain-language acceptance criteria, have a **critic** attack them (`agents/critic.md`), get the owner's approval (they type "duyệt" or "approve", recorded by a hook; an AskUserQuestion pick is not recorded), dispatch a **tester** to write failing tests and lock them (the brief carries the approved criteria and names the plan section; `agents/tester.md`, "Reading the plan"), then a **builder** that may not edit the locked tests, then a **reviewer** that checks tests against criteria. Use at least BUILD_REVIEW. When unsure whether a task is high risk, treat it as high. Enforced by the `sensitive-gate.sh` hook and CI (`rules/enforcement.md`, section 6).
 17. Prototype only to decide. Route PROTOTYPE when the owner asks to try or see an idea first, or the requirements stay unclear after one question; announce it and proceed (no approval wait: nothing ships). Its findings start a new task with its own route line. Never route a fix, a data change or shippable work to PROTOTYPE.
+18. Session model (Session Model and Effort). When the task needs a stronger tier or effort than the session runs, say so in one line after the route line, with the `/model` step, and for high risk or tests-first wait for the owner's answer. Suggest a cheaper tier only when a new task starts in a fresh session: switching mid-session loses the prompt cache, which usually costs more than it saves.
 
 ---
 
