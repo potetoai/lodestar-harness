@@ -141,6 +141,7 @@ hold "test_a failed"; t "stop hook holds the first failed stop" [ $? = 2 ]
 hold "test_b failed"; t "stop hook holds a different failure" [ $? = 2 ]
 hold "test_b failed"; t "stop hook lets a stop end when nothing changed" [ $? = 0 ]
 hold "test_b failed"; t "stop hook keeps letting it end while nothing changes" [ $? = 0 ]
+hold "test_z failed"; t "stop hook: after a release, a new failure on the same files is not run or held" [ $? = 0 ]
 echo b > "$p/new.txt"
 hold "test_b failed"; t "stop hook holds after a new untracked file" [ $? = 2 ]
 hold "test_b failed"; t "stop hook lets go again once that state was held" [ $? = 0 ]
@@ -148,7 +149,7 @@ echo changed > "$p/a.txt"
 hold "test_b failed"; t "stop hook holds after a tracked file changes" [ $? = 2 ]
 git -C "$p" add -A
 hold "test_b failed"; t "stop hook: staging alone is no change" [ $? = 0 ]
-hold ""; t "stop hook passes when verify passes" [ $? = 0 ]
+echo p > "$p/a.txt"; hold ""; t "stop hook passes when verify passes" [ $? = 0 ]
 echo again > "$p/a.txt"
 hold "test_b failed"; t "stop hook holds again after a pass" [ $? = 2 ]
 rm "$p/a.txt"
@@ -172,6 +173,8 @@ printf 'verify:
 cstop; t "stop hook: a failing run after a change still holds" [ $? = 2 ]
 cstop; cstop; cstop; t "stop hook: once a failure was let go, later stops do not rerun verify" [ $? = 0 -a "$(runs)" = 5 ]
 echo d > "$c/a.txt"; cstop; t "stop hook: a change after that runs verify again and holds" [ $? = 2 -a "$(runs)" = 6 ]
+cstop; echo e > "$c/a.txt"; cstop; echo d > "$c/a.txt"; cstop
+t "stop hook: a new hold forgets the released files (back to them runs verify)" [ $? = 2 -a "$(runs)" = 9 ]
 # make verify records its own pass (top-level make only): the stop right
 # after the agent's passing run does not repeat it.
 printf 'verify:\n\t@echo run >> "$$RUNS"\n\t@[ "$(MAKELEVEL)" != 0 ] || bash "$$HOOK" --record-pass\nsub:\n\t@$(MAKE) -s verify\n' > "$c/Makefile"

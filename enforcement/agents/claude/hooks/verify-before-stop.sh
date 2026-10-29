@@ -163,7 +163,7 @@ if ! out=$(make --no-print-directory verify 2>&1); then
       state "" | git hash-object --stdin > "$released"
       exit 0
     fi
-    echo "$now" > "$held"
+    echo "$now" > "$held"; rm -f "$released"
   fi
   echo "Not done yet: 'make verify' fails. Fix the problems below, then finish:" >&2
   echo "$out" | tail -n 60 >&2
