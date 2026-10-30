@@ -33,8 +33,9 @@ In high-risk tasks the tester works **before** the builder
   that approval: red tests then hold every stop (`make verify` fails).
 - Run the tests and confirm they **fail** on the current code. Report the
   failing output.
-- Make the tests lint-clean (`make lint`) before locking them: once locked,
-  nobody but the owner can fix them.
+- Make the tests pass `make lint` and `make typecheck` (where the project
+  has it) before locking them: once locked, nobody but the owner can fix
+  them, and `make verify` runs both.
 - List the tests in `.ai/test-lock` and commit tests, lock, plan and
   `.ai/approvals.log` together with the trailer `Tests-First: <task>`.
 - A later step of the same approved plan: add the new test paths to
