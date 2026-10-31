@@ -104,6 +104,7 @@ checked by the onboarding report and review.
 | A10 | `format-check`, `lint-file`, `verify-full` targets | Recommended |
 | A10b | `verify` ends with `verify-before-stop.sh --record-pass` (top-level make only), so a passing run by the agent is not repeated by the Stop hook | Recommended |
 | A11 | `AGENTS.md` under 200 lines; detail moves to `.claude/rules/` (scoped with `paths:`) or docs | Recommended |
+| A11b | `AGENTS.md` tells a cloud or web session to clone the `repo` in `.ai/enforcement.json` when `source` is missing (template line) | Recommended |
 | A12 | Stack tools installed (`.venv` / `node_modules`); else run `make setup` | Recommended |
 | C1 | `main` requires a PR and passing checks (set by hand on GitHub) | Recommended |
 | D1 | Maintenance done in the last 14 days (`.ai/last-maintenance`) | Recommended |

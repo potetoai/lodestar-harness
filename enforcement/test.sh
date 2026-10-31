@@ -60,6 +60,11 @@ cp "$p/AGENTS.md" "$tmp/agents.bak"; seq 201 >> "$p/AGENTS.md"
 out=$(bash "$p/.claude/hooks/doctor.sh" "$p"); rc=$?
 t "doctor warns on a long AGENTS.md (A11), still ready" bash -c '[ $1 = 0 ] && grep -qE "⚠️ +A11 " <<<"$2"' _ "$rc" "$out"
 cp "$tmp/agents.bak" "$p/AGENTS.md"
+t "template AGENTS.md passes A11b" grep -qE '✅ A11b ' <<<"$out"
+sed -i '/enforcement\.json/d' "$p/AGENTS.md"
+out=$(bash "$p/.claude/hooks/doctor.sh" "$p"); rc=$?
+t "doctor warns when AGENTS.md misses the cloud line (A11b), still ready" bash -c '[ $1 = 0 ] && grep -qE "⚠️ +A11b " <<<"$2"' _ "$rc" "$out"
+cp "$tmp/agents.bak" "$p/AGENTS.md"
 mkdir -p "$p/backend"; echo X=1 > "$p/backend/.env"
 bash "$p/.claude/hooks/doctor.sh" "$p" >/dev/null
 t "doctor fails on a nested .env without .env.example" [ $? = 1 ]

@@ -52,6 +52,9 @@ short_agents_md() { [ "$(wc -l < AGENTS.md)" -le 200 ]; }
 # Claude reads AGENTS.md only when there is no CLAUDE.md, so a CLAUDE.md may
 # only be the import line that pulls AGENTS.md in.
 no_own_claude_md() { [ ! -e CLAUDE.md ] || [ "$(tr -d '\r' < CLAUDE.md)" = "@AGENTS.md" ]; }
+# A cloud or web session has no local lodestar-harness and no global bootstrap,
+# so AGENTS.md must tell it to clone the repo named in .ai/enforcement.json.
+agents_md_finds_lodestar() { grep -q 'enforcement\.json' AGENTS.md; }
 # `make -n` understands every way to declare a target (variables, includes).
 has_targets() { local t; for t in "$@"; do make -n "$t" >/dev/null 2>&1 || return 1; done; }
 # registered FILE EVENT MATCHER PATTERN...: each command PATTERN sits under
@@ -209,6 +212,7 @@ check B6  ".ai/invariants.md lists at least one invariant" fail grep -qE '^\| *I
 check A10 "Makefile has format-check, lint-file, verify-full" warn has_targets format-check lint-file verify-full
 check A10b "make verify records its pass (last line: verify-before-stop.sh --record-pass, see the stack Makefile)" warn records_pass
 check A11 "AGENTS.md under 200 lines (move detail to .claude/rules/ with paths:, or docs)" warn short_agents_md
+check A11b "AGENTS.md says where lodestar-harness is for cloud sessions (template line on .ai/enforcement.json)" warn agents_md_finds_lodestar
 check A12 "stack tools installed (.venv / node_modules), else run make setup" warn stack_env
 check D1  "maintenance done in the last 14 days (workflows/maintenance.md)" warn maintenance_recent
 check D2  "no repeated mistake without a machine rule (.ai/feedback-log.md)" warn no_repeated_mistakes

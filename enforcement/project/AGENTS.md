@@ -10,7 +10,10 @@ points to. Keep project rules here; a `CLAUDE.md` may only hold the line
 
 ## How to work here
 
-- Follow lodestar-harness: start with its `router/ROUTER.md`.
+- Follow lodestar-harness: start with its `router/ROUTER.md`. It lives at
+  `source` in `.ai/enforcement.json`; where that path does not exist (a cloud
+  or web session), clone `repo` from that file and read it there (no `repo`:
+  ask the owner).
 - Read `.ai/project.md` (context, architecture, sensitive paths) before
   significant changes.
 - Read `.ai/invariants.md`. Never break an invariant.
