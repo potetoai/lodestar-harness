@@ -14,8 +14,8 @@ Implement the assigned task according to the requirements and project rules.
 - Name new code after "Domain Terms" in `.ai/project.md`.
 - Write or update tests when appropriate.
 - Run relevant verification.
-- Keep each edit lint-clean: a hook lints the file after every edit. Write a
-  new file in one Write; add a name in the same Edit as its first use.
+- Keep each edit lint-clean: a hook lints the file after every edit (a name
+  not used yet passes). Write a new file in one Write.
 
 ## Must Not
 

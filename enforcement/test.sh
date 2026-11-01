@@ -129,6 +129,22 @@ p2=$tmp/longlint; mkdir -p "$p2"; echo x > "$p2/a.txt"
 printf 'lint-file:\n\t@seq 1 45; exit 1\n' > "$p2/Makefile"
 out=$(CLAUDE_PROJECT_DIR=$p2 bash "$here/agents/claude/hooks/lint-file.sh" 2>&1 >/dev/null <<<"{\"tool_input\":{\"file_path\":\"$(native "$p2/a.txt")\"}}")
 t "lint hook caps output at 30 lines" bash -c 'grep -qx 30 <<<"$1" && ! grep -qx 31 <<<"$1" && grep -qE "^\.\.\. [0-9]+ more lines$" <<<"$1"' _ "$out"
+# Unused names only (a name added before its first use) pass; anything else blocks.
+p3=$tmp/unused; mkdir -p "$p3"; echo x > "$p3/a.txt"
+printf 'lint-file:\n\t@cat out; exit 1\n' > "$p3/Makefile"
+lintu() { printf '%b' "$1" > "$p3/out"; CLAUDE_PROJECT_DIR=$p3 bash "$here/agents/claude/hooks/lint-file.sh" 2>/dev/null <<<"{\"tool_input\":{\"file_path\":\"$(native "$p3/a.txt")\"}}"; }
+lintu "C:\\\\x\\\\a.ts\r\n  8:15  error  'Billing' is defined but never used  @typescript-eslint/no-unused-vars\r\n\r\n✖ 1 problem (1 error, 0 warnings)\n"
+t "lint hook lets an ESLint unused name pass" [ $? = 0 ]
+lintu "a.ts\n  8:15  error  'B' is defined but never used  no-unused-vars\n  9:1  error  Unexpected var  no-var\n"
+t "lint hook blocks unused name plus another problem" [ $? = 2 ]
+lintu "a.py:1:8: F401 [*] \`os\` imported but unused\na.py:3:5: F841 Local variable \`x\` is assigned to but never used\nFound 2 errors.\n"
+t "lint hook lets ruff F401/F841 (concise) pass" [ $? = 0 ]
+lintu "F401 [*] \`os\` imported but unused\n --> a.py:1:8\n  |\n1 | import os\n  |        ^^\n\nFound 1 error.\n"
+t "lint hook lets ruff F401 (full format) pass" [ $? = 0 ]
+lintu "E501 Line too long (120 > 88)\n --> a.py:2:89\nF401 [*] \`os\` imported but unused\n --> a.py:1:8\n"
+t "lint hook blocks ruff unused plus another rule" [ $? = 2 ]
+lintu "  1:5  error  Parsing error: Unexpected token\n"
+t "lint hook blocks a parse error" [ $? = 2 ]
 stop false; t "stop hook passes when verify passes" [ $? = 0 ]
 touch "$p/fail"
 stop false; t "stop hook blocks when verify fails (exit 2)" [ $? = 2 ]
