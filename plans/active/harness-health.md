@@ -176,6 +176,7 @@ Done when: F1 is merged with `enforcement/test.sh` green.
 | 2026-10-31 | 1 | Release 2.9.0 (batch of PRs #89-#111), 5 days after 2.8.0: owner exception to the cadence |
 | 2026-11-01 | 1 | PR #113: CI skips verify for Markdown plus `.ai/approvals.log` (October minutes over 2000); ships in the next batch |
 | 2026-11-01 | 1 | PR #114: ci.yml pins Node/Python from `.nvmrc`/`.python-version` (App01); doctor A4d passes in CI (ProjectS #179 blocked) |
+| 2026-11-01 | 1 | Release 2.9.1 (PRs #113, #114), 1 day after 2.9.0: owner exception, ProjectS PR #179 blocked by doctor A4d in CI |
 
 ## 7. Decision log
 
@@ -192,3 +193,4 @@ Done when: F1 is merged with `enforcement/test.sh` green.
 | 2026-10-31 | Release 2.9.0 five days after 2.8.0, outside the 7-14 day cadence | Owner chose it when asked (AskUserQuestion), knowing no fix blocks work. Projects upgrade once GitHub billing is fixed; one batch holds #92 merge-pr route check, #95 critic limit, #106 review line, #111 cloud sessions |
 | 2026-11-01 | CI skips setup and verify for a PR of Markdown plus `.ai/approvals.log` only; docs images not added | Owner asked why CI minutes ran out. October: App01 1471 + ProjectS 580 min (over 2000); 821 min were re-runs on push to main, already removed in 2.8.0. 24 plan/docs PRs ran full verify only because they carry the approval log (App01 verify ~8 min); images would add 4 more PRs but can break a doc-path test |
 | 2026-10-29 | F1: the review line counts only with a verdict starting `approve`/`pass` and a commit id of this PR; a review of an older commit of the PR still passes; `gh-sweep.sh` keeps its loose check | Owner "làm đi". Last 60 merged PRs per repo, 78 review lines: 56 start with approve/pass, 69 name a commit, 43 name the PR head. So 26 of 69 reviews had fix commits after them; "reviewed commit = head" would force a reviewer re-run on about a third of PRs (token budget). The 22 other verdicts ("no BLOCKER/MAJOR", "changes then pass") get a clear message and a one-word change. The sweep has no commit list and would flag old-format lines in projects before they upgrade |
+| 2026-11-01 | Release 2.9.1 one day after 2.9.0, outside the 7-14 day cadence | Owner typed "phát hành 2.9.1". #114 fixes doctor A4d failing in every fresh CI clone (git does not clone hooks), which blocks ProjectS PR #179; #113 skips CI verify for Markdown plus approval-log PRs |
