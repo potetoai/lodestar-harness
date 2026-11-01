@@ -174,6 +174,7 @@ Done when: F1 is merged with `enforcement/test.sh` green.
 | 2026-10-27 | 2 | PR #92: `merge-pr.sh` refuses a PR without route/review lines (ProjectS merged 5 by hand while CI had no minutes); ships in the next batch |
 | 2026-10-29 | idea | Idea enforced-vs-written rated; F1 built (review line: pass verdict + a commit of this PR), PR #106; ships in the next batch |
 | 2026-10-31 | 1 | Release 2.9.0 (batch of PRs #89-#111), 5 days after 2.8.0: owner exception to the cadence |
+| 2026-11-01 | 1 | PR #113: CI skips verify for Markdown plus `.ai/approvals.log` (October minutes over 2000); ships in the next batch |
 
 ## 7. Decision log
 
