@@ -145,6 +145,12 @@ lintu "E501 Line too long (120 > 88)\n --> a.py:2:89\nF401 [*] \`os\` imported b
 t "lint hook blocks ruff unused plus another rule" [ $? = 2 ]
 lintu "  1:5  error  Parsing error: Unexpected token\n"
 t "lint hook blocks a parse error" [ $? = 2 ]
+lintu "a.py:1:8: F401 [*] \`os\` imported but unused\na.py:3:1: SyntaxError: Expected an expression\n"
+t "lint hook blocks unused name plus a ruff syntax error (concise)" [ $? = 2 ]
+lintu "F401 [*] \`os\` imported but unused\n --> a.py:1:8\nerror[invalid-syntax]: Expected an expression\n --> a.py:3:1\n"
+t "lint hook blocks unused name plus a ruff syntax error (full)" [ $? = 2 ]
+lintu "  8:15  error  'B' is defined but never used  no-unused-vars\nError: Cannot find module 'x'\n"
+t "lint hook blocks unused name plus a linter crash line" [ $? = 2 ]
 stop false; t "stop hook passes when verify passes" [ $? = 0 ]
 touch "$p/fail"
 stop false; t "stop hook blocks when verify fails (exit 2)" [ $? = 2 ]

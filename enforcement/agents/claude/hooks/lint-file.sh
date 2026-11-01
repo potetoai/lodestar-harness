@@ -56,9 +56,14 @@ if ! out=$(make --no-print-directory lint-file FILE="$file" 2>&1); then
   # in the next edit) is not a mistake yet. When every problem found is an
   # unused name (ESLint no-unused-vars, ruff F401/F841), let the edit pass:
   # `make lint` in verify and CI still catch a name that stays unused.
-  # Output in a format not recognized here blocks as before.
-  probs=$(grep -E '^[[:space:]]+[0-9]+:[0-9]+[[:space:]]+(error|warning)[[:space:]]|^([^[:space:]].*:[0-9]+:[0-9]+: )?[A-Z]+[0-9]+ ' <<<"$out")
-  if [ -n "$probs" ] && ! grep -vqE 'no-unused-(vars|imports)[[:space:]]*$|(^|: )F(401|841) ' <<<"$probs"; then
+  # Fail closed: any other line that looks like a problem (error, warning,
+  # a rule code such as E501, a syntax error) blocks as before. Summary
+  # lines and the file-name header line are not problems.
+  unused='no-unused-(vars|imports)[[:space:]]*$|(^|[^[:alnum:]])F(401|841)([^[:alnum:]]|$)'
+  if grep -qE "$unused" <<<"$out" && ! grep -vE "$unused" <<<"$out" |
+      grep -vE '^Found [0-9]+ errors?\.|problems? \(|potentially fixable|^make(\[[0-9]+\])?: \*\*\* .*Error [0-9]+$' |
+      tr '\\\\' / | awk -v b="/${f##*/}" 'substr($0, length($0) - length(b) + 1) != b' |
+      grep -qE '[Ee]rror|ERROR|[Ww]arn|WARN|[A-Z]+[0-9]{3}'; then
     exit 0
   fi
   echo "Linter found problems in $file. Fix them as the messages below say:" >&2
