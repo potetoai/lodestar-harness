@@ -6,7 +6,8 @@ name: CI
 # re-run on every merge (the PR already ran the same code): a daily run checks
 # main when it changed in the last day, which catches two PRs that break each
 # other. A new push to a PR cancels its older run. A PR that changes only
-# Markdown skips setup and verify; the scans and PR checks still run.
+# Markdown (and the approval log a plan PR carries) skips setup and verify;
+# the scans and PR checks still run.
 on:
   pull_request:
     types: [opened, synchronize, reopened, labeled] # labeled: the "test-mutation" label reruns CI
@@ -32,13 +33,13 @@ jobs:
           fetch-depth: 0 # full history, for the secret scan
 
       # SKIP=all: daily run, main has no commit in the last 25 hours.
-      # SKIP=verify: the PR changes only Markdown files.
+      # SKIP=verify: the PR changes only Markdown files and .ai/approvals.log.
       - name: What to run
         run: |
           if [ "${{ github.event_name }}" = schedule ] && [ -z "$(git log -1 --since='25 hours ago' --format=%H)" ]; then
             echo "SKIP=all" >> "$GITHUB_ENV"; echo "No commit on main in the last 25 hours; nothing to check."
-          elif [ "${{ github.event_name }}" = pull_request ] && ! git diff --name-only "origin/${{ github.base_ref }}...HEAD" | grep -qv '\.md$'; then
-            echo "SKIP=verify" >> "$GITHUB_ENV"; echo "Only Markdown files changed; setup and verify skipped."
+          elif [ "${{ github.event_name }}" = pull_request ] && ! git diff --name-only "origin/${{ github.base_ref }}...HEAD" | grep -qvE '\.md$|^\.ai/approvals\.log$'; then
+            echo "SKIP=verify" >> "$GITHUB_ENV"; echo "Only Markdown files (and the approval log) changed; setup and verify skipped."
           fi
 
       # Toolchains: set up only what the project uses.
