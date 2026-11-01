@@ -175,6 +175,7 @@ Done when: F1 is merged with `enforcement/test.sh` green.
 | 2026-10-29 | idea | Idea enforced-vs-written rated; F1 built (review line: pass verdict + a commit of this PR), PR #106; ships in the next batch |
 | 2026-10-31 | 1 | Release 2.9.0 (batch of PRs #89-#111), 5 days after 2.8.0: owner exception to the cadence |
 | 2026-11-01 | 1 | PR #113: CI skips verify for Markdown plus `.ai/approvals.log` (October minutes over 2000); ships in the next batch |
+| 2026-11-01 | 1 | PR #114: ci.yml pins Node/Python from `.nvmrc`/`.python-version` (App01); doctor A4d passes in CI (ProjectS #179 blocked) |
 
 ## 7. Decision log
 

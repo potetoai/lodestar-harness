@@ -1294,9 +1294,10 @@ git -C "$r" push -q origin fix/a 2>/dev/null; t "a real git push of a feature br
 w=$tmp/pp-proto; git -C "$r" worktree add -q "$w" -b proto/wt
 git -C "$w" push -q origin HEAD:fix/c 2>/dev/null; t "a real push from a prototype worktree is blocked" [ $? != 0 ]
 git -C "$r" worktree remove --force "$w"; git -C "$r" branch -q -D proto/wt
-out=$(bash "$r/.claude/hooks/doctor.sh" "$r" 2>&1); t "doctor A4d passes with the hook" grep -qE '✅ A4d ' <<<"$out"
+out=$(GITHUB_ACTIONS= bash "$r/.claude/hooks/doctor.sh" "$r" 2>&1); t "doctor A4d passes with the hook" grep -qE '✅ A4d ' <<<"$out"
 rm "$r/.git/hooks/pre-push"
-out=$(bash "$r/.claude/hooks/doctor.sh" "$r" 2>&1); t "doctor A4d fails without the hook (fresh clone)" grep -qE '❌ A4d ' <<<"$out"
+out=$(GITHUB_ACTIONS= bash "$r/.claude/hooks/doctor.sh" "$r" 2>&1); t "doctor A4d fails without the hook (fresh clone)" grep -qE '❌ A4d ' <<<"$out"
+out=$(GITHUB_ACTIONS=true bash "$r/.claude/hooks/doctor.sh" "$r" 2>&1); t "doctor A4d passes in GitHub Actions (CI never has the hook)" grep -qE '✅ A4d ' <<<"$out"
 printf '#!/bin/sh\necho mine\n' > "$r/.git/hooks/pre-push"
 out=$(bash "$here/bootstrap.sh" "$r" --stack python --upgrade)
 t "bootstrap keeps a pre-push hook that is not Lodestar's and says what to add" bash -c 'grep -q mine "$1" && grep -q "not Lodestar" <<<"$2"' _ "$r/.git/hooks/pre-push" "$out"

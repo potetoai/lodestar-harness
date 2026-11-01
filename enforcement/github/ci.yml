@@ -42,15 +42,24 @@ jobs:
             echo "SKIP=verify" >> "$GITHUB_ENV"; echo "Only Markdown files (and the approval log) changed; setup and verify skipped."
           fi
 
-      # Toolchains: set up only what the project uses.
-      - if: env.SKIP == '' && hashFiles('**/package.json') != ''
+      # Toolchains: set up only what the project uses. A root .nvmrc or
+      # .python-version pins the version; without one CI takes the latest.
+      - if: env.SKIP == '' && hashFiles('**/package.json') != '' && hashFiles('.nvmrc') == ''
         uses: actions/setup-node@v7
         with:
           node-version: lts/*
-      - if: env.SKIP == '' && hashFiles('**/requirements*.txt', '**/pyproject.toml') != ''
+      - if: env.SKIP == '' && hashFiles('**/package.json') != '' && hashFiles('.nvmrc') != ''
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - if: env.SKIP == '' && hashFiles('**/requirements*.txt', '**/pyproject.toml') != '' && hashFiles('.python-version') == ''
         uses: actions/setup-python@v7
         with:
           python-version: 3.x
+      - if: env.SKIP == '' && hashFiles('**/requirements*.txt', '**/pyproject.toml') != '' && hashFiles('.python-version') != ''
+        uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
 
       - name: Setup
         if: env.SKIP == ''

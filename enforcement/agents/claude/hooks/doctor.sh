@@ -77,8 +77,10 @@ has_hooks() {
     registered $f UserPromptSubmit '' 'approval-record\.sh'
 }
 # git's pre-push hook (bootstrap.sh) runs pre-push.sh. Git does not clone
-# hooks: a fresh clone fails here until bootstrap runs again.
+# hooks: a fresh clone fails here until bootstrap runs again. CI is always a
+# fresh clone and never pushes, so the check passes there.
 git_pre_push() {
+  [ "${GITHUB_ACTIONS:-}" = true ] && return 0
   local pp; pp=$(git rev-parse --git-path hooks 2>/dev/null)/pre-push
   [ -f "$pp" ] && grep -q 'pre-push\.sh' "$pp"
 }
