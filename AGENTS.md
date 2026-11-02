@@ -25,6 +25,7 @@ Code alone, or Orca when present).
 | `plans/ideas/` | Idea plans not yet rated; rated in an active plan before any work |
 | `plans/completed/ideas/` | Rated idea plans, kept for reference |
 | `scripts/` | Repo tooling (`check-links.sh`) |
+| `evals/` | Behavior evals, run locally (`evals/README.md`); Router suite main scores in `evals/router/scores.md` |
 | `LICENSE`, `THIRD_PARTY.md` | MIT; tools used but not bundled |
 
 ## Absolute rules

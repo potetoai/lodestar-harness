@@ -155,6 +155,7 @@ Questions 1-3 were decided on 2026-11-02; see the decision log.
 | 2026-11-02 | rating | Idea rated in harness-health; plan written. Smoke test: the runner works (1 case, haiku, $0.00) |
 | 2026-11-02 | 0 | Spike, PR #128: (1) yes, a skills-dir plugin whose skill points at this repo, run with `--allow-tools "Read(D:/AI/Lodestar-harness/**)"` (without it the sandbox denies the read); (2) yes, both arms run in a temp home without `~/.claude/CLAUDE.md`; (3) tokens are in each run's `out/trace.jsonl` (needs `--keep-temp`), not `~/.claude/projects`. One route case, with arm: haiku ~47k tokens (mostly cache reads), 11 s; opus ~65k, 32 s. Haiku routed BUILD_REVIEW, opus COMPLEX. Waits for owner go/stop |
 | 2026-11-02 | 0 | Gate EV-0: go (owner). Open questions 1-3 decided, PR #129 |
+| 2026-11-02 | 1 | Router suite, 13 cases in `evals/router/`, PR #<n>: with Lodestar 13/13 (1.00), baseline 10/13 (mean delta +0.15), 860k tokens (opus, 1 run). Scores in `evals/router/scores.md`. Waits for owner approval before phase 2 |
 
 ## 9. Decision log
 
@@ -166,3 +167,5 @@ Questions 1-3 were decided on 2026-11-02; see the decision log.
 | 2026-11-02 | Gate EV-0: go | Spike answered yes to questions 1 and 2; owner said go |
 | 2026-11-02 | Cases run on opus, 1 run each (3 only when borderline), ceiling about 1.5M tokens per suite run | Opus is the day-to-day model and haiku routed differently in the spike; 12 cases at ~65k + ~22k tokens fit under the ceiling |
 | 2026-11-02 | Case prompts list the workflow names and risk levels | The spike's baseline scored 0 only because it did not know the names; the arms should differ only in judgment |
+| 2026-11-02 | Case prompts state the project is onboarded (doctor passes) | The eval temp dir has no `doctor.sh`; without it Lodestar routes every case to ONBOARDING (Routing Rule 15) |
+| 2026-11-02 | 13 cases, not 12: one INDEPENDENT_COMPARE and one COMPLEX case besides the listed boundaries | Every workflow gets at least one case; 860k tokens stays under the 1.5M ceiling |

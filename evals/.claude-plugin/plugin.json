@@ -1,0 +1,4 @@
+{
+  "name": "lodestar",
+  "description": "Eval wrapper: loads Lodestar-harness the way ~/.claude/CLAUDE.md does, for claude plugin eval"
+}
