@@ -106,7 +106,7 @@ checked by the onboarding report and review.
 | A11 | `AGENTS.md` under 200 lines; detail moves to `.claude/rules/` (scoped with `paths:`) or docs | Recommended |
 | A11b | `AGENTS.md` tells a cloud or web session to clone the `repo` in `.ai/enforcement.json` when `source` is missing (template line) | Recommended |
 | A12 | Stack tools installed (`.venv` / `node_modules`); else run `make setup` | Recommended |
-| A12b | Root `.nvmrc` / `.python-version` pins the Node / Python version when the repo has a `package.json` / Python requirements; else CI takes the newest release, which can break a green project overnight. `bootstrap.sh` writes the version this machine runs | Required |
+| A12b | Root `.nvmrc` / `.python-version` pins the Node / Python version when the repo has a `package.json` / Python requirements; else CI takes the newest release, which can break a green project overnight. `bootstrap.sh` writes the version this machine runs (Python: the project `.venv` first) | Required |
 | C1 | `main` requires a PR and passing checks (set by hand on GitHub) | Recommended |
 | D1 | Maintenance done in the last 14 days (`.ai/last-maintenance`) | Recommended |
 | D2 | No repeated mistake in `.ai/feedback-log.md` without a machine rule | Recommended |
