@@ -83,6 +83,13 @@ About 12 cases under `evals/router/`, each a task text in and the expected
   cannot show the wait);
 - PROTOTYPE vs a real fix.
 
+Every case prompt lists the workflow names (SIMPLE, BUILD_REVIEW,
+INDEPENDENT_COMPARE, COMPLEX, PROTOTYPE) and the risk levels, so the two
+arms differ only in judgment, not in knowing the names (the spike's baseline
+scored 0 only for that reason; its judgment matched). Cases run on opus, 1
+run each (3 only when a result is borderline), with a ceiling of about 1.5M
+tokens per suite run.
+
 Run once on main with the baseline arm. Record per case: score with and
 without Lodestar, and the tokens used. Store the main scores in
 `evals/router/scores.md` (committed) so later PRs compare against them
@@ -125,6 +132,8 @@ and E2/E3 are dropped.
 
 ## 6. Open questions (owner)
 
+Questions 1-3 were decided on 2026-11-02; see the decision log.
+
 1. Token ceiling per suite run, after phase 0 measures it. The runner only
    stops on `--max-cost-usd`, so the agent turns the token ceiling into
    dollars at the model's API price and passes that.
@@ -145,6 +154,7 @@ and E2/E3 are dropped.
 |---|---|---|
 | 2026-11-02 | rating | Idea rated in harness-health; plan written. Smoke test: the runner works (1 case, haiku, $0.00) |
 | 2026-11-02 | 0 | Spike, PR #128: (1) yes, a skills-dir plugin whose skill points at this repo, run with `--allow-tools "Read(D:/AI/Lodestar-harness/**)"` (without it the sandbox denies the read); (2) yes, both arms run in a temp home without `~/.claude/CLAUDE.md`; (3) tokens are in each run's `out/trace.jsonl` (needs `--keep-temp`), not `~/.claude/projects`. One route case, with arm: haiku ~47k tokens (mostly cache reads), 11 s; opus ~65k, 32 s. Haiku routed BUILD_REVIEW, opus COMPLEX. Waits for owner go/stop |
+| 2026-11-02 | 0 | Gate EV-0: go (owner). Open questions 1-3 decided, PR #129 |
 
 ## 9. Decision log
 
@@ -153,3 +163,6 @@ and E2/E3 are dropped.
 | 2026-11-02 | Router suite first; reviewer and text-only suites wait for gate EV-3 | `ROUTER.md` changed 14 times since 2026-10-01, `reviewer.md` 3 times; token budget |
 | 2026-11-02 | Measure and report evals in tokens, not dollars | Owner: the subscription charges no money per run, so dollars mislead; the dollar flag stays only as the runner's stop switch |
 | 2026-11-02 | Run on Router PRs, model changes and before cuts; never in CI or on a schedule | Same text and model give the same expected result; each run costs the owner's quota |
+| 2026-11-02 | Gate EV-0: go | Spike answered yes to questions 1 and 2; owner said go |
+| 2026-11-02 | Cases run on opus, 1 run each (3 only when borderline), ceiling about 1.5M tokens per suite run | Opus is the day-to-day model and haiku routed differently in the spike; 12 cases at ~65k + ~22k tokens fit under the ceiling |
+| 2026-11-02 | Case prompts list the workflow names and risk levels | The spike's baseline scored 0 only because it did not know the names; the arms should differ only in judgment |
