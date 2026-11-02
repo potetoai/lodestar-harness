@@ -98,6 +98,18 @@ for s in "${stacks[@]}"; do
     [ -f "$f" ] && put "$f" "$sub/$(basename "$f")" project
   done
 done
+# CI reads the toolchain version from a root .nvmrc / .python-version; without
+# one it takes the newest release, which can break a green project overnight
+# (doctor A12b). Pin what this machine runs; a missing tool writes nothing.
+pin() {   # pin FILE VERSION
+  [ -e "$1" ] || [ -z "$2" ] || { printf '%s\n' "$2" > "$1"; say created "$1 ($2)"; }
+}
+for s in "${stacks[@]}"; do
+  case "${s%%=*}" in
+    node-ts) pin .nvmrc "$(node -v 2>/dev/null | sed -nE 's/^v([0-9]+)\..*/\1/p' || true)" ;;
+    python) pin .python-version "$({ python3 --version || python --version; } 2>/dev/null | sed -nE 's/^Python ([0-9]+\.[0-9]+)\..*/\1/p' | head -1 || true)" ;;
+  esac
+done
 
 # Several parts: the root Makefile runs each target in every part that has
 # it, and sends lint-file to the part that owns the file.

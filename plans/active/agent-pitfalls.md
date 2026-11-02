@@ -246,6 +246,7 @@ or change it.
 | 2026-10-28 | 5 data | Critic limit, for the 11-05 recount: vn30 `rsi-force-filter` 6 runs (3 full, then 3 narrowed, each after an owner fix and "duyệt critic", as the rule allows); narrowed runs 16% of its critic cache reads; run 4 found a live-DB write, run 5 three minors, run 6 none. vn30 `intraday-write-changed-only` 4 runs. vn30 has no `critic-limit.sh` yet (batch); PR #103 |
 | 2026-11-02 | 5 data | P5-b: App01 maintenance ran `--friction` (second project); its top sessions lost 10-17 edits each to unused-name lint blocks, fix: `lint-file.sh` passes an edit whose only problems are unused names; PR #116 |
 | 2026-11-02 | 5 data | P5-b: ProjectS found the #116 pass never fired there (ruff colour codes, oxlint format); fixed before any project shipped 2.9.2; PR #118 |
+| 2026-11-02 | 5 data | P5-b: App01 CI broke when `lts/*` jumped Node 24 to 26; doctor A12b now requires a root `.nvmrc` / `.python-version`, bootstrap writes it; PR #120 |
 
 ## 8. Decision log
 
