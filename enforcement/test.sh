@@ -109,6 +109,15 @@ p2=$tmp/ignored; mkdir -p "$p2"; git -C "$p2" init -q; printf '.claude/*\n' > "$
 out=$(bash "$here/bootstrap.sh" "$p2" --stack python)
 t "bootstrap warns when .gitignore hides hooks" grep -q 'WARNING: .gitignore hides' <<<"$out"
 
+# The project's .venv python (what make uses) wins over the PATH python (A12b).
+fakepy() { mkdir -p "$1/.venv/bin"; printf '#!/bin/sh\necho "Python %s"\n' "$2" > "$1/.venv/bin/python"; chmod +x "$1/.venv/bin/python"; }
+pv=$tmp/venvpin; mkdir -p "$pv"; fakepy "$pv" 3.99.1
+out=$(bash "$here/bootstrap.sh" "$pv" --stack python)
+t "bootstrap pins the project .venv python over PATH (A12b)" bash -c 'grep -qx 3.99 "$1/.python-version" && grep -qF "from ./.venv/bin/python" <<<"$2"' _ "$pv" "$out"
+pv=$tmp/venvpart; mkdir -p "$pv/backend"; fakepy "$pv/backend" 3.98.0
+bash "$here/bootstrap.sh" "$pv" --stack python=backend >/dev/null
+t "bootstrap pins a part's .venv python (A12b)" grep -qx 3.98 "$pv/.python-version"
+
 # A later template adds a hook to an existing group: upgrade must register it.
 p3=$tmp/grouped; mkdir -p "$p3/.claude"
 echo '{"hooks":{"PreToolUse":[{"matcher":"Edit|Write|MultiEdit|NotebookEdit","hooks":[{"type":"command","command":"bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/protect-tests.sh\""}]}]}}' > "$p3/.claude/settings.json"

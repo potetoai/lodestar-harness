@@ -101,13 +101,22 @@ done
 # CI reads the toolchain version from a root .nvmrc / .python-version; without
 # one it takes the newest release, which can break a green project overnight
 # (doctor A12b). Pin what this machine runs; a missing tool writes nothing.
-pin() {   # pin FILE VERSION
-  [ -e "$1" ] || [ -z "$2" ] || { printf '%s\n' "$2" > "$1"; say created "$1 ($2)"; }
+# Python: the project's .venv (the one make uses) wins over the PATH python.
+pin() {   # pin FILE VERSION [SOURCE]
+  [ -e "$1" ] || [ -z "$2" ] || { printf '%s\n' "$2" > "$1"; say created "$1 ($2${3:+ from $3})"; }
 }
+pyver() { "$@" --version 2>/dev/null | sed -nE 's/^Python ([0-9]+\.[0-9]+)\..*/\1/p' | head -1 || true; }
 for s in "${stacks[@]}"; do
+  sub=.; case "$s" in *=*) sub=${s#*=} ;; esac
   case "${s%%=*}" in
     node-ts) pin .nvmrc "$(node -v 2>/dev/null | sed -nE 's/^v([0-9]+)\..*/\1/p' || true)" ;;
-    python) pin .python-version "$({ python3 --version || python --version; } 2>/dev/null | sed -nE 's/^Python ([0-9]+\.[0-9]+)\..*/\1/p' | head -1 || true)" ;;
+    python)
+      v= src=
+      for py in "$sub/.venv/bin/python" "$sub/.venv/Scripts/python.exe" .venv/bin/python .venv/Scripts/python.exe; do
+        [ -x "$py" ] && v=$(pyver "$py") && [ -n "$v" ] && { src=$py; break; }
+      done
+      [ -n "$v" ] || { v=$(pyver python3); [ -n "$v" ] || v=$(pyver python); src="PATH python"; }
+      pin .python-version "$v" "$src" ;;
   esac
 done
 

@@ -247,6 +247,7 @@ or change it.
 | 2026-11-02 | 5 data | P5-b: App01 maintenance ran `--friction` (second project); its top sessions lost 10-17 edits each to unused-name lint blocks, fix: `lint-file.sh` passes an edit whose only problems are unused names; PR #116 |
 | 2026-11-02 | 5 data | P5-b: ProjectS found the #116 pass never fired there (ruff colour codes, oxlint format); fixed before any project shipped 2.9.2; PR #118 |
 | 2026-11-02 | 5 data | P5-b: App01 CI broke when `lts/*` jumped Node 24 to 26; doctor A12b now requires a root `.nvmrc` / `.python-version`, bootstrap writes it; PR #120 |
+| 2026-11-02 | 5 data | P5-b follow-up: bootstrap pins the project `.venv` python before the PATH one (ProjectS had to fix it by hand); PR #122 |
 
 ## 8. Decision log
 
