@@ -146,6 +146,19 @@ and rules only written. Rating:
 
 Done when: F1 is merged with `enforcement/test.sh` green.
 
+### Rated idea: behavior evals (2026-11-02)
+
+`plans/completed/ideas/behavior-evals.md` proposes three eval suites with
+`claude plugin eval`. Rating:
+
+| Suite | Rating | Action |
+|---|---|---|
+| E1 Router | do | `plans/active/behavior-evals.md` phases 0-2: spike (gate EV-0), then about 12 string-match cases, run on Router PRs |
+| E2 Reviewer | wait | Gate EV-3: `reviewer.md` changed 3 times since 2026-10-01; build only if E1 earns its cost |
+| E3 Text-only rules | wait | Gate EV-3, same |
+
+Done when: `plans/active/behavior-evals.md` is merged.
+
 ## 4. Open questions
 
 - **Q1 (phase 2):** may a hook be removed when CI checks the same thing,
@@ -181,6 +194,7 @@ Done when: F1 is merged with `enforcement/test.sh` green.
 | 2026-11-02 | 1 | Release 2.9.3 (PR #118), same day as 2.9.2: the #116 pass never fired with ruff colour output or oxlint (found by ProjectS) |
 | 2026-11-02 | 1 | Release 2.9.4 (PR #120), same day as 2.9.3: doctor requires a pinned Node/Python version (App01 CI broke when `lts/*` moved to Node 26) |
 | 2026-11-02 | 1 | Release 2.9.5 (PR #122), same day as 2.9.4: bootstrap pins the project .venv python, not the first one on PATH |
+| 2026-11-02 | idea | Idea behavior-evals rated: Router suite in `plans/active/behavior-evals.md`; reviewer and text-only suites wait for gate EV-3 |
 
 ## 7. Decision log
 
@@ -203,3 +217,4 @@ Done when: F1 is merged with `enforcement/test.sh` green.
 | 2026-11-02 | Release 2.9.4 the same day as 2.9.3 | Owner "làm đi" after being told ProjectS has no pinned Node/Python and can break like App01 PR #132; `bootstrap.sh --upgrade` writes the pin files |
 | 2026-11-02 | Release 2.9.5 the same day as 2.9.4 | Follow-up to 2.9.4: #122 makes the pin written by `--upgrade` match the project .venv; planned in the handoff, owner said "continue" |
 | 2026-11-02 | Release 2.9.6 in the fix PR #124, the same day as 2.9.5 | App01 is blocked by the critic limit and waits for it; one PR means one owner merge approval |
+| 2026-11-02 | Behavior evals: Router suite only, run by hand on Router PRs, not in CI | Owner asked for a plan after the smoke test showed `claude plugin eval` works; `ROUTER.md` is the most edited policy file and has no behavior check |
