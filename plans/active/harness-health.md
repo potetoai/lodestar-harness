@@ -179,6 +179,7 @@ Done when: F1 is merged with `enforcement/test.sh` green.
 | 2026-11-01 | 1 | Release 2.9.1 (PRs #113, #114), 1 day after 2.9.0: owner exception, ProjectS PR #179 blocked by doctor A4d in CI |
 | 2026-11-02 | 1 | Release 2.9.2 (PR #116), 1 day after 2.9.1: owner exception, to cut lint-block token waste in App01 and ProjectS |
 | 2026-11-02 | 1 | Release 2.9.3 (PR #118), same day as 2.9.2: the #116 pass never fired with ruff colour output or oxlint (found by ProjectS) |
+| 2026-11-02 | 1 | Release 2.9.4 (PR #120), same day as 2.9.3: doctor requires a pinned Node/Python version (App01 CI broke when `lts/*` moved to Node 26) |
 
 ## 7. Decision log
 
@@ -198,3 +199,4 @@ Done when: F1 is merged with `enforcement/test.sh` green.
 | 2026-11-01 | Release 2.9.1 one day after 2.9.0, outside the 7-14 day cadence | Owner typed "phát hành 2.9.1". #114 fixes doctor A4d failing in every fresh CI clone (git does not clone hooks), which blocks ProjectS PR #179; #113 skips CI verify for Markdown plus approval-log PRs |
 | 2026-11-02 | Release 2.9.2 one day after 2.9.1, outside the 7-14 day cadence | Owner chose it when offered wait vs. early release ("nâng cấp cho cả 2 đi vì nó giảm lượng token tiêu tốn"). #116 stops unused-name lint blocks mid-edit (App01 subagents lost 10-17 edits each) |
 | 2026-11-02 | Release 2.9.3 the same day as 2.9.2 | 2.9.2 was the owner's early release to cut tokens, but its pass never fired in ProjectS (ruff colour codes, oxlint format); #118 fixes it, so shipping now keeps that goal |
+| 2026-11-02 | Release 2.9.4 the same day as 2.9.3 | Owner "làm đi" after being told ProjectS has no pinned Node/Python and can break like App01 PR #132; `bootstrap.sh --upgrade` writes the pin files |
