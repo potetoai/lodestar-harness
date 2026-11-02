@@ -144,6 +144,7 @@ and E2/E3 are dropped.
 | Date | Phase | Note |
 |---|---|---|
 | 2026-11-02 | rating | Idea rated in harness-health; plan written. Smoke test: the runner works (1 case, haiku, $0.00) |
+| 2026-11-02 | 0 | Spike, PR #128: (1) yes, a skills-dir plugin whose skill points at this repo, run with `--allow-tools "Read(D:/AI/Lodestar-harness/**)"` (without it the sandbox denies the read); (2) yes, both arms run in a temp home without `~/.claude/CLAUDE.md`; (3) tokens are in each run's `out/trace.jsonl` (needs `--keep-temp`), not `~/.claude/projects`. One route case, with arm: haiku ~47k tokens (mostly cache reads), 11 s; opus ~65k, 32 s. Haiku routed BUILD_REVIEW, opus COMPLEX. Waits for owner go/stop |
 
 ## 9. Decision log
 
