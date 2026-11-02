@@ -57,8 +57,9 @@ fi
 # ("2026-10-31-share-sheet-android" or "share-sheet-android").
 short_name() { local n; n=$(basename "$1" .md); n=${n,,}; echo "${n#[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-}"; }
 named_in_prompt() {
-  local full; full=$(basename "$1" .md); full=${full,,}
-  grep -qE "(^|[^[:alnum:]-])($full|$(short_name "$1"))([^[:alnum:]-]|\$)" <<<"$low"
+  local full short; full=$(basename "$1" .md); full=${full,,}; short=$(short_name "$1")
+  full=$(sed 's/[][\.^$*+?(){}|]/\\&/g' <<<"$full"); short=$(sed 's/[][\.^$*+?(){}|]/\\&/g' <<<"$short")
+  grep -qE "(^|[^[:alnum:]-])($full|$short)([^[:alnum:]-]|\$)" <<<"$low"
 }
 
 if ! ls .ai/plans/active/*.md >/dev/null 2>&1; then
