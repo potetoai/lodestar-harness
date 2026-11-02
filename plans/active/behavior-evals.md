@@ -54,7 +54,9 @@ questions in the progress log:
 2. Is the baseline arm clean (no `~/.claude/CLAUDE.md` Lodestar text)?
 3. Cost and time of one run, on haiku and on the day-to-day model.
 
-If 1 or 2 is no, stop and report; the plan ends there unless the owner
+Gate EV-0 is a go/stop decision by the owner on these answers, not a counted
+gate, so it has no row in the Data gates table. If 1 or 2 is no, stop and
+report; the plan ends there unless the owner
 rates a new approach. Spike files are throwaway; nothing is committed.
 
 Done when: the three answers are logged and the owner has chosen go or stop.
@@ -68,13 +70,15 @@ About 12 cases under `evals/router/`, each a task text in and the expected
   investigation);
 - sensitive paths that force tests-first;
 - a question that is not a request (answer, no route line);
-- high or critical risk that must wait for approval;
+- high or critical risk that must wait for approval (graded by the haiku
+  judge: the reply asks for approval and starts no build; a route line alone
+  cannot show the wait);
 - PROTOTYPE vs a real fix.
 
 Run once on main with the baseline arm. Record per case: score with and
 without Lodestar, and the run cost. Store the main scores in
 `evals/router/scores.md` (committed) so later PRs compare against them
-without re-running main.
+without re-running main. Add an `evals/` row to the `AGENTS.md` Map.
 
 Done when: the suite is merged and the main scores and cost are logged.
 
@@ -89,7 +93,9 @@ One short rule in `AGENTS.md`. Run the Router suite:
 - when the day-to-day model changes;
 - before cutting Router text, to show the cut changes no score.
 
-Do not run it on other PRs, on every push, or on a schedule.
+Do not run it on other PRs, on every push, or on a schedule. The
+`Lodestar evals:` line is the agent's own report; `ci-checks.sh` and
+`merge-pr.sh` do not check it, and adding such a check needs a new rating.
 
 Done when: the rule is merged.
 
@@ -107,7 +113,7 @@ and E2/E3 are dropped.
 
 | Gate | Measure (source) | Minimum | Check | Stop | Status |
 |---|---|---|---|---|---|
-| EV-3 More suites | Router suite runs in PRs that changed `router/ROUTER.md` (PR text `Lodestar evals:` lines), and how many found a drop that was fixed or text that was cut | 5 runs, at least 1 that changed a PR | 2026-12-01 | 2026-12-22 | waiting (0) |
+| EV-3 More suites | Router suite runs in PRs that changed `router/ROUTER.md` (PR text `Lodestar evals:` lines), and how many found a drop that was fixed or text that was cut | 5 runs, at least 1 that changed a PR; count only runs after the phase 2 rule is merged (if it is not merged by the check day, log the count and set a new check day) | 2026-12-01 | 2026-12-22 | waiting (0) |
 
 ## 6. Open questions (owner)
 
