@@ -52,12 +52,16 @@ critic_runs() {
 
 # Critic runs a plan (path) may have: 3, plus one for each owner approval of
 # its criteria (a change during the build) and each "duyệt critic" the owner
-# typed for it (approval-record.sh), both in .ai/approvals.log.
+# typed for it (approval-record.sh), both in .ai/approvals.log. A "duyệt
+# critic" line also holds the run count when it was typed, so it always
+# allows the next run, even for a plan with more past runs than its limit.
 critic_limit() {
-  local extra=0
-  [ -f .ai/approvals.log ] && extra=$(tr -d '\r' < .ai/approvals.log |
-    awk -v p="$1" '$3 == p || ($3 == "critic-run" && $4 == p) { n++ } END { print n + 0 }')
-  echo $((3 + extra))
+  local n=3
+  [ -f .ai/approvals.log ] && n=$(tr -d '\r' < .ai/approvals.log | awk -v p="$1" '
+    $3 == p || ($3 == "critic-run" && $4 == p) { n++ }
+    $3 == "critic-run" && $4 == p && $5 ~ /^[0-9]+$/ && $5 + 1 > next1 { next1 = $5 + 1 }
+    END { n += 3; print (next1 > n ? next1 : n) }')
+  echo "$n"
 }
 
 # Is this criteria hash approved in an approvals log (file content on stdin)?

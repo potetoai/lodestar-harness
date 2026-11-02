@@ -1120,7 +1120,7 @@ crit "You are the critic (agents/critic.md). Plan: .ai/plans/active/other.md"; t
 crit "You are the critic. Plan: D:/AI/Lodestar-harness/plans/active/c.md"; t "critic hook ignores a plan outside .ai/" [ $? = 0 ]
 LODESTAR_SKIP_HOOKS=1 crit "$brief"; t "LODESTAR_SKIP_HOOKS disables the critic hook" [ $? = 0 ]
 out=$(CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"duyệt critic"}')
-t "'duyệt critic' records one more run and no criteria" bash -c 'grep -q " critic-run .ai/plans/active/c.md$" .ai/approvals.log && [ $(wc -l < .ai/approvals.log) = 1 ] && grep -q "one more critic run" <<<"$1"' _ "$out"
+t "'duyệt critic' records one more run and no criteria" bash -c 'grep -q " critic-run .ai/plans/active/c.md 3$" .ai/approvals.log && [ $(wc -l < .ai/approvals.log) = 1 ] && grep -q "one more critic run" <<<"$1"' _ "$out"
 crit "$brief"; t "critic hook allows a run the owner approved" [ $? = 0 ]
 runs 4 4; crit "$brief"; t "critic hook blocks again after that run" [ $? = 2 ]
 approve; crit "$brief"; t "an owner approval of the criteria allows one more run" [ $? = 0 ]
@@ -1128,13 +1128,27 @@ mkplan d "b works"
 out=$(CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"duyệt critic"}')
 t "'duyệt critic' with two plans and no name records nothing" bash -c '[ $(grep -c critic-run .ai/approvals.log) = 1 ] && grep -q "plans are active" <<<"$1"' _ "$out"
 CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"duyệt critic d"}' >/dev/null
-t "'duyệt critic d' records the named plan only" bash -c '[ $(grep -c " critic-run .ai/plans/active/d.md$" .ai/approvals.log) = 1 ] && [ $(grep -c critic-run .ai/approvals.log) = 2 ]'
+t "'duyệt critic d' records the named plan only" bash -c '[ $(grep -c " critic-run .ai/plans/active/d.md 0$" .ai/approvals.log) = 1 ] && [ $(grep -c critic-run .ai/approvals.log) = 2 ]'
 rm .ai/plans/active/c.md
 CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"duyệt, critic ổn rồi"}' >/dev/null
 t "'duyệt, critic ổn rồi' approves the criteria, not a critic run" bash -c 'grep -qE " .ai/plans/active/d.md [0-9a-f]{40}$" .ai/approvals.log && [ $(grep -c critic-run .ai/approvals.log) = 2 ]'
 mkplan critic-x "c works"; mkplan e "e works"
 CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"duyệt critic-x"}' >/dev/null
 t "'duyệt critic-x' approves the plan named critic-x" bash -c 'grep -qE " .ai/plans/active/critic-x.md [0-9a-f]{40}$" .ai/approvals.log && [ $(grep -c critic-run .ai/approvals.log) = 2 ]'
+# A dated plan with more past runs than its limit (runs from before the hook
+# counted them): one "duyệt critic", by full or short name, allows the next run.
+mkplan 2026-10-31-share-x "s works"; pl=.ai/plans/active/2026-10-31-share-x.md; runs 1 13
+brief="You are the critic. Plan: .ai/plans/active/2026-10-31-share-x.md"
+out=$(CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/critic-limit.sh" 2>&1 >/dev/null <<<"$(jq -n --arg b "$brief" '{tool_input:{subagent_type:"critic",prompt:$b}}')")
+t "the critic block message names the line the owner types" grep -q "duyệt critic share-x$" <<<"$out"
+CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"duyệt critic 2026-10-31-share-x"}' >/dev/null
+t "'duyệt critic' with the dated name records the run count" grep -q " critic-run .ai/plans/active/2026-10-31-share-x.md 13$" .ai/approvals.log
+crit "$brief"; t "one 'duyệt critic' allows the next run past old runs" [ $? = 0 ]
+runs 14 14; crit "$brief"; t "the run after it is blocked again" [ $? = 2 ]
+CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"duyệt critic share-x"}' >/dev/null
+crit "$brief"; t "'duyệt critic' with the short name allows the next run" [ $? = 0 ]
+CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"duyệt 2026-10-31-share-x"}' >/dev/null
+t "an approval naming a dated plan in full approves its criteria" grep -qE " .ai/plans/active/2026-10-31-share-x.md [0-9a-f]{40}$" .ai/approvals.log
 cd "$here"
 
 # 17. Stop hook keeps locked tests unchanged while the task is active, even
