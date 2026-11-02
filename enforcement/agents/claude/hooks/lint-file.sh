@@ -52,14 +52,18 @@ if ! make -n lint-file FILE="$file" >/dev/null 2>&1; then
 fi
 if ! out=$(make --no-print-directory lint-file FILE="$file" 2>&1); then
   out=${out//$'\r'/}
+  # Some linters colour their output even here (ruff reads any FORCE_COLOR
+  # value as "force colour"), so drop colour codes before matching.
+  esc=$'\e'; out=$(sed "s/${esc}\[[0-9;]*[A-Za-z]//g" <<<"$out")
   # A name added before its first use (an import now, the code that uses it
   # in the next edit) is not a mistake yet. When every problem found is an
-  # unused name (ESLint no-unused-vars, ruff F401/F841), let the edit pass:
+  # unused name (ESLint no-unused-vars, oxlint eslint(no-unused-vars),
+  # ruff F401/F841), let the edit pass:
   # `make lint` in verify and CI still catch a name that stays unused.
   # Fail closed: any other line that looks like a problem (error, warning,
   # a rule code such as E501, a syntax error) blocks as before. Summary
   # lines and the file-name header line are not problems.
-  unused='no-unused-(vars|imports)[[:space:]]*$|(^|[^[:alnum:]])F(401|841)([^[:alnum:]]|$)'
+  unused='no-unused-(vars|imports)[[:space:]]*$|eslint\(no-unused-(vars|imports)\)|(^|[^[:alnum:]])F(401|841)([^[:alnum:]]|$)'
   if grep -qE "$unused" <<<"$out" && ! grep -vE "$unused" <<<"$out" |
       grep -vE '^Found [0-9]+ errors?\.|problems? \(|potentially fixable|^make(\[[0-9]+\])?: \*\*\* .*Error [0-9]+$' |
       tr '\\\\' / | awk -v b="/${f##*/}" 'substr($0, length($0) - length(b) + 1) != b' |
