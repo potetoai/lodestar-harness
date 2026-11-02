@@ -184,7 +184,7 @@ Data gates for the parts not yet decided (`rules/documentation.md`, section
 | Gate | Measure (source) | Minimum | Check | Stop | Status |
 |---|---|---|---|---|---|
 | P5-a Phase 2 (PROTOTYPE) | Sessions routed PROTOTYPE in all projects (`usage-report.py` route lines, PR route lines) | 3 uses | 2026-11-05 | 2026-11-26 | waiting (0) |
-| P5-b `--friction` | Maintenance runs that ran `usage-report.py --friction` (grep transcripts for the command), and fixes that came from its output (feedback rows, PRs, read by hand) | 3 runs, from 2 projects | 2026-11-05 | 2026-11-26 | waiting (1) |
+| P5-b `--friction` | Maintenance runs that ran `usage-report.py --friction` (grep transcripts for the command), and fixes that came from its output (feedback rows, PRs, read by hand) | 3 runs, from 2 projects | 2026-11-05 | 2026-11-26 | waiting (2: vn30, App01; 1 fix) |
 | P5-c Critic limit (#94, #95) | Plans with critic runs since 2026-10-27: runs per plan, findings per narrowed run (`- Run <n>` lines in plan `## Criteria review`; findings counted by hand in critic reports) | 8 plans from 2 projects, 3 of them with `critic-limit.sh` installed (batch release) | 2026-11-05 | 2026-11-26, or release + 21 days if the batch ships after 2026-11-05 | waiting (2: vn30, no hook) |
 
 Phase 5 is done when all three are met or stopped. At the stop day, P5-a and
@@ -244,6 +244,7 @@ or change it.
 | 2026-10-27 | 5 | 1b: 176 Stop-hook holds = 125 `make verify` (1.0% of turns; first answers 0.84% of cost, was 1.2%) + 51 unpushed commits (0.27%). Of 54 holds equal to the one before, 48 followed an edit or shell command, 6 nothing (a background builder was editing); PR #99 |
 | 2026-10-27 | 5 | 1: App01 has the Domain Terms table, vn30 does not (missed at its 2026-10-19 maintenance). 2: no real PROTOTYPE route yet. 3: `--friction` ran in one maintenance (vn30); PR #99 |
 | 2026-10-28 | 5 data | Critic limit, for the 11-05 recount: vn30 `rsi-force-filter` 6 runs (3 full, then 3 narrowed, each after an owner fix and "duyệt critic", as the rule allows); narrowed runs 16% of its critic cache reads; run 4 found a live-DB write, run 5 three minors, run 6 none. vn30 `intraday-write-changed-only` 4 runs. vn30 has no `critic-limit.sh` yet (batch); PR #103 |
+| 2026-11-02 | 5 data | P5-b: App01 maintenance ran `--friction` (second project); its top sessions lost 10-17 edits each to unused-name lint blocks, fix: `lint-file.sh` passes an edit whose only problems are unused names; PR #116 |
 
 ## 8. Decision log
 

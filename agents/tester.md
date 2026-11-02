@@ -57,9 +57,9 @@ In high-risk tasks the tester works **before** the builder
 
 ## Editing
 
-A hook lints each file after every edit, so a half-done file fails (an
-import added before the code that uses it). Write a new test file in one
-Write; in an existing file, add a name in the same Edit as its first use.
+A hook lints each file after every edit. A name not used yet (an import
+added before the code that uses it) passes; other problems block. Write a
+new test file in one Write; finish each edit so it parses.
 
 ## Before Reporting
 
