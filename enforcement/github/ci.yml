@@ -43,7 +43,8 @@ jobs:
           fi
 
       # Toolchains: set up only what the project uses. A root .nvmrc or
-      # .python-version pins the version; without one CI takes the latest.
+      # .python-version pins the version (doctor A12b requires it); without
+      # one CI takes the latest, which can change under a green project.
       - if: env.SKIP == '' && hashFiles('**/package.json') != '' && hashFiles('.nvmrc') == ''
         uses: actions/setup-node@v7
         with:

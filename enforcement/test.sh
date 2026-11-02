@@ -65,6 +65,23 @@ sed -i '/enforcement\.json/d' "$p/AGENTS.md"
 out=$(bash "$p/.claude/hooks/doctor.sh" "$p"); rc=$?
 t "doctor warns when AGENTS.md misses the cloud line (A11b), still ready" bash -c '[ $1 = 0 ] && grep -qE "⚠️ +A11b " <<<"$2"' _ "$rc" "$out"
 cp "$tmp/agents.bak" "$p/AGENTS.md"
+t "bootstrap pins the Python version this machine runs (A12b)" grep -qxE '[0-9]+\.[0-9]+' "$p/.python-version"
+mv "$p/.python-version" "$tmp/pyver.bak"
+out=$(bash "$p/.claude/hooks/doctor.sh" "$p"); rc=$?
+t "doctor fails when Python is used without .python-version (A12b)" bash -c '[ $1 = 1 ] && grep -qE "❌ A12b " <<<"$2"' _ "$rc" "$out"
+mv "$tmp/pyver.bak" "$p/.python-version"
+mkdir -p "$p/web"; echo '{}' > "$p/web/package.json"
+out=$(bash "$p/.claude/hooks/doctor.sh" "$p"); rc=$?
+t "doctor fails on a nested package.json without a root .nvmrc (A12b)" bash -c '[ $1 = 1 ] && grep -qE "❌ A12b " <<<"$2"' _ "$rc" "$out"
+echo 24 > "$p/.nvmrc"
+bash "$p/.claude/hooks/doctor.sh" "$p" >/dev/null
+t "doctor accepts package.json with a root .nvmrc (A12b)" [ $? = 0 ]
+rm -rf "$p/web" "$p/.nvmrc"
+cp "$p/.gitignore" "$tmp/gi.bak"; echo 'node_modules/' >> "$p/.gitignore"
+mkdir -p "$p/node_modules/pkg"; echo '{}' > "$p/node_modules/pkg/package.json"
+bash "$p/.claude/hooks/doctor.sh" "$p" >/dev/null
+t "doctor ignores a git-ignored package.json (A12b)" [ $? = 0 ]
+rm -rf "$p/node_modules"; cp "$tmp/gi.bak" "$p/.gitignore"
 mkdir -p "$p/backend"; echo X=1 > "$p/backend/.env"
 bash "$p/.claude/hooks/doctor.sh" "$p" >/dev/null
 t "doctor fails on a nested .env without .env.example" [ $? = 1 ]

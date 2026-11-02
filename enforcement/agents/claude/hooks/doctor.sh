@@ -161,6 +161,14 @@ stack_env() {
     esac
   done
 }
+# CI (ci.yml) sets up Node when any package.json exists and Python when any
+# requirements*.txt or pyproject.toml exists; without a root pin it takes the
+# newest release, which can break a green project overnight.
+toolchain_pinned() {
+  local files; files=$(git ls-files -co --exclude-standard 2>/dev/null) || return 0
+  ! grep -qE '(^|/)package\.json$' <<<"$files" || [ -s .nvmrc ] || return 1
+  ! grep -qE '(^|/)(requirements[^/]*\.txt|pyproject\.toml)$' <<<"$files" || [ -s .python-version ]
+}
 # .ai/last-maintenance holds the date (YYYY-MM-DD) of the last maintenance run.
 # ponytail: GNU date (Linux, Git Bash); macOS needs `gdate` if it ever matters.
 maintenance_recent() {
@@ -216,6 +224,7 @@ check A10b "make verify records its pass (last line: verify-before-stop.sh --rec
 check A11 "AGENTS.md under 200 lines (move detail to .claude/rules/ with paths:, or docs)" warn short_agents_md
 check A11b "AGENTS.md says where lodestar-harness is for cloud sessions (template line on .ai/enforcement.json)" warn agents_md_finds_lodestar
 check A12 "stack tools installed (.venv / node_modules), else run make setup" warn stack_env
+check A12b "root .nvmrc / .python-version pins the Node / Python version CI uses (else run bootstrap.sh --upgrade, or write the major version you run)" fail toolchain_pinned
 check D1  "maintenance done in the last 14 days (workflows/maintenance.md)" warn maintenance_recent
 check D2  "no repeated mistake without a machine rule (.ai/feedback-log.md)" warn no_repeated_mistakes
 # A4c starts Codex and C1 calls the GitHub API: skip both in quiet mode
