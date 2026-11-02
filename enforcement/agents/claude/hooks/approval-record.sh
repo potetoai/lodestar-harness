@@ -53,6 +53,15 @@ fi
 [ -f .claude/hooks/lodestar-lib.sh ] || exit 0
 . .claude/hooks/lodestar-lib.sh || exit 0
 
+# The owner names a plan by its file name, with or without the date prefix
+# ("2026-10-31-share-sheet-android" or "share-sheet-android").
+short_name() { local n; n=$(basename "$1" .md); n=${n,,}; echo "${n#[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-}"; }
+named_in_prompt() {
+  local full short; full=$(basename "$1" .md); full=${full,,}; short=$(short_name "$1")
+  full=$(sed 's/[][\.^$*+?(){}|]/\\&/g' <<<"$full"); short=$(sed 's/[][\.^$*+?(){}|]/\\&/g' <<<"$short")
+  grep -qE "(^|[^[:alnum:]-])($full|$short)([^[:alnum:]-]|\$)" <<<"$low"
+}
+
 if ! ls .ai/plans/active/*.md >/dev/null 2>&1; then
   echo "Lodestar: the owner approved, but no plan exists in .ai/plans/active/, so nothing was recorded."
   echo "If this approves acceptance criteria: write them under '## Acceptance criteria' in a plan"
@@ -69,19 +78,19 @@ fi
 if grep -qE '^(duyệt|duyet|approve|approved)[[:space:]]+critic([^[:alnum:]-]|$)' <<<"$start"; then
   all=() said=()
   for p in .ai/plans/active/*.md; do
-    n=$(basename "$p" .md); n=${n,,}; n=${n#[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-}
-    all+=("$p"); grep -qE "(^|[^[:alnum:]-])$n([^[:alnum:]-]|\$)" <<<"$low" && said+=("$p")
+    all+=("$p"); named_in_prompt "$p" && said+=("$p")
   done
   [ ${#said[@]} = 0 ] && [ ${#all[@]} = 1 ] && said=("${all[@]}")
   if [ ${#said[@]} = 0 ]; then
     echo "Lodestar: the owner allowed another critic run, but ${#all[@]} plans are active, so nothing was recorded."
-    echo "Ask the owner to type \"duyệt critic\" followed by the plan's name. Active plans:"
-    for p in "${all[@]}"; do n=$(basename "$p" .md); echo "  ${n#[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-}"; done
+    echo "Ask the owner to type one of these lines (the plan's name, with or without its date):"
+    for p in "${all[@]}"; do echo "  duyệt critic $(short_name "$p")"; done
     exit 0
   fi
   now=$(date '+%Y-%m-%d %H:%M')
   for p in "${said[@]}"; do
-    echo "$now critic-run $p" >> .ai/approvals.log
+    # The run count now: this approval allows the next run, however many came before.
+    echo "$now critic-run $p $(critic_runs < "$p")" >> .ai/approvals.log
     echo "Lodestar: recorded the owner's approval of one more critic run for $p (no criteria approved)."
   done
   exit 0
@@ -95,8 +104,7 @@ fi
 pending=() named=() named_done=()
 for p in .ai/plans/active/*.md; do
   h=$(criteria_hash < "$p") || continue
-  n=$(basename "$p" .md); n=${n,,}; n=${n#[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-}
-  said=0; grep -qE "(^|[^[:alnum:]-])$n([^[:alnum:]-]|\$)" <<<"$low" && said=1
+  said=0; named_in_prompt "$p" && said=1
   if [ -f .ai/approvals.log ] && hash_approved "$h" < .ai/approvals.log; then
     [ $said = 1 ] && named_done+=("$p"); continue
   fi
@@ -116,7 +124,7 @@ if [ ${#named[@]} = 0 ] && [ ${#pending[@]} -gt 1 ]; then
   echo "Lodestar: the owner approved, but ${#pending[@]} plans are waiting, so nothing was recorded."
   echo "Ask the owner to reply with the approval word (\"duyệt\" when owner_language is vi, else"
   echo "\"approve\") followed by the plan's name, once for each plan they approve. Waiting plans:"
-  for p in "${pending[@]}"; do n=$(basename "$p" .md); echo "  ${n#[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-}"; done
+  for p in "${pending[@]}"; do echo "  $(short_name "$p")"; done
   exit 0
 fi
 [ ${#named[@]} -gt 0 ] && pending=("${named[@]}")

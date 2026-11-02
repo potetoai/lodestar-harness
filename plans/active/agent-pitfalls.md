@@ -248,6 +248,7 @@ or change it.
 | 2026-11-02 | 5 data | P5-b: ProjectS found the #116 pass never fired there (ruff colour codes, oxlint format); fixed before any project shipped 2.9.2; PR #118 |
 | 2026-11-02 | 5 data | P5-b: App01 CI broke when `lts/*` jumped Node 24 to 26; doctor A12b now requires a root `.nvmrc` / `.python-version`, bootstrap writes it; PR #120 |
 | 2026-11-02 | 5 data | P5-b follow-up: bootstrap pins the project `.venv` python before the PATH one (ProjectS had to fix it by hand); PR #122 |
+| 2026-11-02 | 5 data | Critic limit: an App01 plan with 13 old runs needed 7 "duyệt critic"; one now allows the next run, dated plan names match; PR #124 |
 
 ## 8. Decision log
 

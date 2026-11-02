@@ -202,3 +202,4 @@ Done when: F1 is merged with `enforcement/test.sh` green.
 | 2026-11-02 | Release 2.9.3 the same day as 2.9.2 | 2.9.2 was the owner's early release to cut tokens, but its pass never fired in ProjectS (ruff colour codes, oxlint format); #118 fixes it, so shipping now keeps that goal |
 | 2026-11-02 | Release 2.9.4 the same day as 2.9.3 | Owner "làm đi" after being told ProjectS has no pinned Node/Python and can break like App01 PR #132; `bootstrap.sh --upgrade` writes the pin files |
 | 2026-11-02 | Release 2.9.5 the same day as 2.9.4 | Follow-up to 2.9.4: #122 makes the pin written by `--upgrade` match the project .venv; planned in the handoff, owner said "continue" |
+| 2026-11-02 | Release 2.9.6 in the fix PR #124, the same day as 2.9.5 | App01 is blocked by the critic limit and waits for it; one PR means one owner merge approval |
