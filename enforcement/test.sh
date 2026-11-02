@@ -159,6 +159,12 @@ lintu "C:/x/a.js:1:7: warning eslint(no-unused-vars): Variable 'u' is declared b
 t "lint hook lets an oxlint unused name pass" [ $? = 0 ]
 lintu "a.js:1:7: warning eslint(no-unused-vars): Variable 'u' is declared but never used.\na.js:2:1: error eslint(no-debugger): \`debugger\` statement is not allowed\n"
 t "lint hook blocks oxlint unused plus another rule" [ $? = 2 ]
+lintu "  ! eslint(no-unused-vars): Variable 'u' is declared but never used.\n  x eslint(no-undef): 'foo' is not defined\n"
+t "lint hook blocks oxlint default format unused plus another rule" [ $? = 2 ]
+lintu "  ! eslint(no-unused-vars): Variable 'u' is declared but never used.\n"
+t "lint hook lets oxlint default format unused pass" [ $? = 0 ]
+lintu "a.js:1:1: error eslint(no-console): msg mentions eslint(no-unused-vars) here\n"
+t "lint hook: another rule naming no-unused-vars in its text still blocks" [ $? = 2 ]
 stop false; t "stop hook passes when verify passes" [ $? = 0 ]
 touch "$p/fail"
 stop false; t "stop hook blocks when verify fails (exit 2)" [ $? = 2 ]
