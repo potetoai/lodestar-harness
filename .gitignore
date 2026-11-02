@@ -13,3 +13,7 @@ __pycache__/
 
 # Owner's merge approvals (local; read by merge-pr.sh, AGENTS.md)
 .ai/approvals.log
+
+# Behavior eval runs (local; plans/active/behavior-evals.md)
+evals/results/
+evals/router/results/
