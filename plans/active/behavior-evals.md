@@ -28,6 +28,11 @@ its cost (gate EV-3).
 - Not yet known: whether the runner can load Lodestar (it is not a plugin; it
   loads through `~/.claude/CLAUDE.md`), and whether the baseline arm also
   loads that global file (then it is not a baseline). Phase 0 answers this.
+- The runner reports cost only in dollars (`costUsd`, `judgeCostUsd` in its
+  `--json` output, checked 2026-11-02), not tokens, and stops a run only on
+  `--max-cost-usd`. Its dollars are an API-price estimate: this machine
+  logs in with a claude.ai subscription, so a run uses the plan's usage
+  limit, not money.
 - Owner constraints: token budget is watched, GitHub Free only, test
   artifacts are throwaway.
 
@@ -52,7 +57,10 @@ questions in the progress log:
 1. Can the runner load Lodestar (for example as a skills-dir plugin wrapping
    this repo, or through `--eval-dir` in this repo)?
 2. Is the baseline arm clean (no `~/.claude/CLAUDE.md` Lodestar text)?
-3. Cost and time of one run, on haiku and on the day-to-day model.
+3. Tokens and time of one run, on haiku and on the day-to-day model. Read
+   tokens from the run's session transcripts with `scripts/usage-report.py`
+   if the runner leaves them in `~/.claude/projects`; if it does not, log the
+   runner's dollar estimate and say tokens could not be read.
 
 Gate EV-0 is a go/stop decision by the owner on these answers, not a counted
 gate, so it has no row in the Data gates table. If 1 or 2 is no, stop and
@@ -76,11 +84,11 @@ About 12 cases under `evals/router/`, each a task text in and the expected
 - PROTOTYPE vs a real fix.
 
 Run once on main with the baseline arm. Record per case: score with and
-without Lodestar, and the run cost. Store the main scores in
+without Lodestar, and the tokens used. Store the main scores in
 `evals/router/scores.md` (committed) so later PRs compare against them
 without re-running main. Add an `evals/` row to the `AGENTS.md` Map.
 
-Done when: the suite is merged and the main scores and cost are logged.
+Done when: the suite is merged and the main scores and tokens are logged.
 
 ### Phase 2: When to run (one rule)
 
@@ -88,7 +96,7 @@ One short rule in `AGENTS.md`. Run the Router suite:
 
 - in a PR that changes `router/ROUTER.md`: run on the branch, compare with
   `evals/router/scores.md`, and put one line in the PR text:
-  `Lodestar evals: router <branch score> (main <score>), $<cost>`. A drop
+  `Lodestar evals: router <branch score> (main <score>), <N>k tokens`. A drop
   is fixed or explained before merge; a merged change updates `scores.md`;
 - when the day-to-day model changes;
 - before cutting Router text, to show the cut changes no score.
@@ -117,7 +125,9 @@ and E2/E3 are dropped.
 
 ## 6. Open questions (owner)
 
-1. Cost ceiling per suite run (`--max-cost-usd`), after phase 0 measures it.
+1. Token ceiling per suite run, after phase 0 measures it. The runner only
+   stops on `--max-cost-usd`, so the agent turns the token ceiling into
+   dollars at the model's API price and passes that.
 2. Which model runs the cases: the day-to-day model (real behavior, costs
    more) or haiku (cheap, may score differently).
 3. Runs per case: 3 (default; shows flaky rules) or 1 (a third of the cost).
@@ -140,4 +150,5 @@ and E2/E3 are dropped.
 | Date | Decision | Why |
 |---|---|---|
 | 2026-11-02 | Router suite first; reviewer and text-only suites wait for gate EV-3 | `ROUTER.md` changed 14 times since 2026-10-01, `reviewer.md` 3 times; token budget |
+| 2026-11-02 | Measure and report evals in tokens, not dollars | Owner: the subscription charges no money per run, so dollars mislead; the dollar flag stays only as the runner's stop switch |
 | 2026-11-02 | Run on Router PRs, model changes and before cuts; never in CI or on a schedule | Same text and model give the same expected result; each run costs the owner's quota |
