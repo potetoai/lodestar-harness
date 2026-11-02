@@ -151,6 +151,20 @@ lintu "F401 [*] \`os\` imported but unused\n --> a.py:1:8\nerror[invalid-syntax]
 t "lint hook blocks unused name plus a ruff syntax error (full)" [ $? = 2 ]
 lintu "  8:15  error  'B' is defined but never used  no-unused-vars\nError: Cannot find module 'x'\n"
 t "lint hook blocks unused name plus a linter crash line" [ $? = 2 ]
+lintu "\033[1m\033[91mF401\033[0m [\033[1m\033[96m*\033[0m]\033[1m \`os\` imported but unused\033[0m\n \033[1m\033[94m--> \033[0ma.py:1:8\n"
+t "lint hook lets coloured ruff F401 pass" [ $? = 0 ]
+lintu "\033[1m\033[91mE501\033[0m Line too long\n\033[1m\033[91mF401\033[0m \`os\` imported but unused\n"
+t "lint hook blocks coloured ruff unused plus another rule" [ $? = 2 ]
+lintu "C:/x/a.js:1:7: warning eslint(no-unused-vars): Variable 'u' is declared but never used. help: Consider removing this declaration.\n"
+t "lint hook lets an oxlint unused name pass" [ $? = 0 ]
+lintu "a.js:1:7: warning eslint(no-unused-vars): Variable 'u' is declared but never used.\na.js:2:1: error eslint(no-debugger): \`debugger\` statement is not allowed\n"
+t "lint hook blocks oxlint unused plus another rule" [ $? = 2 ]
+lintu "  ! eslint(no-unused-vars): Variable 'u' is declared but never used.\n  x eslint(no-undef): 'foo' is not defined\n"
+t "lint hook blocks oxlint default format unused plus another rule" [ $? = 2 ]
+lintu "  ! eslint(no-unused-vars): Variable 'u' is declared but never used.\n"
+t "lint hook lets oxlint default format unused pass" [ $? = 0 ]
+lintu "a.js:1:1: error eslint(no-console): msg mentions eslint(no-unused-vars) here\n"
+t "lint hook: another rule naming no-unused-vars in its text still blocks" [ $? = 2 ]
 stop false; t "stop hook passes when verify passes" [ $? = 0 ]
 touch "$p/fail"
 stop false; t "stop hook blocks when verify fails (exit 2)" [ $? = 2 ]
