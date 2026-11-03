@@ -135,7 +135,7 @@ Rating: **Do** · **Check** (measure first, act only if the number says so) ·
 | 42 | DESIGN:OS (jangtrinh) | Design CLI and skills, about 100 UI lint checks | Overlaps impeccable (idea 43) | **Check**: only if impeccable fails the App01 trial; take no text (license) |
 | 43 | impeccable, ui-ux-pro-max, vercel-react-native-skills, vercel-composition-patterns | Design critique and audit, palettes and fonts, RN rules, component API | Installed in App01, not committed | **Check**: App01 trial (phase 5b), keep or drop each |
 | 44 | frontend-design (Anthropic) | Web UI taste guide | Not covered | **Optional**: web projects; App01 is mobile |
-| 45 | LSP plugins (pyright, typescript) | Type and compile errors while editing | `lint-file.sh` after each edit | **Check**: vn30 trial (phase 5b) |
+| 45 | LSP plugins (pyright, typescript) | Type and compile errors while editing | `lint-file.sh` after each edit | **Drop** (2026-11-03): vn30 pre-check too noisy; CI check of Optional rules instead |
 | 46 | LibreUIUX, designer-skills, superdesign | Large design bundles; vendor skill | Ideas 42-44 | **Drop**: too many skills, overlap, vendor-written ranking |
 | 47 | spec-kit, Feature Dev (Anthropic) | Spec-driven development; 7-phase feature workflow with parallel agents | Plans, acceptance criteria, Router workflows | **Covered** |
 
@@ -356,6 +356,11 @@ Done when: `installed_plugins.json` matches Q4.
   and commits kept skills through its own PR (`.claude/` is a safety path
   there: the owner's "duyệt merge PR <n>"). This repo sends prompts only.
 
+  - Result 2026-11-03: 502 errors, 226 in app code, 0 confirmed bugs, mostly
+    pandas/SQLAlchemy typing noise; about 20 `reportOptional*` errors. LSP
+    dropped. vn30 reviews those 20 read-only, fixes real bugs, then adds a CI
+    pyright step with only the `reportOptional*` rules on (its own PR).
+
 Done when: both projects report; results in the progress log.
 
 ### Phase 5c — Design bridge (ideas 38-40; after gate DS-1)
@@ -436,6 +441,7 @@ this plan to `plans/completed/`, once phase 5c is merged or dropped.
 | 2026-10-27 | — | Review fixes: real start about 11-06, measure phases 1-2 before 3, cost bars, baseline after the release, phase 3 in two PRs |
 | 2026-11-03 | 0b | Ideas 36-47 rated (Lodestar OS idea, DESIGN:OS, App01 report, 2026 lists); adoption rule and template table, #131 |
 | 2026-11-03 | 5b | Skill trial with baseline, KEEP / MODIFY / DROP bars, vn30 LSP pre-check, #132 |
+| 2026-11-03 | 5b | vn30 LSP pre-check: 226 app errors, idea 45 dropped, #PR |
 
 ## 8. Decision log
 
@@ -453,3 +459,4 @@ this plan to `plans/completed/`, once phase 5c is merged or dropped.
 | 2026-11-03 | Router eval: all 13 pass fully with Lodestar, 10 of 13 without is evidence for routing only, not for code or design quality | One run per case, 13 cases written with the policy, regex on the route line; limits in `evals/router/scores.md` |
 | 2026-11-03 | vn30 LSP starts with a read-only pyright count; no TypeScript LSP | Owner; vn30's frontend is JavaScript; a noisy LSP costs tokens on every edit |
 | 2026-11-03 | Skill trials compare with a no-skill baseline run; only new, correct, actionable findings count; unproven value means DROP; 30k tokens per run cap | Owner's review of #132; a finding the plain model also makes is not the skill's value |
+| 2026-11-03 | Drop idea 45 (pyright LSP); vn30 checks the ~20 Optional errors, then runs pyright on CI with only `reportOptional*` rules | Owner ("làm đi"); 226 noisy errors would enter context after each edit; CI costs no agent tokens and still catches empty-data bugs |
