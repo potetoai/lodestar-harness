@@ -34,5 +34,5 @@ case adds a haiku judge), so the suite measures the routing decision, not the qu
 work that follows. Without Lodestar, 10 of 13 cases pass fully (mean 0.85).
 Lodestar costs about 46k more tokens per routed task (58k vs 12k).
 Reproduce with the command in `evals/README.md`; the run's JSON stays on the
-owner's machine (`evals/results/` is gitignored), and `--runs 3` on a case
+owner's machine (the evals results folder is gitignored), and `--runs 3` on a case
 shows whether a result holds.
