@@ -310,7 +310,8 @@ Done when: `installed_plugins.json` matches Q4.
     `audit`; ui-ux-pro-max search for that component's palette, type and
     UX rules; vercel-react-native-skills rule check of its code;
     vercel-composition-patterns review of its props API.
-  - Run order is randomized and recorded (baseline included). Tokens per run come from `usage-report.py`.
+  - Run order is randomized and recorded (baseline included). Tokens per
+    run come from `usage-report.py`.
   - Cap: 30k tokens per run. A run expected to pass it asks the owner
     before it starts.
   - Each finding gets one tag. New: correct, actionable (it names what to
