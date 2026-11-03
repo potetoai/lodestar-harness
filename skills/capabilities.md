@@ -88,8 +88,9 @@ installed version; do not hard-code tool names or flags.
 
 ### Adopting a third-party skill or plugin
 
-A project adopts one only for a gap its rules and checks leave, and keeps
-few: many skills slow agents and make them erratic.
+A project adopts one only for a named gap its rules and checks leave (the
+reason is recorded, step 5), and keeps few: many skills slow agents and
+make them erratic.
 
 1. **Read it first.** What it installs, which files it writes, whether it
    starts hooks or subagents, what it sends out (telemetry off), and its
@@ -98,7 +99,9 @@ few: many skills slow agents and make them erratic.
    source of truth next to the project's docs (a second design or product
    file), its own hooks, and any skill instruction that dispatches
    subagents: the project's docs stay the one source, and the Router
-   dispatches.
+   dispatches. While in use, a skill creates no file, turns on no hook,
+   changes no setting or config, and installs nothing, unless the owner or
+   the running workflow asked for that file or change.
 3. **Per project.** Turn it on in the project that needs it, not for the
    whole machine.
 4. **Trial before keeping.** Run it read only on real work and compare its
