@@ -43,7 +43,8 @@ reminder_claim() {
   lock="$state.lock"
   for ((attempt=0; attempt<40; attempt++)); do
     reminder_create "$lock" && break
-    [ -e "$lock" ] || return 2
+    # Gone already: the holder just released it, so try again.
+    [ -e "$lock" ] || { [ -w "$reminder_dir" ] && continue; return 2; }
     sleep 0.05
   done
   # A lock older than a minute was left by a process that died holding it
@@ -60,8 +61,7 @@ reminder_claim() {
     if [[ ! $previous =~ ^[0-9]+$ ]]; then rm -f "$lock"; return 2; fi
   fi
   if [ "$previous" -ge "$identity" ]; then rm -f "$lock"; return 1; fi
-  if ! printf '%s
-' "$identity" > "$state.$$" || ! mv "$state.$$" "$state"; then
+  if ! printf '%s\n' "$identity" > "$state.$$" || ! mv "$state.$$" "$state"; then
     rm -f "$state.$$" "$lock"; return 2
   fi
   rm -f "$lock" || return 2
