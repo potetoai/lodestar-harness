@@ -183,6 +183,7 @@ fb parallel > "$tmp/fb-one" 2>&1 & first=$!
 fb parallel > "$tmp/fb-two" 2>&1 & second=$!
 wait "$first" || :; wait "$second" || :
 t 'C4 concurrent feedback invocation delivers exactly once' bash -c '[ "$(grep -l feedback-log.md "$1" "$2" | wc -l)" = 1 ]' _ "$tmp/fb-one" "$tmp/fb-two"
+[ "$(grep -l feedback-log.md "$tmp/fb-one" "$tmp/fb-two" | wc -l)" = 1 ] || { echo '--- fb-one:'; cat "$tmp/fb-one"; echo '--- fb-two:'; cat "$tmp/fb-two"; ls -la "$LODESTAR_STATE_DIR"; } >&2
 t 'C4 feedback state stores no correction text' bash -c '! grep -Rqs PRIVATE_CORRECTION_7642 "$1" "$2" "$3"' _ "$LODESTAR_STATE_DIR" "$parity_home" "$p/.git"
 capture cx feedback-check "$(jq -nc --arg t "$transcript" '{transcript_path:$t}')"
 t 'C4 missing feedback session identity is advisory unavailable' unavailable
