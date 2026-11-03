@@ -310,8 +310,7 @@ Done when: `installed_plugins.json` matches Q4.
     `audit`; ui-ux-pro-max search for that component's palette, type and
     UX rules; vercel-react-native-skills rule check of its code;
     vercel-composition-patterns review of its props API.
-  - Run order is shuffled and recorded (baseline included), so no skill
-    always runs first or last. Tokens per run come from `usage-report.py`.
+  - Run order is randomized and recorded (baseline included). Tokens per run come from `usage-report.py`.
   - Cap: 30k tokens per run. A run expected to pass it asks the owner
     before it starts.
   - Each finding gets one tag. New: correct, actionable (it names what to
@@ -322,12 +321,13 @@ Done when: `installed_plugins.json` matches Q4.
     findings count as the skill's value.
   - KEEP: 2 or more new (or 1 the owner rates major), under 40% of its
     findings rejected, no file, hook or setting written, within the cap. If
-    two skills qualify with mostly the same new findings, keep the cheaper.
+    two skills qualify and half or more of their new findings match, keep
+    the cheaper.
   - MODIFY only when the new findings come from a named part (a command or
     reference file) and the unwanted behavior has a named limit (commands
     banned in App01's `.ai/project.md`, or only those reference files kept).
   - DROP every other result, including a skill whose value was not shown;
-    a skill is not kept because it missed a DROP bar.
+    a skill is never kept by default.
   - App01 commits a skill only after the owner approves its result.
   - Context cost, read 2026-11-03: skill descriptions load every session
     (about 500 tokens for all four); a body loads when used (impeccable
@@ -434,7 +434,7 @@ this plan to `plans/completed/`, once phase 5c is merged or dropped.
 | 2026-10-27 | — | Ideas 27-35 added from Matt Pocock's skills (owner asked) |
 | 2026-10-27 | — | Review fixes: real start about 11-06, measure phases 1-2 before 3, cost bars, baseline after the release, phase 3 in two PRs |
 | 2026-11-03 | 0b | Ideas 36-47 rated (Lodestar OS idea, DESIGN:OS, App01 report, 2026 lists); adoption rule and template table, #131 |
-| 2026-11-03 | 5b | Trial protocol with a no-skill baseline, KEEP / MODIFY / DROP bars, 30k cap for App01; vn30 LSP pre-check; skill limits, #132 |
+| 2026-11-03 | 5b | Skill trial with baseline, KEEP / MODIFY / DROP bars, vn30 LSP pre-check, #132 |
 
 ## 8. Decision log
 
