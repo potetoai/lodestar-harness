@@ -59,6 +59,30 @@ code, fewer tokens. Every hook, test lock, review and approval stays.
   compares the diff to the criteria only in tests-first tasks.
 - Popular lists (2026) rank superpowers, karpathy, frontend-design,
   agent-browser, claude-mem, ui-ux-pro-max, everything-claude-code highest.
+- Owner's idea plan "Lodestar OS" (2026-11-03, now
+  `plans/completed/ideas/lodestar-os/`): a Core (runtime adapters, model
+  router, orchestration engine, schema contracts, memory), an Engineering OS
+  and a Design OS, 35 tasks. Most of Core and Engineering OS exist here
+  (Router, runtime parity, `.ai/project.md`, hooks, roles, tests-first);
+  the adapters and engine are orchestration, which `AGENTS.md` forbids.
+- DESIGN:OS (github.com/jangtrinh/design-os, read 2026-11-03): an npm CLI
+  plus skills for Claude, Codex and Gemini, about 100 UI lint checks, 551
+  commits, 36 stars, 55 open issues, one maintainer. License PolyForm Shield
+  1.0.0: use and change allowed, a competing product not. No "Code OS".
+- App01 report (session app01-43, 2026-11-03): installed in its
+  `.claude/skills/` (not committed): impeccable, ui-ux-pro-max,
+  vercel-react-native-skills, vercel-composition-patterns, pinned by commit
+  in `SOURCES.txt`. Used as checklists against `docs/design/`; they found
+  missing state tokens, RN shadow and font-loading rules, gray text on color.
+  Commands that write their own design files and the impeccable hook are off.
+  The keep-or-drop trial was not run. Gaps it names: no place to record why a
+  skill was chosen, no trial step, no warning about skills that write their
+  own source files or start hooks or subagents.
+- Design and coding lists (2026-11-03): frontend-design (Anthropic) is the
+  most named UI skill (web); Vercel agent-skills for React; LSP plugins
+  (pyright, typescript) report type errors during edits; LibreUIUX (152
+  agents) and designer-skills (63 skills) are large bundles, and one list
+  warns that many skills slow agents and make them erratic.
 
 ## 3. Rating of every idea
 
@@ -87,7 +111,7 @@ Rating: **Do** · **Check** (measure first, act only if the number says so) ·
 | 18 | claude-mem, supermemory | Extra memory store | Memory files and `.ai/handoff.md`; a second store drifts | **Drop** |
 | 19 | agent-browser | Browser control | Playwright MCP (`skills/capabilities.md`) | **Covered** |
 | 20 | everything-claude-code | Full config bundle | Would override the Router | **Drop** |
-| 21 | ui-ux-pro-max, taste-skill, frontend-design | UI design guidance | Not covered | **Optional** (Q4): plugin on per project, no Lodestar text |
+| 21 | ui-ux-pro-max, taste-skill, frontend-design | UI design guidance | Not covered | **Optional** (Q4): plugin on per project, no Lodestar text; ui-ux-pro-max now in the idea 43 trial |
 | 22 | expo, firecrawl | Expo apps, web scraping (paid key) | Not covered | **Optional** (Q4) |
 | 23 | gstack plan-ceo-review | Premise check before a new user-facing feature: the real problem, does the plan fix it or a proxy, cost of doing nothing, smallest version that gives most of the value | `explore-options.md` steps 1 and 3, only when the goal is open | **Do**, phase 3b |
 | 24 | gstack plan-design-review, design-review | UI checklist: screen hierarchy, cut words, conventions, visible tap targets (44px), every state designed; rate 0-10 and name what a 10 needs | `agents/frontend.md` states and accessibility | **Do**, phase 3b |
@@ -102,6 +126,18 @@ Rating: **Do** · **Check** (measure first, act only if the number says so) ·
 | 33 | pocock prototype | Logic prototype as one HTML file the owner can click | `workflows/prototype.md` | **Check**: decide when PROTOTYPE use is counted (agent-pitfalls phase 5) |
 | 34 | pocock (rest) | Git guardrails, handoff, glossary and ADRs, wayfinder map, retro | `guard-install.sh`, `.ai/handoff.md`, Domain Terms, plans, maintenance | **Covered** |
 | 35 | pocock (rest) | Parallel implementers and merger agents, architecture HTML report, smell list, questionnaire, wizard, teach, re-pitch | Runtime dispatch; idea 8; idea 4 | **Drop**: orchestration, overlap, or rare use |
+| 36 | Lodestar OS idea (Core) | Runtime adapters, model router, orchestration engine, schema contracts, memory store | Router, `ORCA-INTEGRATION.md`, runtime parity, `.ai/project.md`, hooks, feedback-check | **Drop**: covered, or orchestration (`AGENTS.md`) |
+| 37 | Lodestar OS idea (Engineering OS) | Codebase profiling, spec and plan, TDD, debugging, review, quality gates; a knowledge base of patterns (MVC, DDD, SOLID) | Onboarding, plans, tests-first, `investigate.md`, reviewer, CI | **Covered**; knowledge base **Drop** (the model knows it; agents would read more) |
+| 38 | Lodestar OS idea (Design OS) | Design-system discovery, UI workflow, design checks, visual QA, design-to-code handoff | `agents/frontend.md` states, Playwright capability, template section 8 | **Do**, phase 5c, as a thin bridge to tried skills; no Lodestar design knowledge base |
+| 39 | Lodestar OS idea | Each check is machine-checked, rule-based or expert opinion; an AI opinion is never proof; never claim a design is user-validated without user tests | Not covered | **Do**, phase 5c |
+| 40 | Lodestar OS idea | Project facts marked verified or assumed, with source and date | Not covered | **Do**, phase 5c |
+| 41 | App01 report | Record why a skill or plugin was chosen; read-only trial before adopting; turn off parts that write their own source files, start hooks or dispatch subagents | `skills/capabilities.md`: Router leads, no always-on rules | **Do**, phase 0b |
+| 42 | DESIGN:OS (jangtrinh) | Design CLI and skills, about 100 UI lint checks | Overlaps impeccable (idea 43) | **Check**: only if impeccable fails the App01 trial; take no text (license) |
+| 43 | impeccable, ui-ux-pro-max, vercel-react-native-skills, vercel-composition-patterns | Design critique and audit, palettes and fonts, RN rules, component API | Installed in App01, not committed | **Check**: App01 trial (phase 5b), keep or drop each |
+| 44 | frontend-design (Anthropic) | Web UI taste guide | Not covered | **Optional**: web projects; App01 is mobile |
+| 45 | LSP plugins (pyright, typescript) | Type and compile errors while editing | `lint-file.sh` after each edit | **Check**: vn30 trial (phase 5b) |
+| 46 | LibreUIUX, designer-skills, superdesign | Large design bundles; vendor skill | Ideas 42-44 | **Drop**: too many skills, overlap, vendor-written ranking |
+| 47 | spec-kit, Feature Dev (Anthropic) | Spec-driven development; 7-phase feature workflow with parallel agents | Plans, acceptance criteria, Router workflows | **Covered** |
 
 ## 4. Phases
 
@@ -130,6 +166,14 @@ reports while phases 3 and 3b give the reviewer more to report, so one
 combined count cannot tell which phase worked. Phase 1 and 2 numbers are
 taken (phase 6 bars) when gate SH-12 is met, before phase 3 merges.
 
+Phases 0b, 5b and 5c do not wait for gate SH-0: they change how a project
+adopts a tool, not reply length, report length or the roles phases 1-3
+measure. Phase 5c waits for gate DS-1 instead:
+
+| Gate | Measure (source) | Minimum | Check | Stop | Status |
+|---|---|---|---|---|---|
+| DS-1 Design bridge | App01 trial (phase 5b): keep or drop recorded for each design skill | All four of idea 43 decided | App01 components step | 2026-12-31 (then drop phase 5c, note it in the decision log) | waiting (0) |
+
 ### Phase 0 — Baseline (read only)
 
 - Window: from the batch release (not before 2026-11-02) to the start day
@@ -147,6 +191,19 @@ taken (phase 6 bars) when gate SH-12 is met, before phase 3 merges.
   for the phase 3 and 3b cost bars.
 
 Done when: the numbers are in the progress log.
+
+### Phase 0b — How a project adopts a skill or plugin (idea 41)
+
+- `skills/capabilities.md`: extend "Other installed plugins" with a section
+  on adopting a third-party skill or plugin: read it first (what it
+  installs, writes, starts, sends out; license; pin the commit); turn off
+  parts that write their own source of truth, start hooks or dispatch
+  subagents; turn on per project; a read-only trial against known bugs
+  before keeping it; record the reason and the trial result.
+- `project/.ai/project.md` section 2: a small "Agent Skills and Plugins"
+  table (name, source and commit, why, trial, status).
+
+Done when: merged.
 
 ### Phase 1 — Reply style to the owner (ideas 1, 31)
 
@@ -239,6 +296,35 @@ Done when: one maintenance run shows the list.
 
 Done when: `installed_plugins.json` matches Q4.
 
+### Phase 5b — Trials in projects (ideas 42, 43, 45; no PR here)
+
+- App01, at its components step: impeccable critique and audit on the
+  share-sheet flow (read only), compared with its known bugs; the same for
+  the other three skills of idea 43. Keep a skill if it finds real issues the
+  project's checks missed, at a token cost the owner accepts (owner
+  decides); drop it otherwise. DESIGN:OS is tried only if impeccable is dropped.
+- vn30: turn on the pyright LSP plugin in its project settings for 7 days;
+  keep it if it reports at least one error before the tests or the lint
+  hook do, and `usage-report.py` shows tokens per task up no more than 10%.
+- Each project records the result in its `.ai/project.md` table (phase 0b)
+  and commits kept skills through its own PR (`.claude/` is a safety path
+  there: the owner's "duyệt merge PR <n>"). This repo sends prompts only.
+
+Done when: both projects report; results in the progress log.
+
+### Phase 5c — Design bridge (ideas 38-40; after gate DS-1)
+
+- Only parts the phase 5b trial showed useful: the Router names design work
+  and picks the kept skills as a capability; a designer role or a section in
+  `agents/frontend.md`; the three check classes of idea 39; a design-to-code
+  handoff template (screens, states, tokens, components, limits); onboarding
+  fills template section 8 from the code (tokens, theme, component library);
+  verified or assumed marks on project facts (idea 40).
+- No Lodestar design knowledge base: the kept skills carry that.
+
+Done when: merged; a dry run on one App01 screen (read only) shows the
+handoff and the check classes.
+
 ### Phase 6 — Measure and close
 
 When gate SH-6 is met, rerun phase 0. Keep a phase if:
@@ -259,7 +345,7 @@ When gate SH-6 is met, rerun phase 0. Keep a phase if:
   owner complaint about PR text length.
 
 Otherwise change or revert, with the number in the decision log. Then move
-this plan to `plans/completed/`.
+this plan to `plans/completed/`, once phase 5c is merged or dropped.
 
 ## 5. Open questions
 
@@ -286,6 +372,8 @@ this plan to `plans/completed/`.
 - New hooks or CI checks for style: judgment rules stay review text.
 - Any orchestration; the runtime dispatches.
 - Relaxing any hook, test lock, review or approval.
+- Building a Lodestar Core, Engineering OS or Design OS as software
+  (ideas 36-37).
 
 ## 7. Progress log
 
@@ -296,6 +384,7 @@ this plan to `plans/completed/`.
 | 2026-10-27 | — | Phase 3 guard: the over-engineering pass never cuts real error handling, tests or security checks |
 | 2026-10-27 | — | Ideas 27-35 added from Matt Pocock's skills (owner asked) |
 | 2026-10-27 | — | Review fixes: real start about 11-06, measure phases 1-2 before 3, cost bars, baseline after the release, phase 3 in two PRs |
+| 2026-11-03 | 0b | Ideas 36-47 rated (Lodestar OS idea, DESIGN:OS, App01 report, 2026 lists); adoption rule and template table, #131 |
 
 ## 8. Decision log
 
@@ -307,3 +396,6 @@ this plan to `plans/completed/`.
 | 2026-10-27 | From Matt Pocock's skills take grilling rounds, ranked hypotheses, the spec check, the tautological-test ban and the undo line in PRs; no install | Owner asked; the rest is covered, is orchestration, or is rare use |
 | 2026-10-27 | Measure phases 1-2 before phase 3 merges; add reviewer and explore-options cost bars; baseline only after the batch release | Plan review: phases 2 and 3 pull report length opposite ways; owner watches tokens; the release changes agent runs |
 | 2026-10-28 | Start and measures on data gates SH-0, SH-base, SH-12, SH-6 instead of "about 11-06", "a short window" and "about one week" | Owner: plans start on data, not only a date; a baseline or a bar on a few runs cannot tell a change from noise |
+| 2026-11-03 | Build no Core or Engineering OS as software; design work uses third-party skills that pass a project trial, plus a thin Lodestar bridge (phase 5c) | Owner ("làm đi" after the review); most of the idea exists here, the rest is orchestration; a tried skill is cheaper than a Lodestar design knowledge base |
+| 2026-11-03 | DESIGN:OS only as a fallback to impeccable; no text copied from it | They overlap; PolyForm Shield bars a competing product; one maintainer |
+| 2026-11-03 | App01 commits its design skills only after the trial | An untried skill adds reading cost in every session |
