@@ -300,23 +300,25 @@ Done when: `installed_plugins.json` matches Q4.
 
 - App01 design skills (idea 43), at its components step, on one real
   component (share-sheet flow or the first shared component):
-  - Before the run, App01 writes the known issues of that component (open
-    bugs, the design-system gaps found 2026-11-02) in its plan; the skills
-    do not see the list.
+  - Before the first skill runs, App01 commits the known issues of that
+    component (open bugs, the design-system gaps found 2026-11-02) in its
+    plan, dated; the skills do not see the list.
   - Each skill runs alone, read only, in a fresh session, on the same
     component: impeccable `critique` and `audit`; ui-ux-pro-max search for
     that component's palette, type and UX rules; vercel-react-native-skills
     rule check of its code; vercel-composition-patterns review of its props
     API. Tokens per run come from `usage-report.py`.
-  - Each finding is tagged: new real issue, already caught by the project's
-    checks, wrong or taste only, or against `docs/design/`.
-  - KEEP: 2 or more new real issues (or 1 the owner rates major), over half
-    of its findings real, no file, hook or setting written, tokens per run
-    the owner accepts. MODIFY: useful but noisy, or it tried to write files,
-    start hooks or dispatch: keep with those commands banned in App01's
-    `.ai/project.md`, or keep only the reference files that helped. DROP:
-    no new real issue, half or more of its findings wrong, or most findings
-    the same as a kept skill's.
+  - Each finding gets one tag: new (a real issue the known list and the
+    project's checks missed), known (real, already on the list or caught by
+    the checks), or wrong (not an issue, taste only, or against
+    `docs/design/`). Real = new + known.
+  - KEEP: 2 or more new (or 1 the owner rates major), more than 60% of its
+    findings real, no file, hook or setting written, tokens per run the
+    owner accepts. DROP: no new, or under 40% real, or more than half of its
+    real findings also found by a skill already kept (skills are compared in
+    run order). MODIFY, the default for every other result: keep it with
+    the commands that misbehaved banned in App01's `.ai/project.md`, or keep
+    only the reference files that helped; the owner decides.
   - Context cost, read 2026-11-03: skill descriptions load every session
     (about 500 tokens for all four); a body loads when used (impeccable
     12 KB, ui-ux-pro-max 16 KB, react-native 4.5 KB, composition 3 KB,
@@ -331,8 +333,8 @@ Done when: `installed_plugins.json` matches Q4.
     many errors may be noise. Go on only if the count is small enough to
     fix or silence in `pyrightconfig.json` (owner decides); a noisy LSP adds
     its errors to the agent's context after every edit.
-  - Install inside the project (`requirements-dev.txt` in `backend/.venv`,
-    per `guard-install.sh`), never global; the plugin finds
+  - Install inside the project (`requirements-dev.txt` in `backend/.venv`;
+    `guard-install.sh` blocks pip outside a venv and global npm); the plugin finds
     `pyright-langserver` only if that `.venv` is on PATH when Claude starts:
     check this on Windows first. The PyPI `pyright` package downloads
     Node.js on first run: allow once or use the node from the frontend.
@@ -422,7 +424,7 @@ this plan to `plans/completed/`, once phase 5c is merged or dropped.
 | 2026-10-27 | — | Ideas 27-35 added from Matt Pocock's skills (owner asked) |
 | 2026-10-27 | — | Review fixes: real start about 11-06, measure phases 1-2 before 3, cost bars, baseline after the release, phase 3 in two PRs |
 | 2026-11-03 | 0b | Ideas 36-47 rated (Lodestar OS idea, DESIGN:OS, App01 report, 2026 lists); adoption rule and template table, #131 |
-| 2026-11-03 | 5b | Trial protocol and KEEP / MODIFY / DROP bars for App01; vn30 LSP pre-check; skill limits on files, hooks, settings, PR pending |
+| 2026-11-03 | 5b | Trial protocol and KEEP / MODIFY / DROP bars for App01; vn30 LSP pre-check; skill limits on files, hooks, settings, #132 |
 
 ## 8. Decision log
 
@@ -437,5 +439,5 @@ this plan to `plans/completed/`, once phase 5c is merged or dropped.
 | 2026-11-03 | Build no Core or Engineering OS as software; design work uses third-party skills that pass a project trial, plus a thin Lodestar bridge (phase 5c) | Owner ("làm đi" after the review); most of the idea exists here, the rest is orchestration; a tried skill is cheaper than a Lodestar design knowledge base |
 | 2026-11-03 | DESIGN:OS only as a fallback to impeccable; no text copied from it | They overlap; PolyForm Shield bars a competing product; one maintainer |
 | 2026-11-03 | App01 commits its design skills only after the trial | An untried skill adds reading cost in every session |
-| 2026-11-03 | Router eval 13/13 (with) vs 10 of 13 full passes (without) is evidence for routing only, not for code or design quality | One run per case, 13 cases written with the policy, regex on the route line; limits in `evals/router/scores.md` |
+| 2026-11-03 | Router eval: all 13 pass fully with Lodestar, 10 of 13 without is evidence for routing only, not for code or design quality | One run per case, 13 cases written with the policy, regex on the route line; limits in `evals/router/scores.md` |
 | 2026-11-03 | vn30 LSP starts with a read-only pyright count; no TypeScript LSP | Owner; vn30's frontend is JavaScript; a noisy LSP costs tokens on every edit |
