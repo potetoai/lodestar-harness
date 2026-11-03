@@ -96,14 +96,15 @@ few: many skills slow agents and make them erratic.
    license. Pin the commit or version.
 2. **Turn off what competes with Lodestar.** Commands that write their own
    source of truth next to the project's docs (a second design or product
-   file), its own hooks, and any "this skill may dispatch subagents" line:
-   the project's docs stay the one source, and the Router dispatches.
+   file), its own hooks, and any skill instruction that dispatches
+   subagents: the project's docs stay the one source, and the Router
+   dispatches.
 3. **Per project.** Turn it on in the project that needs it, not for the
    whole machine.
 4. **Trial before keeping.** Run it read only on real work and compare its
    findings with known bugs or the reviewer's findings. Keep it if it finds
    real issues the project's checks missed, at a token cost the owner
-   accepts; drop it otherwise.
+   accepts (the owner decides); drop it otherwise.
 5. **Record it** in the project's `.ai/project.md`, table "Agent Skills and
    Plugins": source and commit, why it was chosen, trial result, status.
 

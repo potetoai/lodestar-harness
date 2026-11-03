@@ -111,7 +111,7 @@ Rating: **Do** · **Check** (measure first, act only if the number says so) ·
 | 18 | claude-mem, supermemory | Extra memory store | Memory files and `.ai/handoff.md`; a second store drifts | **Drop** |
 | 19 | agent-browser | Browser control | Playwright MCP (`skills/capabilities.md`) | **Covered** |
 | 20 | everything-claude-code | Full config bundle | Would override the Router | **Drop** |
-| 21 | ui-ux-pro-max, taste-skill, frontend-design | UI design guidance | Not covered | **Optional** (Q4): plugin on per project, no Lodestar text |
+| 21 | ui-ux-pro-max, taste-skill, frontend-design | UI design guidance | Not covered | **Optional** (Q4): plugin on per project, no Lodestar text; ui-ux-pro-max now in the idea 43 trial |
 | 22 | expo, firecrawl | Expo apps, web scraping (paid key) | Not covered | **Optional** (Q4) |
 | 23 | gstack plan-ceo-review | Premise check before a new user-facing feature: the real problem, does the plan fix it or a proxy, cost of doing nothing, smallest version that gives most of the value | `explore-options.md` steps 1 and 3, only when the goal is open | **Do**, phase 3b |
 | 24 | gstack plan-design-review, design-review | UI checklist: screen hierarchy, cut words, conventions, visible tap targets (44px), every state designed; rate 0-10 and name what a 10 needs | `agents/frontend.md` states and accessibility | **Do**, phase 3b |
@@ -172,7 +172,7 @@ measure. Phase 5c waits for gate DS-1 instead:
 
 | Gate | Measure (source) | Minimum | Check | Stop | Status |
 |---|---|---|---|---|---|
-| DS-1 Design bridge | App01 trial (phase 5b): keep or drop recorded for each design skill | All four of idea 43 decided | App01 components step | 2026-12-31 | waiting (0) |
+| DS-1 Design bridge | App01 trial (phase 5b): keep or drop recorded for each design skill | All four of idea 43 decided | App01 components step | 2026-12-31 (then drop phase 5c, note it in the decision log) | waiting (0) |
 
 ### Phase 0 — Baseline (read only)
 
@@ -194,7 +194,7 @@ Done when: the numbers are in the progress log.
 
 ### Phase 0b — How a project adopts a skill or plugin (idea 41)
 
-- `skills/capabilities.md`: replace "Other installed plugins" with a section
+- `skills/capabilities.md`: extend "Other installed plugins" with a section
   on adopting a third-party skill or plugin: read it first (what it
   installs, writes, starts, sends out; license; pin the commit); turn off
   parts that write their own source of truth, start hooks or dispatch
@@ -301,11 +301,11 @@ Done when: `installed_plugins.json` matches Q4.
 - App01, at its components step: impeccable critique and audit on the
   share-sheet flow (read only), compared with its known bugs; the same for
   the other three skills of idea 43. Keep a skill if it finds real issues the
-  project's checks missed, at a token cost the owner accepts; drop it
-  otherwise. DESIGN:OS is tried only if impeccable is dropped.
+  project's checks missed, at a token cost the owner accepts (owner
+  decides); drop it otherwise. DESIGN:OS is tried only if impeccable is dropped.
 - vn30: turn on the pyright LSP plugin in its project settings for 7 days;
-  keep it if it reports errors before the tests do, with no clear rise in
-  tokens per task.
+  keep it if it reports at least one error before the tests or the lint
+  hook do, and `usage-report.py` shows tokens per task up no more than 10%.
 - Each project records the result in its `.ai/project.md` table (phase 0b)
   and commits kept skills through its own PR (`.claude/` is a safety path
   there: the owner's "duyệt merge PR <n>"). This repo sends prompts only.
