@@ -73,6 +73,16 @@ owner can check each row. Name new code after the "Name in code" column.
 * Storage:
 * External services:
 
+### Agent Skills and Plugins
+
+Third-party skills or plugins this project turns on, and why
+(`skills/capabilities.md` in Lodestar-harness, "Adopting a third-party skill
+or plugin"). Leave empty if none.
+
+| Name | Source and commit | Why (the gap it fills) | Trial result | Status |
+|---|---|---|---|---|
+| | | | | trial / kept / dropped |
+
 ---
 
 ## 3. Repository Structure
