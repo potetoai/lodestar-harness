@@ -441,7 +441,7 @@ this plan to `plans/completed/`, once phase 5c is merged or dropped.
 | 2026-10-27 | — | Review fixes: real start about 11-06, measure phases 1-2 before 3, cost bars, baseline after the release, phase 3 in two PRs |
 | 2026-11-03 | 0b | Ideas 36-47 rated (Lodestar OS idea, DESIGN:OS, App01 report, 2026 lists); adoption rule and template table, #131 |
 | 2026-11-03 | 5b | Skill trial with baseline, KEEP / MODIFY / DROP bars, vn30 LSP pre-check, #132 |
-| 2026-11-03 | 5b | vn30 LSP pre-check: 226 app errors, idea 45 dropped, #PR |
+| 2026-11-03 | 5b | vn30 LSP pre-check: 226 app errors, idea 45 dropped, #133 |
 
 ## 8. Decision log
 
