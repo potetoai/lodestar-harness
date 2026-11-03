@@ -27,3 +27,12 @@ The baseline (no Lodestar) fails three cases: it writes a route line for a
 question (`question-is-there-a-way`), and on both sensitive-path cases it
 picks high risk but does not name tests-first mode. On the other ten it
 routes the same as Lodestar once the prompt lists the workflow names.
+
+Limits: one run per case, so a single flip moves a score; 13 cases, written
+by the same author as the policy; graders are regex on the route line (one
+case adds a haiku judge), so the suite measures the routing decision, not the quality of the
+work that follows. Without Lodestar, 10 of 13 cases pass fully (mean 0.85).
+Lodestar costs about 46k more tokens per routed task (58k vs 12k).
+Reproduce with the command in `evals/README.md`; the run's JSON stays on the
+owner's machine (the evals results folder is gitignored), and `--runs 3` on a case
+shows whether a result holds.
