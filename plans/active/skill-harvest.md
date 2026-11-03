@@ -303,22 +303,32 @@ Done when: `installed_plugins.json` matches Q4.
   - Before the first skill runs, App01 commits the known issues of that
     component (open bugs, the design-system gaps found 2026-11-02) in its
     plan, dated; the skills do not see the list.
-  - Each skill runs alone, read only, in a fresh session, on the same
-    component: impeccable `critique` and `audit`; ui-ux-pro-max search for
-    that component's palette, type and UX rules; vercel-react-native-skills
-    rule check of its code; vercel-composition-patterns review of its props
-    API. Tokens per run come from `usage-report.py`.
-  - Each finding gets one tag: new (a real issue the known list and the
-    project's checks missed), known (real, already on the list or caught by
-    the checks), or wrong (not an issue, taste only, or against
-    `docs/design/`). Real = new + known.
-  - KEEP: 2 or more new (or 1 the owner rates major), more than 60% of its
-    findings real, no file, hook or setting written, tokens per run the
-    owner accepts. DROP: no new, or under 40% real, or more than half of its
-    real findings also found by a skill already kept (skills are compared in
-    run order). MODIFY, the default for every other result: keep it with
-    the commands that misbehaved banned in App01's `.ai/project.md`, or keep
-    only the reference files that helped; the owner decides.
+  - All runs use the same commit, model and request, each alone, read
+    only, in a fresh session. A baseline run has no skill: "review this
+    component's design, UX, code and props API; list the issues". Each
+    skill run adds one skill to that request: impeccable `critique` and
+    `audit`; ui-ux-pro-max search for that component's palette, type and
+    UX rules; vercel-react-native-skills rule check of its code;
+    vercel-composition-patterns review of its props API.
+  - Run order is shuffled and recorded (baseline included), so no skill
+    always runs first or last. Tokens per run come from `usage-report.py`.
+  - Cap: 30k tokens per run. A run expected to pass it asks the owner
+    before it starts.
+  - Each finding gets one tag. New: correct, actionable (it names what to
+    change), and missed by the baseline, the known list and the project's
+    checks (tests, lint, existing reports). Known: correct, but the
+    baseline, the list or the checks found it too. Rejected: not an issue,
+    not actionable, taste only, or against `docs/design/`. Only new
+    findings count as the skill's value.
+  - KEEP: 2 or more new (or 1 the owner rates major), under 40% of its
+    findings rejected, no file, hook or setting written, within the cap. If
+    two skills qualify with mostly the same new findings, keep the cheaper.
+  - MODIFY only when the new findings come from a named part (a command or
+    reference file) and the unwanted behavior has a named limit (commands
+    banned in App01's `.ai/project.md`, or only those reference files kept).
+  - DROP every other result, including a skill whose value was not shown;
+    a skill is not kept because it missed a DROP bar.
+  - App01 commits a skill only after the owner approves its result.
   - Context cost, read 2026-11-03: skill descriptions load every session
     (about 500 tokens for all four); a body loads when used (impeccable
     12 KB, ui-ux-pro-max 16 KB, react-native 4.5 KB, composition 3 KB,
@@ -424,7 +434,7 @@ this plan to `plans/completed/`, once phase 5c is merged or dropped.
 | 2026-10-27 | — | Ideas 27-35 added from Matt Pocock's skills (owner asked) |
 | 2026-10-27 | — | Review fixes: real start about 11-06, measure phases 1-2 before 3, cost bars, baseline after the release, phase 3 in two PRs |
 | 2026-11-03 | 0b | Ideas 36-47 rated (Lodestar OS idea, DESIGN:OS, App01 report, 2026 lists); adoption rule and template table, #131 |
-| 2026-11-03 | 5b | Trial protocol and KEEP / MODIFY / DROP bars for App01; vn30 LSP pre-check; skill limits on files, hooks, settings, #132 |
+| 2026-11-03 | 5b | Trial protocol with a no-skill baseline, KEEP / MODIFY / DROP bars, 30k cap for App01; vn30 LSP pre-check; skill limits, #132 |
 
 ## 8. Decision log
 
@@ -441,3 +451,4 @@ this plan to `plans/completed/`, once phase 5c is merged or dropped.
 | 2026-11-03 | App01 commits its design skills only after the trial | An untried skill adds reading cost in every session |
 | 2026-11-03 | Router eval: all 13 pass fully with Lodestar, 10 of 13 without is evidence for routing only, not for code or design quality | One run per case, 13 cases written with the policy, regex on the route line; limits in `evals/router/scores.md` |
 | 2026-11-03 | vn30 LSP starts with a read-only pyright count; no TypeScript LSP | Owner; vn30's frontend is JavaScript; a noisy LSP costs tokens on every edit |
+| 2026-11-03 | Skill trials compare with a no-skill baseline run; only new, correct, actionable findings count; unproven value means DROP; 30k tokens per run cap | Owner's review of #132; a finding the plain model also makes is not the skill's value |

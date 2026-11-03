@@ -88,28 +88,25 @@ installed version; do not hard-code tool names or flags.
 
 ### Adopting a third-party skill or plugin
 
-A project adopts one only for a named gap its rules and checks leave (the
-reason is recorded, step 5), and keeps few: many skills slow agents and
-make them erratic.
+A project adopts one only for a named gap its rules and checks leave, and
+keeps few: many skills slow agents and make them erratic.
 
 1. **Read it first.** What it installs, which files it writes, whether it
    starts hooks or subagents, what it sends out (telemetry off), and its
    license. Pin the commit or version.
-2. **Turn off what competes with Lodestar.** Commands that write their own
-   source of truth next to the project's docs (a second design or product
-   file), its own hooks, and any skill instruction that dispatches
-   subagents: the project's docs stay the one source, and the Router
-   dispatches. While in use, a skill creates no file, turns on no hook,
-   changes no setting or config, and installs nothing, unless the owner or
-   the running workflow asked for that file or change.
+2. **Limit what it does.** The project's docs stay the one source and the
+   Router dispatches. While in use, a skill writes no file (such as a
+   second design or product file), turns on no hook, changes no setting or
+   config, installs nothing and dispatches no subagent, unless the owner or
+   the running workflow asked for it. Turn off the commands that would.
 3. **Per project.** Turn it on in the project that needs it, not for the
    whole machine.
-4. **Trial before keeping.** Run it read only on real work and compare its
-   findings with known bugs or the reviewer's findings. Keep it if it finds
-   real issues the project's checks missed, at a token cost the owner
-   accepts (the owner decides); drop it otherwise.
+4. **Trial before keeping.** Run it read only on real work, next to the
+   same request without it. Keep it only for correct, actionable findings
+   that the run without it, the known bugs and the project's checks missed,
+   at a token cost the owner accepts (the owner decides); drop it otherwise.
 5. **Record it** in the project's `.ai/project.md`, table "Agent Skills and
-   Plugins": source and commit, why it was chosen, trial result, status.
+   Plugins": source and commit, the gap it fills, trial result, status.
 
 A skill's findings are review input, not proof: tests, lint and the other
 machine checks still decide whether work is done.
