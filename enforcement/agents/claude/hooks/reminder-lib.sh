@@ -23,6 +23,10 @@ reminder_state() {
   reminder_dir=${LODESTAR_STATE_DIR:-${reminder_project_dir:-$reminder_home}/lodestar-state}
 }
 # Return 0 for the unique claim, 1 for an existing claim, 2 if persistence fails.
+# Create a file only if it does not exist yet. Bash's noclobber open is atomic;
+# mkdir is not on every system (uutils mkdir on Ubuntu 26.04 lets two racing
+# calls both succeed).
+reminder_create() { ( set -C; : > "$1" ) 2>/dev/null; }
 reminder_claim() {
   local kind=$1 identity=$2 key state lock previous attempt
   reminder_state || return 2
@@ -31,31 +35,34 @@ reminder_claim() {
   state="$reminder_dir/$reminder_key-$kind"
   mkdir -p "$reminder_dir" 2>/dev/null || return 2
   if [ "$kind" = feedback ] || [ "$kind" = task-done ]; then
-    mkdir "$state-$key" 2>/dev/null && return 0
-    [ -d "$state-$key" ] && return 1
+    # Older versions left a directory here; it still counts as claimed.
+    reminder_create "$state-$key" && return 0
+    [ -e "$state-$key" ] && return 1
     return 2
   fi
   lock="$state.lock"
   for ((attempt=0; attempt<40; attempt++)); do
-    mkdir "$lock" 2>/dev/null && break
-    [ -d "$lock" ] || return 2
+    reminder_create "$lock" && break
+    [ -e "$lock" ] || return 2
     sleep 0.05
   done
-  # A lock older than a minute was left by a process that died holding it.
+  # A lock older than a minute was left by a process that died holding it
+  # (a directory from an older version, or a file).
   # Racing recoveries can at worst repeat one advisory reminder.
   if [ "$attempt" -ge 40 ] && [ -n "$(find "$lock" -maxdepth 0 -mmin +1 2>/dev/null)" ]; then
-    rm -f "$lock/value"; rmdir "$lock" 2>/dev/null
-    mkdir "$lock" 2>/dev/null && attempt=0
+    if [ -d "$lock" ]; then rm -f "$lock/value"; rmdir "$lock" 2>/dev/null; else rm -f "$lock"; fi
+    reminder_create "$lock" && attempt=0
   fi
   [ "$attempt" -lt 40 ] || return 2
   previous=0
   if [ -e "$state" ]; then
     previous=$(cat "$state" 2>/dev/null)
-    if [[ ! $previous =~ ^[0-9]+$ ]]; then rmdir "$lock"; return 2; fi
+    if [[ ! $previous =~ ^[0-9]+$ ]]; then rm -f "$lock"; return 2; fi
   fi
-  if [ "$previous" -ge "$identity" ]; then rmdir "$lock"; return 1; fi
-  if ! printf '%s\n' "$identity" > "$lock/value" || ! mv "$lock/value" "$state"; then
-    rm -f "$lock/value"; rmdir "$lock"; return 2
+  if [ "$previous" -ge "$identity" ]; then rm -f "$lock"; return 1; fi
+  if ! printf '%s
+' "$identity" > "$state.$$" || ! mv "$state.$$" "$state"; then
+    rm -f "$state.$$" "$lock"; return 2
   fi
-  rmdir "$lock" || return 2
+  rm -f "$lock" || return 2
 }
