@@ -16,7 +16,6 @@ These rules are especially important when multiple agents work in parallel using
 # 1. Core Principle
 
 Git operations must preserve:
-
 * Existing work
 * Other agents' changes
 * Commit history
@@ -30,7 +29,6 @@ Agents must never perform destructive Git operations without explicit authorizat
 # 2. Inspect Before Changing
 
 Before modifying Git state, inspect:
-
 ```bash
 git status
 git branch
@@ -38,7 +36,6 @@ git log
 ```
 
 When working in a multi-agent environment, also determine:
-
 * Current branch
 * Current worktree
 * Whether uncommitted changes exist
@@ -51,7 +48,6 @@ Never assume the repository is clean.
 # 3. Worktree Isolation
 
 When the runtime assigns independent agents to separate worktrees:
-
 ```text
 Main Repository
       │
@@ -75,13 +71,11 @@ Independent agents should not share uncommitted changes.
 Each independent implementation should normally have its own branch.
 
 Branch names should be:
-
 * Descriptive
 * Related to the task
 * Consistent with project conventions
 
 Examples:
-
 ```text
 feature/user-profile
 feature/payment-api
@@ -98,14 +92,12 @@ Do not create unnecessary branches for trivial changes when the project workflow
 If the working tree already contains changes:
 
 Do not automatically:
-
 * Delete them
 * Reset them
 * Stash them
 * Overwrite them
 
 First determine whether they belong to:
-
 * Current task
 * Another task
 * Another agent
@@ -120,13 +112,11 @@ If ownership is unclear, stop and report the situation.
 Commits should represent coherent changes.
 
 Prefer:
-
 ```text
 One logical change → One meaningful commit
 ```
 
 Avoid commits containing:
-
 * Unrelated changes
 * Temporary debugging code
 * Generated noise
@@ -135,7 +125,6 @@ Avoid commits containing:
 Commit messages should clearly describe the change.
 
 Examples:
-
 ```text
 feat: add user profile editing
 fix: handle expired authentication token
@@ -160,13 +149,11 @@ For independent agent workflows, committing the completed implementation before 
 # 8. Uncommitted Changes
 
 Before finishing a task:
-
 ```bash
 git status
 ```
 
 Verify that:
-
 * Intended files are modified
 * No unexpected files changed
 * Temporary files are removed
@@ -179,13 +166,11 @@ Do not leave unrelated changes in the working tree.
 # 9. Diff Review
 
 Before reporting completion, inspect:
-
 ```bash
 git diff
 ```
 
 and, when appropriate:
-
 ```bash
 git diff --stat
 ```
@@ -193,7 +178,6 @@ git diff --stat
 The final diff should match the requested scope.
 
 Check for:
-
 * Accidental changes
 * Debugging code
 * Secrets
@@ -206,7 +190,6 @@ Check for:
 # 10. Generated Files
 
 Do not commit generated files unless:
-
 * The project tracks them intentionally
 * The project requires them
 * The existing repository convention requires them
@@ -218,7 +201,6 @@ When generated files are tracked, follow the project's generation workflow.
 # 11. Secrets
 
 Never commit:
-
 * API keys
 * Passwords
 * Access tokens
@@ -250,7 +232,6 @@ is lost with it. The Stop hook (`verify-before-stop.sh`) holds a stop once per
 HEAD while the branch has commits on no remote branch.
 
 Merge policy by workflow:
-
 - **SIMPLE** — after verification passes and only if there are no conflicts, the
   worker may merge its own PR automatically. A SIMPLE task that escalated to a
   higher workflow mid-execution loses this — it is no longer SIMPLE.
@@ -261,7 +242,6 @@ Merge policy by workflow:
 
 Never auto-merge when any of these hold, regardless of workflow — open the PR and
 wait for a human instead:
-
 - verification did not pass,
 - merge conflicts exist,
 - the change is security-sensitive (see `rules/security.md`); a PR that changes
@@ -311,7 +291,6 @@ Follow the project's branch, PR, and remote conventions.
 Agents must NOT execute destructive Git commands without explicit authorization.
 
 Examples include:
-
 ```bash
 git reset --hard
 git clean -fd
@@ -343,7 +322,6 @@ Prefer the least disruptive approach.
 Only merge when the workflow requires integration.
 
 Before merging:
-
 1. Ensure the source branch is complete.
 2. Verify tests.
 3. Review the diff.
@@ -351,7 +329,6 @@ Before merging:
 5. Understand conflicting changes.
 
 After merging:
-
 1. Run relevant tests.
 2. Check Git status.
 3. Inspect the final diff.
@@ -362,7 +339,6 @@ After merging:
 # 16. Merge Conflicts
 
 When conflicts occur:
-
 1. Identify the conflicting files.
 2. Understand both sides.
 3. Determine intended behavior.
@@ -378,7 +354,6 @@ If the correct resolution is ambiguous, escalate to the appropriate agent or hum
 # 17. Multi-Agent Integration
 
 For workflows such as:
-
 ```text
 Agent A ──┐
 Agent B ──┼──→ Integration
@@ -386,7 +361,6 @@ Agent C ──┘
 ```
 
 Each agent should:
-
 1. Work independently.
 2. Keep changes isolated.
 3. Complete implementation.
@@ -402,7 +376,6 @@ The integration agent is responsible for resolving interactions between implemen
 # 18. Independent Compare Workflow
 
 For independent implementation comparison:
-
 ```text
 Task
  ├── Agent A → Worktree A
@@ -418,7 +391,6 @@ Task
 Do not expose one implementation to the other before independent implementation is complete.
 
 Compare:
-
 * Correctness
 * Requirements
 * Architecture
@@ -434,7 +406,6 @@ The selected implementation must still pass final verification.
 # 19. Review Workflow
 
 For Build → Review workflows:
-
 ```text
 Builder
    ↓
@@ -454,7 +425,6 @@ Final Diff
 The Reviewer should review the actual Git diff whenever possible.
 
 Review findings should reference:
-
 * File
 * Relevant code
 * Problem
@@ -466,7 +436,6 @@ Review findings should reference:
 # 20. Do Not Hide Changes
 
 Agents must not:
-
 * Modify history to hide mistakes
 * Delete evidence of changes
 * Rewrite another agent's commits without reason
@@ -479,7 +448,6 @@ Git history should remain understandable and reviewable.
 # 21. Pull / Sync
 
 Before synchronizing with the main branch:
-
 1. Check current branch.
 2. Check working tree.
 3. Ensure local changes are safe.
@@ -494,14 +462,12 @@ Do not blindly pull or merge when the working tree contains unknown changes.
 # 22. Final Git Verification
 
 Before declaring a task complete:
-
 ```bash
 git status
 git diff
 ```
 
 Verify:
-
 * Correct branch
 * Expected files changed
 * No unrelated files changed
@@ -516,7 +482,6 @@ Verify:
 # 23. Agent Handoff
 
 When handing work to another agent, report:
-
 ```text
 Branch:
 Worktree:
@@ -547,7 +512,6 @@ This allows the next agent to continue without reconstructing the previous agent
 # 24. Human Approval
 
 Human approval is required before:
-
 * Destructive Git operations
 * Force push
 * Deleting important branches

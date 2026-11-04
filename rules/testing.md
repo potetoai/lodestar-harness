@@ -10,7 +10,6 @@ Scope: All projects using Lodestar-harness
 Define global testing and verification principles for all projects.
 
 These rules apply to:
-
 * Builder
 * Frontend
 * Backend
@@ -28,7 +27,6 @@ The goal is to ensure that completed work is verified rather than assumed to be 
 Never report a task as complete without appropriate verification.
 
 Verification should be proportional to:
-
 * Change size
 * Risk
 * Architecture impact
@@ -45,7 +43,6 @@ Large or high-risk changes require broader verification.
 # 2. Test Before Claiming Completion
 
 An agent must not claim:
-
 * "Tests pass"
 * "Build passes"
 * "Feature works"
@@ -54,7 +51,6 @@ An agent must not claim:
 unless the relevant verification was actually performed.
 
 If verification cannot be performed, explicitly report:
-
 * What was not tested
 * Why it could not be tested
 * What remains uncertain
@@ -72,7 +68,6 @@ Possible levels:
 Use for very small or low-risk changes.
 
 Examples:
-
 * Type checking
 * Linting
 * Formatting
@@ -83,7 +78,6 @@ Examples:
 Use when a specific function, component, module, or feature changes.
 
 Examples:
-
 * Unit test
 * Component test
 * API test
@@ -93,7 +87,6 @@ Examples:
 Use when multiple modules interact.
 
 Examples:
-
 * API + database
 * Frontend + backend
 * Service + external dependency
@@ -103,7 +96,6 @@ Examples:
 Use when user flows or critical system behavior are affected.
 
 Examples:
-
 * Login
 * Checkout
 * Payment
@@ -114,7 +106,6 @@ Examples:
 Use for high-risk or major changes.
 
 May include:
-
 * Unit tests
 * Integration tests
 * End-to-end tests
@@ -213,7 +204,6 @@ automatically; when unsure, select it.
 
 **When a test or criterion turns out wrong mid-task** (a misread criterion,
 the owner changes their mind, a test that cannot work):
-
 1. The builder stops and tells the owner in plain words what is wrong.
 2. If the owner agrees, update the criteria in the plan and ask for the
    approval word again. This opens a relock window: the tester may rewrite the
@@ -232,7 +222,6 @@ the owner changes their mind, a test that cannot work):
 CI fails a pull request that changes a file in `sensitive_paths` without
 changing any test file. When a change truly needs no new test (a comment, a
 rename), add a trailer to the commit with the reason:
-
 ```
 No-Test-Reason: only fixes a typo in a comment
 ```
@@ -264,7 +253,6 @@ it locally on a clean tree: `make test-mutation FILES="app/money.py"`.
 Before changing complex functionality, identify existing tests.
 
 Determine:
-
 * What behavior is already covered
 * What behavior is not covered
 * Which tests are relevant to the change
@@ -280,7 +268,6 @@ If existing tests are incorrect, document why they need to change.
 New functionality should normally include appropriate tests.
 
 Tests should cover:
-
 * Expected behavior
 * Important edge cases
 * Failure cases
@@ -294,7 +281,6 @@ The exact test type depends on the project's architecture.
 # 6. Bug Fixes
 
 When fixing a reproducible bug:
-
 1. Understand the failure.
 2. Reproduce it when possible.
 3. Identify the root cause.
@@ -310,7 +296,6 @@ A bug fix without regression protection should be treated as higher risk.
 # 7. Edge Cases
 
 Tests should consider relevant edge cases such as:
-
 * Empty input
 * Null/undefined values
 * Invalid input
@@ -332,7 +317,6 @@ Do not test hypothetical edge cases that have no meaningful relationship to the 
 Do not test only the happy path.
 
 When failure handling is part of the feature, verify:
-
 * Error detection
 * Error propagation
 * User-facing behavior
@@ -344,7 +328,6 @@ When failure handling is part of the feature, verify:
 # 9. Frontend Testing
 
 For frontend changes, consider:
-
 * Rendering
 * User interaction
 * State transitions
@@ -364,7 +347,6 @@ Do not rely exclusively on snapshots for behavior-heavy components.
 # 10. Backend Testing
 
 For backend changes, consider:
-
 * Request validation
 * Business logic
 * API responses
@@ -381,7 +363,6 @@ Critical business logic should have direct automated coverage where practical.
 # 11. Database Changes
 
 For database-related changes, verify:
-
 * Migration succeeds
 * Existing data remains valid
 * Constraints behave correctly
@@ -398,7 +379,6 @@ Never run destructive database operations against real environments without expl
 Use integration tests when correctness depends on multiple components working together.
 
 Examples:
-
 ```text
 Frontend
     ↓
@@ -410,7 +390,6 @@ Database
 ```
 
 or:
-
 ```text
 Application
     ↓
@@ -426,7 +405,6 @@ Unit tests alone may not detect integration failures.
 Use E2E testing for important user-facing flows when appropriate.
 
 Typical examples:
-
 * Authentication
 * Registration
 * Checkout
@@ -443,7 +421,6 @@ E2E tests should focus on meaningful user behavior rather than implementation de
 Tests should be as independent as practical.
 
 Avoid:
-
 * Hidden dependency between tests
 * Shared mutable state
 * Test-order dependence
@@ -458,7 +435,6 @@ If shared setup is necessary, keep it explicit.
 Tests should produce predictable results.
 
 Avoid unnecessary dependence on:
-
 * Current time
 * Randomness
 * External services
@@ -474,7 +450,6 @@ When such dependencies are required, isolate or control them where practical.
 Do not make normal unit tests depend on unreliable external services.
 
 Prefer:
-
 * Mocks
 * Stubs
 * Fakes
@@ -487,7 +462,6 @@ Use real integrations for integration/E2E testing when appropriate.
 # 17. Test Data
 
 Test data should be:
-
 * Minimal
 * Understandable
 * Relevant
@@ -502,7 +476,6 @@ Do not include real secrets or sensitive production data in tests.
 # 18. Test Failures
 
 When a test fails:
-
 1. Determine whether the failure is caused by the change.
 2. Identify the root cause.
 3. Fix the implementation if necessary.
@@ -517,7 +490,6 @@ Never modify a test merely to make a failing implementation pass.
 # 19. Flaky Tests
 
 If a test is flaky:
-
 * Identify the source of nondeterminism.
 * Do not simply retry indefinitely.
 * Do not disable the test without documenting why.
@@ -534,7 +506,6 @@ Coverage percentage is a signal, not the objective.
 Do not optimize for coverage numbers alone.
 
 Prioritize coverage of:
-
 * Business-critical logic
 * High-risk paths
 * Complex logic
@@ -550,7 +521,6 @@ A high coverage percentage does not guarantee correct behavior.
 Do not perform performance optimization or benchmarking without a relevant reason.
 
 When performance matters:
-
 * Define the metric.
 * Establish a baseline.
 * Make the change.
@@ -564,7 +534,6 @@ Do not claim performance improvement without measurement.
 # 22. Architecture Changes
 
 For significant architecture changes, testing should verify:
-
 * Existing behavior
 * New behavior
 * Module boundaries
@@ -579,7 +548,6 @@ Architectural changes should generally receive broader verification than ordinar
 # 23. Reviewer Testing Responsibility
 
 The Reviewer should verify that:
-
 * Appropriate tests exist
 * Tests cover important behavior
 * Tests are meaningful
@@ -587,7 +555,6 @@ The Reviewer should verify that:
 * Relevant verification was actually executed
 
 The Reviewer should distinguish between:
-
 * Missing tests
 * Incorrect tests
 * Failing tests
@@ -600,7 +567,6 @@ The Reviewer should distinguish between:
 QA should focus on behavior from the user's perspective.
 
 QA should verify where applicable:
-
 * Main user flow
 * Edge cases
 * Error states
@@ -618,7 +584,6 @@ QA should not duplicate every unit test.
 # 25. Verification Report
 
 When completing a task, report verification in a concise format:
-
 ```text
 Verification
 
@@ -653,7 +618,6 @@ If verification fails:
 Do not report the task as complete.
 
 Instead:
-
 1. Investigate.
 2. Fix if within scope.
 3. Re-run verification.
@@ -666,7 +630,6 @@ For a workflow containing multiple agents, return the task to the appropriate im
 # 27. Verification Loop
 
 For tasks requiring iterative debugging:
-
 ```text
 Implement
     ↓
@@ -682,7 +645,6 @@ Test again
 ```
 
 Repeat until:
-
 * Verification passes
 * The issue is proven unrelated
 * The issue requires human decision

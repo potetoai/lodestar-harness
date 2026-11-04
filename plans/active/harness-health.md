@@ -164,7 +164,8 @@ Done when: `plans/active/behavior-evals.md` is merged.
 - **Q1 (phase 2):** may a hook be removed when CI checks the same thing,
   accepting that the fault shows later (at PR time, not at the command)?
   Recommended: yes for faults CI blocks before merge; no for faults that
-  cannot be undone (push to main, a forged approval).
+  cannot be undone (push to main, a forged approval). **Answered
+  2026-10-23: yes, as recommended** (decision log).
 - **Q2 (phase 3):** after one report, make it a maintenance step, or stop?
   Decide after seeing the numbers.
 
