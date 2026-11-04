@@ -138,7 +138,7 @@ Use this guide as an index, not a new tracking application. Before an activity s
 
 | Activity | Owner / capacity | Start / check / stop | Evidence source | Status |
 |---|---|---|---|---|
-| S1 | Agent works, owner approves; Normal (4 h/week) | Start 2026-11-04 / check 2026-12-04 / stop 2026-12-25 | De-identified summaries indexed here; raw transcripts/code in private consented storage | Week 1 audit done ([s1-week1-audit.md](s1-week1-audit.md)); Week 2 waits for owner |
+| S1 | Agent works, owner approves; Normal (4 h/week) | Start 2026-11-04 / check 2026-12-04 / stop 2026-12-25 | De-identified summaries indexed here; raw transcripts/code in private consented storage | Week 1 audit done ([s1-week1-audit.md](s1-week1-audit.md)); Week 2 in progress |
 | S2–S4 | Unassigned | Not started; instantiate 04 formulas per stage | Not collected | Strategy only |
 | Benchmark cohorts | Allocation not selected | Not started | Required manifest/run records below | No runs authorized by this document |
 | C1 Optional commercial gate (07) | Unassigned | Not started; instantiate +30 / +51 if activated | No demand records | Deferred |
@@ -156,6 +156,7 @@ Minimum record shapes (reuse an existing issue, PR attachment or consented local
 | 2026-11-04 | Revision 2.1 | Nine-file strategy and independent review completed; PR #141 |
 | 2026-11-04 | S1 start | Capacity, owner, dates and evidence storage recorded; PR #144 |
 | 2026-11-04 | S1 week 1 | Repository audit: [s1-week1-audit.md](s1-week1-audit.md); PR #146 |
+| 2026-11-04 | S1 week 2 step 1 | README quick start; PR #147 |
 
 ## Decision log
 
@@ -167,3 +168,4 @@ Minimum record shapes (reuse an existing issue, PR attachment or consented local
 | 2026-11-04 | Add the C1 data-gate table and require recent use as well as historical retention for S3 | Independent review of #141 found two minor gaps in gate format and evidence freshness |
 | 2026-11-04 | Delete the untracked v2.0 draft; 2.1 is the only strategy | Owner chose 2.1 and asked to remove the unused version |
 | 2026-11-04 | Start S1: Normal capacity, agent works and owner approves, evidence as de-identified summary plus private raw storage | Owner choice; outreach still needs the owner's separate go. Owner does not yet know where to find pilots: the week 1 audit lists candidate channels |
+| 2026-11-04 | Go for Week 2 docs work; pilot observer option A (agent scores against written criteria, owner reads the summary); GitHub private vulnerability reporting turned on | Owner choice after the week 1 audit (sections 7, 8; F4) |
