@@ -156,6 +156,7 @@ Minimum record shapes (reuse an existing issue, PR attachment or consented local
 | 2026-11-04 | Revision 2.1 | Nine-file strategy and independent review completed; PR #141 |
 | 2026-11-04 | S1 start | Capacity, owner, dates and evidence storage recorded; PR #144 |
 | 2026-11-04 | S1 week 1 | Repository audit: [s1-week1-audit.md](s1-week1-audit.md); PR #146 |
+| 2026-11-04 | S1 week 2 step 1 | README quick start; PR #147 |
 
 ## Decision log
 
