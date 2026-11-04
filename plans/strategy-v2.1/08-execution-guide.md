@@ -152,7 +152,7 @@ Minimum record shapes (reuse an existing issue, PR attachment or consented local
 
 | Date | Phase | Note |
 |---|---|---|
-| 2026-11-04 | Revision 2.1 | Nine-file strategy revision prepared; PR pending |
+| 2026-11-04 | Revision 2.1 | Nine-file strategy and independent review completed; PR #141 |
 
 ## Decision log
 
@@ -161,3 +161,4 @@ Minimum record shapes (reuse an existing issue, PR attachment or consented local
 | 2026-11-04 | Preserve v2.0 and create a separate v2.1; no implementation changes | Owner requested the revised plan after reviewing the six improvements and additional constraints |
 | 2026-11-04 | Keep existing plan ownership, gate dates and verified runtime evidence | Avoid duplicated work, interrupted measurements and unsupported support claims |
 | 2026-11-04 | Use a staged, capped benchmark; commercial exploration remains optional | Owner requested a plan executable by a solo maintainer or small team; budget and demand remain unvalidated |
+| 2026-11-04 | Add the C1 data-gate table and require recent use as well as historical retention for S3 | Independent review of #141 found two minor gaps in gate format and evidence freshness |
