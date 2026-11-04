@@ -4,7 +4,7 @@
 
 **Purpose:** A practical, evidence-led plan for making Lodestar useful, adoptable, differentiated, and sustainable.
 
-**Status:** strategy revision; pilot, benchmark, compatibility-tier activation and commercial work are not yet executed. Revision 2.0 remains unchanged in `plans/active/lodestar-strategy-plans-v2/`. This directory is the canonical home for the revised strategy; existing execution plans retain their authority.
+**Status:** strategy revision; pilot, benchmark, compatibility-tier activation and commercial work are not yet executed. Revision 2.0 was an untracked draft, deleted on 2026-11-04 after the owner chose 2.1. This directory is the canonical home for the revised strategy; existing execution plans retain their authority.
 
 ## Strategic thesis
 
