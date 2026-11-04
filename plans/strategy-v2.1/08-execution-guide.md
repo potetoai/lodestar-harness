@@ -157,6 +157,7 @@ Minimum record shapes (reuse an existing issue, PR attachment or consented local
 | 2026-11-04 | S1 start | Capacity, owner, dates and evidence storage recorded; PR #144 |
 | 2026-11-04 | S1 week 1 | Repository audit: [s1-week1-audit.md](s1-week1-audit.md); PR #146 |
 | 2026-11-04 | S1 week 2 step 1 | README quick start; PR #147 |
+| 2026-11-04 | S1 week 2 step 2 | Setup guide: where tested, removal steps verified on a scratch project and home; PR #148 |
 
 ## Decision log
 

@@ -4,6 +4,19 @@ Step-by-step guide for a Windows machine. Do it once per machine. On a
 machine that is already set up, run only step 3 as a health check: the script
 only reports and changes nothing.
 
+## Where this is tested
+
+Facts only; no support promise beyond them.
+
+| Environment | What is tested | How |
+|---|---|---|
+| Windows 11, Git Bash (Git for Windows) | Full setup and daily use | The maintainer's machine. Last checked 2026-11-04: Git 2.55.0, Claude Code 2.1.318, Codex 0.166.0 |
+| Linux (GitHub `ubuntu-latest`) | Self-test only (`enforcement/test.sh`) and doc links | CI on every pull request and push to `main`. No machine setup |
+| macOS, desktop Linux, WSL | Nothing recorded | `setup-machine.sh` is written to run in any bash and skips the Windows-only steps (winget, user `PATH`); install `make` and `jq` yourself (`brew` or `apt`). If you try one, report the result as a GitHub issue |
+
+Codex hook parity is checked by hand; see the
+[runtime parity guide](runtime-parity.md) for the version it was verified on.
+
 ## Step 1: Install the base software (by hand, once)
 
 | Software | What for | Where to get it |
@@ -128,3 +141,98 @@ billed turn-one number (first bullet above).
 - After updating lodestar-harness (`git pull`): the Lodestar part of
   `~/.claude/CLAUDE.md` may have a new version.
 - When you suspect a problem with the machine: use `--check` to diagnose.
+
+## Remove Lodestar
+
+Nothing here is undone by a script. Each step names exactly what Lodestar
+wrote; remove only that and keep your own content. Run the commands in
+Git Bash. A filter used below drops hook entries whose command matches a
+pattern, and drops groups and events it leaves empty:
+
+```bash
+drop_hooks() {   # drop_hooks FILE PATTERN
+  jq --arg re "$2" 'if .hooks then .hooks |= (map_values(map(.hooks |= map(select((.command // "") | test($re) | not))) | map(select(.hooks | length > 0))) | with_entries(select(.value | length > 0))) else . end' "$1" > "$1.new" && mv "$1.new" "$1"
+}
+```
+
+### From a project
+
+Do it on a branch and merge it with a pull request, like any change.
+`bootstrap.sh` wrote these; `[managed]` files are Lodestar's, `[project]`
+files became yours when it created them.
+
+1. Hook registrations, in `.claude/settings.json` (Claude) and
+   `.codex/hooks.json` (Codex). Delete a file if nothing else is left in it
+   (`{"hooks": {}}` or `{}`).
+
+   ```bash
+   drop_hooks .claude/settings.json '\.claude/hooks/(protect-tests|sensitive-gate|critic-limit|guard-install|lint-file|verify-before-stop|feedback-check|approval-record)\.sh'
+   [ -f .codex/hooks.json ] && drop_hooks .codex/hooks.json '\.claude/hooks/codex-hook\.sh'
+   ```
+
+2. `[managed]` hook scripts and CI:
+
+   ```bash
+   cd .claude/hooks && rm -f lodestar-lib.sh lint-file.sh verify-before-stop.sh protect-tests.sh sensitive-gate.sh guard-install.sh approval-record.sh critic-limit.sh feedback-check.sh ci-checks.sh doctor.sh merge-pr.sh pre-push.sh reminder-lib.sh codex-owner.jq codex-hook.sh codex-patch.jq && cd ../..
+   git rm .github/workflows/ci.yml   # or keep it as your own CI
+   ```
+
+3. Lodestar records in `.ai/`: `enforcement.json`, `last-maintenance`,
+   and, if present, `approvals.log` and `test-lock`.
+4. `[project]` files: `AGENTS.md` (your `CLAUDE.md` was moved there, if you
+   had one), `.ai/project.md`, `.ai/invariants.md`, `.ai/feedback-log.md`,
+   `.ai/tech-debt.md`, `.ai/plans/`, and the stack files it created
+   (`Makefile`, `.gitignore`, `requirements-dev.txt`; it never overwrote a
+   file you already had). Keep what you use; delete the rest.
+5. Small lines, harmless to keep: `.ai/handoff.md` in `.gitignore`;
+   `*.sh text eol=lf` (or `* text=auto eol=lf` in a repo that had no commits)
+   in `.gitattributes`; `.claude/` and `.codex/` in `.prettierignore`;
+   `.nvmrc` or `.python-version`.
+6. Local only, in every clone (git does not commit these):
+
+   ```bash
+   gd=$(git rev-parse --git-common-dir)
+   grep -q 'Managed by lodestar-harness' "$gd/hooks/pre-push" 2>/dev/null && rm "$gd/hooks/pre-push"
+   rm -rf "$(git rev-parse --absolute-git-dir)"/lodestar-*
+   ```
+
+   A `pre-push` hook that is not Lodestar's only had one line added by you:
+   `bash .claude/hooks/pre-push.sh "$@" || exit 1`. Delete that line.
+
+### From the machine
+
+1. The Lodestar block in `~/.claude/CLAUDE.md` and, for Codex,
+   `~/.codex/AGENTS.md` (and `$CODEX_HOME/AGENTS.md` if you set
+   `CODEX_HOME`). Delete a file if the block was all it held.
+
+   ```bash
+   for f in ~/.claude/CLAUDE.md ~/.codex/AGENTS.md ${CODEX_HOME:+"$CODEX_HOME/AGENTS.md"}; do
+     [ -f "$f" ] && sed -i '/<!-- lodestar-harness:begin/,/<!-- lodestar-harness:end -->/d' "$f"
+   done
+   ```
+
+2. Global hooks, in `~/.claude/settings.json` and each Codex home's
+   `hooks.json`. Delete a `hooks.json` left as `{"hooks": {}}`.
+
+   ```bash
+   drop_hooks ~/.claude/settings.json '(check-readiness|context-nudge)\.sh"'
+   for f in ~/.codex/hooks.json ${CODEX_HOME:+"$CODEX_HOME/hooks.json"}; do
+     [ -f "$f" ] && drop_hooks "$f" 'codex-global-hook\.sh"'
+   done
+   ```
+
+3. Reminder state and the bug inbox:
+   `rm -rf ~/.lodestar ~/.claude/lodestar-state ~/.codex/lodestar-state`
+   (and `$CODEX_HOME/lodestar-state`).
+4. Backups the setup made before each change: `CLAUDE.md.bak`,
+   `settings.json.bak`, `AGENTS.md.bak`, `hooks.json.bak`, next to each
+   file. They hold your file as it was before the last change (which may
+   include an older Lodestar block). Delete them when you no longer need
+   them.
+5. Windows only. Setup added Git Bash, `make` and `jq` to your user `PATH`
+   and may have installed `make` and `jq` with winget. Other tools use them,
+   so keeping them is fine. To remove: `winget uninstall --id ezwinports.make`
+   and `winget uninstall --id jqlang.jq`; edit the user `PATH` in Windows
+   "Edit environment variables for your account".
+6. Delete the lodestar-harness folder, then restart Claude Code (and Orca,
+   Codex).
