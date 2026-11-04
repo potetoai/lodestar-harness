@@ -10,7 +10,7 @@ Facts only; no support promise beyond them.
 
 | Environment | What is tested | How |
 |---|---|---|
-| Windows 11, Git Bash (Git for Windows) | Full setup and daily use | The maintainer's machine. Last checked 2026-11-04: Git 2.55.0, Claude Code 2.1.318, Codex 0.166.0 |
+| Windows 11, Git Bash (Git for Windows) | Full setup and daily use | The maintainer's machine. Last checked 2026-11-04: Git 2.55.0, Claude Code 2.1.318, Codex 0.166.0; fresh-clone run in step 5 |
 | Linux (GitHub `ubuntu-latest`) | Self-test only (`enforcement/test.sh`) and doc links | CI on every pull request and push to `main`. No machine setup |
 | macOS, desktop Linux, WSL | Nothing recorded | `setup-machine.sh` is written to run in any bash and skips the Windows-only steps (winget, user `PATH`); install `make` and `jq` yourself (`brew` or `apt`). If you try one, report the result as a GitHub issue |
 
@@ -60,7 +60,8 @@ The script checks each item and prints a ✅ / ⚠️ / ❌ table:
   Claude uses its settings file; Codex uses `hooks.json` in its homes.
   Claude remains the default agent in Orca; these registrations do not
   change the default provider or model.
-- It runs the self-test (1–2 minutes).
+- It runs the self-test: 1–2 minutes on Linux CI, about 17 minutes on the
+  Windows machine recorded in step 5.
 
 Items already in place show ✅ and are skipped. Running it again is always
 safe.
@@ -94,6 +95,45 @@ jq --version
 
 Then, from the project folder, `make verify` and
 `bash .claude/hooks/doctor.sh` run directly.
+
+## Step 5: A first task (example)
+
+A small Python project (`greet.py` and one test in `tests/`), already a git
+repository. Open Claude Code in it and ask for one task, for example:
+
+> `greet('')` should return `Hello there`; add a test.
+
+1. **Onboarding comes first.** The project is not ready yet, so the agent runs
+   [onboarding](../workflows/onboarding.md): `bootstrap.sh <project> --stack
+   python` adds the hooks, CI and `.ai/` files; the agent fills `AGENTS.md`,
+   `.ai/project.md` and `.ai/invariants.md`, asks you about the project and
+   asks you to approve the invariants; `make setup` creates `.venv`. It ends
+   when `bash .claude/hooks/doctor.sh` prints `Ready`. Two warnings can stay:
+   Codex hook trust (only if you use Codex) and branch protection (a GitHub
+   setting).
+2. **Then the task.** The agent writes the failing test first, changes
+   `greet.py`, runs `make verify`, and commits on a branch. It opens a pull
+   request when the project has a GitHub remote.
+3. **What the hooks do on the way.** You do not run them; Claude Code does.
+   Each file edit is linted (`lint-file.sh`). A session cannot finish while
+   `make verify` fails (`verify-before-stop.sh`). Commands that skip checks
+   are blocked, for example `git commit --no-verify`:
+   `Blocked: --no-verify (or commit -n) skips the project's git hooks.`
+
+Record (2026-11-04, Windows 11, Git 2.55.0, Claude Code 2.1.318, Python
+3.12.10): fresh clone of `main` at `9a0e91f`; `setup-machine.sh` run against
+an empty scratch home printed `Ready: 0 warning(s)` and `self-test: 805
+checks passed`. On a scratch project, `bootstrap.sh` was run by hand, then
+one Claude Code session did the rest of onboarding and the task, with the
+owner's questions skipped (the agent marked its invariants "draft; owner to
+review"). Doctor `Ready`; 17 turns, about $0.51. Claude Code ran with the
+maintainer's own home (set up the same way), because its login lives there.
+The session transcript shows these hooks ran: the global readiness hook
+(session start, prompt), `lint-file.sh` after a file write,
+`verify-before-stop.sh` and `feedback-check.sh` at stop. A second short
+session (model Haiku) showed `guard-install.sh` blocking `--no-verify`. The
+other guards (`protect-tests.sh`, `sensitive-gate.sh`) leave no trace when
+they allow a change; no block by them was exercised.
 
 ## Optional: compact long sessions earlier
 

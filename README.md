@@ -26,7 +26,7 @@ For a person setting it up:
 2. **Open Claude Code in your project** and ask for a task. In a project that
    is not ready yet, the agent first runs
    [onboarding](workflows/onboarding.md); after that, each task goes through
-   the Router.
+   the Router. The setup guide's step 5 walks through a first task.
 3. **Approve when asked.** Some steps wait for you, such as merging a pull
    request that changes safety files. Start your own message with `approve`
    or `duyệt`, for example `approve merge PR 12`.
