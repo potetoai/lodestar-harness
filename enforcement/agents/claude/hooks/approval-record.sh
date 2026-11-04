@@ -32,9 +32,11 @@ grep -qE '(chưa|chua|không|khong|đừng|dung|not|don.t|do not)[[:space:]]+(du
 # PR 6" approve nothing. Only the first "merge" of a line counts ("không
 # merge PR 6"). Each line that itself starts with the approval word is one
 # approval ("duyệt merge PR 1" / "duyệt merge PR 2" on two lines approves both);
-# other lines approve nothing.
+# other lines approve nothing. After the first line, a quoted or bulleted line
+# ("> duyệt merge PR 9", from a pasted prompt) is not the owner's own words.
+first=1
 nums=$(while IFS= read -r line; do
-  ls=${line#"${line%%[![:space:][:punct:]]*}"}
+  if [ $first = 1 ]; then ls=$start; first=0; else ls=${line#"${line%%[![:space:]]*}"}; fi
   grep -qE '^(duyệt|duyet|approve|approved)([^[:alpha:]]|$)' <<<"$ls" || continue
   grep -qE '(chưa|chua|không|khong|đừng|dung|not|don.t|do not)[[:space:]]+(duyệt|duyet|approve)' <<<"$ls" && continue
   grep -oE '(^|[^[:alpha:]])merge[[:space:]]+(pr[[:space:]]*#?|#)[0-9]+([[:space:]]*(,|and|và|&)[[:space:]]*(pr[[:space:]]*#?|#)?[0-9]+)*' <<<"$ls" |
