@@ -154,7 +154,7 @@ Minimum record shapes (reuse an existing issue, PR attachment or consented local
 | Date | Phase | Note |
 |---|---|---|
 | 2026-11-04 | Revision 2.1 | Nine-file strategy and independent review completed; PR #141 |
-| 2026-11-04 | S1 start | Capacity, owner, dates and evidence storage recorded; PR TBD |
+| 2026-11-04 | S1 start | Capacity, owner, dates and evidence storage recorded; PR #144 |
 
 ## Decision log
 
