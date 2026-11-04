@@ -454,7 +454,7 @@ this plan to `plans/completed/`, once phase 5c is merged or dropped.
 | 2026-11-03 | 0b | Ideas 36-47 rated (Lodestar OS idea, DESIGN:OS, App01 report, 2026 lists); adoption rule and template table, #131 |
 | 2026-11-03 | 5b | Skill trial with baseline, KEEP / MODIFY / DROP bars, vn30 LSP pre-check, #132 |
 | 2026-11-03 | 5b | vn30 LSP pre-check: 226 app errors, idea 45 dropped, #133 |
-| 2026-11-04 | 3b | Idea 48 (App01 design-review report) rated: folded into phase 3b, PR pending |
+| 2026-11-04 | 3b | Idea 48 (App01 design-review report) rated: folded into phase 3b, #140 |
 
 ## 8. Decision log
 
