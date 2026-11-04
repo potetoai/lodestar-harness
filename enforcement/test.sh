@@ -921,15 +921,11 @@ recm "approve merge #9 and #10" def456 >/dev/null; t "'approve merge #9 and #10'
 rm "$p/.ai/approvals.log"
 recm "duyệt merge PR 5, xem issue #12, nhưng không merge PR 6 vội" def456 >/dev/null; t "a merge approval records only the PR named right after 'merge'" bash -c 'grep -q " merge-pr 5 def456$" "$1" && [ $(wc -l < "$1") = 1 ]' _ "$p/.ai/approvals.log"
 rm "$p/.ai/approvals.log"
-recm 'duyệt merge pr 141
-duyệt merge pr 142' def456 >/dev/null; t "two 'duyệt merge PR' lines in one message record both PRs" bash -c 'grep -q " merge-pr 141 def456$" "$1" && grep -q " merge-pr 142 def456$" "$1" && [ $(wc -l < "$1") = 2 ]' _ "$p/.ai/approvals.log"
+recm 'duyệt merge pr 141\nduyệt merge pr 142' def456 >/dev/null; t "two 'duyệt merge PR' lines in one message record both PRs" bash -c 'grep -q " merge-pr 141 def456$" "$1" && grep -q " merge-pr 142 def456$" "$1" && [ $(wc -l < "$1") = 2 ]' _ "$p/.ai/approvals.log"
 rm "$p/.ai/approvals.log"
-recm 'duyệt merge PR 5
-merge PR 6 nữa' def456 >/dev/null; t "a line without the approval word approves no merge" bash -c 'grep -q " merge-pr 5 def456$" "$1" && [ $(wc -l < "$1") = 1 ]' _ "$p/.ai/approvals.log"
+recm 'duyệt merge PR 5\nmerge PR 6 nữa' def456 >/dev/null; t "a line without the approval word approves no merge" bash -c 'grep -q " merge-pr 5 def456$" "$1" && [ $(wc -l < "$1") = 1 ]' _ "$p/.ai/approvals.log"
 rm "$p/.ai/approvals.log"
-recm 'duyệt merge PR 5
-> duyệt merge PR 9
-- approve merge #8' def456 >/dev/null; t "a quoted or bulleted later line approves no merge" bash -c 'grep -q " merge-pr 5 def456$" "$1" && [ $(wc -l < "$1") = 1 ]' _ "$p/.ai/approvals.log"
+recm 'duyệt merge PR 5\n> duyệt merge PR 9\n- approve merge #8' def456 >/dev/null; t "a quoted or bulleted later line approves no merge" bash -c 'grep -q " merge-pr 5 def456$" "$1" && [ $(wc -l < "$1") = 1 ]' _ "$p/.ai/approvals.log"
 rm "$p/.ai/approvals.log"
 out=$(recm "duyệt merge PR 52" ""); t "a merge approval gh cannot read records nothing and says so" bash -c '[ ! -s "$2" ] && grep -q "could not read PR #52" <<<"$1"' _ "$out" "$p/.ai/approvals.log"
 # The lodestar-harness source repo has no .claude/hooks/ library: merge approvals only.
