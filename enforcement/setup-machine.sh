@@ -186,7 +186,7 @@ done
 # 5. Self-test: proves hooks, bootstrap and doctor work on this machine.
 if [ $selftest = 1 ]; then
   if command -v make >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
-    echo "   running the self-test (1-2 minutes)..."
+    echo "   running the self-test (1-2 minutes on Linux, up to ~20 on Windows)..."
     out=$(bash "$here/test.sh" 2>/dev/null); n=$(grep -c '^PASS' <<<"$out")
     if grep -q 'All tests passed' <<<"$out"; then ok "self-test: $n checks passed"
     else bad "self-test failed: $(grep '^FAIL' <<<"$out" | head -n3 | tr '\n' ' ')"; fi
