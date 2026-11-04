@@ -140,7 +140,7 @@ Use this guide as an index, not a new tracking application. Before an activity s
 |---|---|---|---|---|
 | S1–S4 | Unassigned; no capacity selected | Not started; instantiate 04 formulas per stage | Not collected | Strategy only |
 | Benchmark cohorts | Allocation not selected | Not started | Required manifest/run records below | No runs authorized by this document |
-| Optional commercial gate | Unassigned | Not started; +30 / +51 if activated | No demand records | Deferred |
+| C1 Optional commercial gate (07) | Unassigned | Not started; instantiate +30 / +51 if activated | No demand records | Deferred |
 
 Minimum record shapes (reuse an existing issue, PR attachment or consented local log; index its exact location above):
 

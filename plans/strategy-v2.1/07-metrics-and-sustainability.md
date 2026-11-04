@@ -77,7 +77,11 @@ The baseline sustainability model is a tightly bounded maintainer commitment sup
 
 After methodology, value, adoption and maintainable ecosystem practices have evidence, a team/enterprise offering may be explored. Possible hypotheses are paid onboarding/support or assistance adapting shared policy; these are not roadmap features. Require two unrelated organizations to describe the same paid problem, identify a buyer and budget range, and at least one concrete commitment to a scoped paid pilot before building commercial features. Survey enthusiasm alone is not willingness to pay. Prefer a bounded service experiment before product development, and account for sales/support time as maintenance cost.
 
-If commercial discovery is activated, record an owner, start date, evidence source and a gate: check at +30 days, stop at +51. At stop without the demand evidence above, defer commercial work; do not restrict the core to manufacture demand. This optional gate is currently not started (0 commitments recorded) and is not a dependency of S1–S4. No commercial experiment starts if it would push maintenance above the recorded capacity ceiling.
+If commercial discovery is activated, record an owner, capacity allocation, evidence source and actual calendar dates for C1 in [08](08-execution-guide.md). At stop without the demand evidence below, defer commercial work; do not restrict the core to manufacture demand. C1 is optional and is not a dependency of S1–S4. No commercial experiment starts if it would push maintenance above the recorded capacity ceiling.
+
+| Gate | Measure (source) | Minimum | Check | Stop | Status |
+|---|---|---|---|---|---|
+| C1 Commercial demand | Consented discovery records indexed in 08: organization independence, problem, buyer, budget range and paid-pilot commitment | Two unrelated organizations name the same paid problem, buyer and budget range; at least one concrete commitment to a scoped paid pilot | Recorded discovery start +30 days | Recorded discovery start +51 days | waiting (0 commitments recorded; not started) |
 
 ## License and contribution evidence
 

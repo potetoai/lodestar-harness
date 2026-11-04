@@ -51,10 +51,10 @@ Snapshot: 2026-11-04 at `ebf2587`. Recheck statuses before execution. These plan
 **Goal:** repeated independent use of the validated use case within a sustainable support budget.
 
 - **Minimum:** follow the existing cohort through the retention window, fix one recurring support problem, and decide whether continued external support is affordable.
-- **Normal:** at least three independently operated external projects show retained use, with at least two completing a later task without live help. Publish the proven walkthrough and common troubleshooting; accept small docs or example contributions.
+- **Normal:** at least three independently operated external projects show day-30–60 retention and each completes an accepted task in the 30 days ending at the S3 check, with at least two of those recent tasks completed without live help. Publish the proven walkthrough and common troubleshooting; accept small docs or example contributions.
 - **Stretch:** one outside contributor can maintain an example or a user-requested integration. Contributor recruitment is not a retention gate and no later stage depends on this stretch work.
 
-**Exit:** S3. Show the denominator, nonresponse and support burden. Attention or enthusiasm without a later real task does not pass.
+**Exit:** S3. Collect day-30–60 follow-ups when due during S1/S2, even if Stage 3 has not started. S3 checks current use as well as historical retention; recruit a later cohort only within capacity. Show the denominator, nonresponse and support burden. Attention or enthusiasm without a later real task does not pass.
 
 ## Stage 4 — Sustain the core and build an ecosystem (Months 10–12)
 
@@ -74,7 +74,7 @@ The owner records calendar dates at the start of each stage: `S1 start`, `S2 sta
 |---|---|---|---|---|---|
 | S1 Usability | Consented pilot task and repeat records indexed in 08; distinct external users, help received and task acceptance | 3 users complete; 2 repeat without live help; value and friction recorded | S1 start +30 | S1 start +51 | waiting (0 recorded; not started) |
 | S2 Value | Frozen benchmark manifest and all-run summary indexed in 08 | 3 tasks × A/B/C × 3 runs; apply 05's quality/supervision and complexity rule; all stopped/invalid runs disclosed | S2 start +30 | S2 start +51 | waiting (0 recorded; not started) |
-| S3 Retention | Eligible pilot cohort and day-30–60 follow-ups in 08, using 07's definitions | At least 3 eligible independent external projects retained; 2 later tasks without live help; 4 weeks of support within recorded ceiling | S3 start +60 | S3 start +81 | waiting (0 recorded; not started) |
+| S3 Retention | Eligible pilot cohort, day-30–60 follow-ups and accepted tasks in the 30 days ending at the check in 08, using 07's definitions | At least 3 eligible independent external projects retained and each active in that recent window; 2 recent tasks without live help; 4 weeks of support within recorded ceiling | S3 start +60 | S3 start +81 | waiting (0 recorded; not started) |
 | S4 Sustainability | Four-week hours log, release/recovery rehearsal and unresolved support list indexed in 08 | 4 weeks within capacity; one documented release or rehearsal; critical support issues resolved or affected scope explicitly withdrawn; continued external use documented in that window | S4 start +30 | S4 start +51 | waiting (0 recorded; not started) |
 
 At each check, log counts, exclusions and the next check date. At stop with insufficient use, treat the absence of use as evidence; narrow or stop. For other insufficient data, the owner explicitly chooses an extension, dropping the step or proceeding with thin evidence; record that limitation. Passing a gate does not automatically allocate the next stage's budget. A stage may start only after the previous gate passes or an explicit thin-data/narrowed-scope decision is logged. No new validation claim follows merely from stopping a gate.
