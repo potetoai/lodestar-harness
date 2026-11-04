@@ -193,27 +193,8 @@ Backend or server-side validation remains authoritative when applicable.
 
 # 10. Security
 
-Never introduce obvious security vulnerabilities.
-
-Pay particular attention to:
-* Authentication
-* Authorization
-* Input validation
-* Injection
-* Secrets
-* Sensitive data
-* File access
-* External URLs
-* Authentication tokens
-* Database queries
-
-Never hard-code:
-* API keys
-* Passwords
-* Access tokens
-* Private credentials
-
-Use the project's approved configuration or secret-management mechanism.
+Never introduce obvious security vulnerabilities. What to check, what never to
+hard-code, and when a security review is required: `rules/security.md`.
 
 ---
 
