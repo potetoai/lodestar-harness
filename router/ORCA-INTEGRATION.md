@@ -12,7 +12,6 @@
 This document defines how the Global Master Router integrates with Orca orchestration.
 
 The Router decides:
-
 * Which workflow to use.
 * Which agent roles are required.
 * Which specialized skills are useful.
@@ -20,7 +19,6 @@ The Router decides:
 * Whether work can run in parallel.
 
 Orca is responsible for:
-
 * Creating and managing Tasks.
 * Creating and managing Dispatches.
 * Starting workers.
@@ -48,7 +46,6 @@ The Router answers:
 > What should happen?
 
 The Router determines:
-
 ```text
 Task
   ↓
@@ -70,7 +67,6 @@ Orca answers:
 > How is that work coordinated and executed?
 
 Orca manages:
-
 ```text
 Run
   ↓
@@ -104,7 +100,6 @@ The system has two levels of configuration.
 ```
 
 Contains:
-
 ```text
 router/
 workflows/
@@ -124,7 +119,6 @@ These define how agents should work.
 Defines how the specific project works.
 
 Before significant implementation, the system should consider:
-
 1. Global Router.
 2. Selected Workflow.
 3. Relevant Agent Role.
@@ -137,7 +131,6 @@ Before significant implementation, the system should consider:
 # 4. Routing Process
 
 For every new user task:
-
 ```text
 User Task
     ↓
@@ -187,14 +180,12 @@ what the user agreed to, not what the Router assumed.
 ## SIMPLE
 
 Use when:
-
 * Scope is small.
 * Risk is low.
 * Dependencies are limited.
 * One worker can safely complete the task.
 
 Execution:
-
 ```text
 Router
   ↓
@@ -218,13 +209,11 @@ Normally use one Orca worker.
 ## BUILD_REVIEW
 
 Use when:
-
 * Implementation is meaningful.
 * Independent review provides useful confidence.
 * Architecture or regression risk is moderate.
 
 Execution:
-
 ```text
 Router
   ↓
@@ -254,13 +243,11 @@ Builder and Reviewer must have clearly defined ownership.
 ## INDEPENDENT_COMPARE
 
 Use when:
-
 * Multiple technically valid approaches are possible.
 * Comparing independent solutions provides meaningful value.
 * The task is important enough to justify additional work.
 
 Execution:
-
 ```text
 Router
         ↓
@@ -286,7 +273,6 @@ Independent workers should not see each other's solution before independent work
 ## COMPLEX
 
 Use when:
-
 * Architecture is affected.
 * Multiple modules are involved.
 * Investigation is required.
@@ -294,7 +280,6 @@ Use when:
 * Verification requirements are significant.
 
 Execution:
-
 ```text
 Router
    ↓
@@ -329,7 +314,6 @@ Use when the owner wants to see or try an idea before deciding
 (`router/ROUTER.md`, section 5 and Routing Rule 17).
 
 Execution:
-
 ```text
 Router
   ↓
@@ -352,7 +336,6 @@ own routing decision.
 Agent roles are logical responsibilities.
 
 Available roles:
-
 ```text
 architect
 builder
@@ -366,14 +349,12 @@ qa
 The Router selects roles.
 
 The Router must NOT permanently define:
-
 ```text
 Claude = Frontend
 Codex = Backend
 ```
 
 Instead:
-
 ```text
 Role
   ↓
@@ -383,7 +364,6 @@ Orca worker
 ```
 
 The actual model/agent selection may change according to:
-
 * Task requirements.
 * Availability.
 * Project constraints.
@@ -431,7 +411,6 @@ What evidence proves the Task is complete.
 This follows Orca's Task-spec contract.
 
 Example:
-
 ```text
 Target:
 front-end/src/features/auth/
@@ -463,7 +442,6 @@ the run finds things, not how much it reads or checks: the run still opens
 whatever a finding needs.
 
 Every brief holds:
-
 - the project root, as an absolute path;
 - the paths to read, with line ranges where only a part matters;
 - the commands already run, with their result;
@@ -471,7 +449,6 @@ Every brief holds:
   in one turn."
 
 On top of that, per role:
-
 - Critic (`agents/critic.md`): the plan file path, the criteria text in
   full, the paths the plan touches, and the data source it changes. The
   brief holds material only, not the author's reasons for the criteria.
@@ -492,7 +469,6 @@ the full one (measured 2026-10-16: tester runs reached 383k).
 The Router should translate workflow steps into Orca Dispatches.
 
 Conceptually:
-
 ```text
 Workflow Step
      ↓
@@ -518,7 +494,6 @@ Do not manually recreate lifecycle state that Orca already manages.
 Parallel execution is allowed only when tasks are sufficiently independent.
 
 Good:
-
 ```text
 Frontend implementation
         +
@@ -528,7 +503,6 @@ Backend implementation
 when the interfaces are already defined.
 
 Good:
-
 ```text
 Independent implementation A
         +
@@ -536,7 +510,6 @@ Independent implementation B
 ```
 
 Bad:
-
 ```text
 Architect
    ↓
@@ -558,7 +531,6 @@ Prefer parallel waves over unnecessarily deep chains.
 Every workflow must end with verification.
 
 Verification may include:
-
 ```text
 Static checks
 Focused tests
@@ -574,7 +546,6 @@ Browser QA
 The Router determines the required level.
 
 Relevant agents may perform verification:
-
 ```text
 Tester
 Reviewer
@@ -583,7 +554,6 @@ Builder
 ```
 
 Specialized capabilities may be added when useful:
-
 ```text
 Deep-Investigation → engineering verification
 Product/QA/Release → UI/browser/product verification
@@ -600,7 +570,6 @@ Completion requires evidence.
 A worker must report explicit success or failure.
 
 Expected lifecycle:
-
 ```text
 Worker
   ↓
@@ -616,7 +585,6 @@ Accepted Settlement
 ```
 
 The worker should not be considered complete based only on:
-
 * Terminal disappearance.
 * Timeout.
 * Lost connection.
@@ -630,7 +598,6 @@ Orca explicitly treats uncertain state as `unverifiable` and requires positive e
 # 13. Completion Accounting
 
 After a worker has successfully settled, exactly one lifecycle decision should follow:
-
 ```text
 Reuse
 OR
@@ -652,7 +619,6 @@ Orca's orchestration contract explicitly defines reuse, retention, and release a
 Workers may encounter uncertainty.
 
 Examples:
-
 * Requirement ambiguity.
 * Missing information.
 * Architecture conflict.
@@ -670,14 +636,12 @@ The Coordinator/Router should resolve the question and allow the worker to conti
 # 15. Failure Handling
 
 Failure must preserve:
-
 * Existing work.
 * Worker authority.
 * Evidence.
 * Current state.
 
 Do not automatically:
-
 * Retry.
 * Stop.
 * Abandon.
@@ -697,7 +661,6 @@ Workspace decisions belong to Orca's orchestration layer.
 The Router should describe the required ownership/isolation.
 
 Example:
-
 ```text
 Ownership:
 Modify only the authentication feature.
@@ -733,7 +696,6 @@ Password reset is authentication, so it is security-sensitive
 mode and needs a security review (`router/ROUTER.md`, Routing Rules 13 and 16).
 
 Router:
-
 ```text
 Lodestar route: BUILD_REVIEW risk=high
 
@@ -773,7 +735,6 @@ Authentication change; tests-first because it is security-sensitive.
 
 High risk, so the Router stops for the owner's approval of the route
 (Routing Approval Gate), then of the criteria. Orca then manages:
-
 ```text
 Criteria
   ↓
@@ -799,7 +760,6 @@ worker_done
 # 19. Core Principle
 
 The system has a strict separation of concerns:
-
 ```text
 USER
   ↓
@@ -861,7 +821,6 @@ Performs the actual work.
 Never build a second orchestration system beside Orca.
 
 Use the existing Orca orchestration primitives for:
-
 * Tasks
 * Dispatches
 * Workers
@@ -873,7 +832,6 @@ Use the existing Orca orchestration primitives for:
 * Cleanup
 
 Use `Lodestar-harness` for:
-
 * Routing decisions
 * Workflow definitions
 * Agent role definitions

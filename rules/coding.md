@@ -10,7 +10,6 @@ Scope: All projects using Lodestar-harness
 Define global coding principles for all agents that create, modify, or review code.
 
 These rules apply to:
-
 * Architect
 * Builder
 * Frontend
@@ -26,7 +25,6 @@ Project-specific coding conventions take precedence when explicitly defined in t
 # 1. Understand Before Changing
 
 Before modifying code, the agent MUST:
-
 1. Understand the task.
 2. Inspect relevant files.
 3. Identify existing patterns.
@@ -46,7 +44,6 @@ the whole file.
 Prefer the smallest change that correctly solves the task.
 
 Do not:
-
 * Refactor unrelated code
 * Rename unrelated files
 * Reformat unrelated files
@@ -61,7 +58,6 @@ A larger change is acceptable when the task or architecture requires it.
 # 3. Existing Code First
 
 Before creating new:
-
 * Components
 * Functions
 * Utilities
@@ -74,7 +70,6 @@ Before creating new:
 search the existing codebase.
 
 Prefer:
-
 1. Reuse
 2. Extend
 3. Refactor existing implementation
@@ -91,7 +86,6 @@ Names must clearly communicate intent.
 Prefer descriptive names over short names.
 
 Avoid meaningless names such as:
-
 * `data`
 * `temp`
 * `thing`
@@ -112,14 +106,12 @@ Do not introduce a new naming convention when an established convention already 
 Functions should have a clear responsibility.
 
 Prefer:
-
 * Small focused functions
 * Explicit inputs
 * Predictable outputs
 * Minimal side effects
 
 Avoid functions that simultaneously handle unrelated responsibilities such as:
-
 * Validation
 * Database access
 * Business logic
@@ -135,7 +127,6 @@ unless the project's architecture intentionally combines them.
 Avoid duplicated business logic.
 
 If the same logic appears repeatedly:
-
 1. Determine whether duplication is intentional.
 2. Check whether an existing abstraction already exists.
 3. Extract a shared abstraction only when it improves maintainability.
@@ -149,7 +140,6 @@ Do not create abstractions solely to eliminate a few lines of duplication.
 Introduce abstraction when it provides meaningful value.
 
 Good reasons include:
-
 * Multiple implementations
 * Complex business logic
 * Clear dependency boundary
@@ -158,7 +148,6 @@ Good reasons include:
 * Separation from infrastructure
 
 Avoid abstractions created only because:
-
 * "Clean Code" recommends them
 * A pattern usually uses them
 * Future requirements might need them
@@ -170,14 +159,12 @@ Avoid abstractions created only because:
 Errors must be handled intentionally.
 
 Do not:
-
 * Silently swallow errors
 * Ignore rejected promises
 * Catch exceptions without handling them
 * Return misleading success states
 
 Errors should:
-
 * Preserve useful diagnostic information
 * Be handled at the appropriate layer
 * Provide meaningful user-facing behavior where applicable
@@ -192,7 +179,6 @@ Follow the project's existing error-handling strategy.
 Validate data at appropriate boundaries.
 
 Examples:
-
 * User input
 * API requests
 * External service responses
@@ -210,7 +196,6 @@ Backend or server-side validation remains authoritative when applicable.
 Never introduce obvious security vulnerabilities.
 
 Pay particular attention to:
-
 * Authentication
 * Authorization
 * Input validation
@@ -223,7 +208,6 @@ Pay particular attention to:
 * Database queries
 
 Never hard-code:
-
 * API keys
 * Passwords
 * Access tokens
@@ -236,7 +220,6 @@ Use the project's approved configuration or secret-management mechanism.
 # 11. Dependencies
 
 Before adding a dependency:
-
 1. Check whether the functionality already exists.
 2. Check whether the project's existing dependencies can solve the problem.
 3. Evaluate maintenance and security implications.
@@ -254,13 +237,11 @@ Do not upgrade unrelated dependencies during feature work.
 Comments should explain **why**, not simply **what**.
 
 Good:
-
 ```text
 // Retry once because the payment provider may temporarily return 503.
 ```
 
 Bad:
-
 ```text
 // Increment counter
 counter++;
@@ -269,7 +250,6 @@ counter++;
 Avoid comments that merely repeat the code.
 
 Document non-obvious:
-
 * Business rules
 * Workarounds
 * External limitations
@@ -283,7 +263,6 @@ Document non-obvious:
 Use the strongest practical type safety supported by the project.
 
 Avoid unnecessary:
-
 * `any`
 * Unsafe casts
 * Suppression directives
@@ -300,7 +279,6 @@ Follow the project's existing type system and conventions.
 Keep state changes predictable.
 
 Clearly separate, where appropriate:
-
 * Pure logic
 * State management
 * External side effects
@@ -316,7 +294,6 @@ Avoid hidden global state unless the project intentionally uses it.
 Do not prematurely optimize.
 
 First prioritize:
-
 1. Correctness
 2. Maintainability
 3. Clear architecture
@@ -330,7 +307,6 @@ When optimizing, verify that the optimization actually improves the relevant met
 # 16. Backward Compatibility
 
 Before changing existing behavior, identify:
-
 * Existing callers
 * Existing APIs
 * Data formats
@@ -349,7 +325,6 @@ For breaking changes, identify affected areas and update them consistently.
 Keep environment-specific configuration outside source code where appropriate.
 
 Do not hard-code:
-
 * URLs
 * Credentials
 * Environment-specific values
@@ -364,7 +339,6 @@ Follow the project's configuration strategy.
 Do not manually modify generated files unless the project explicitly requires it.
 
 First identify:
-
 * Source of generation
 * Generation command
 * Generated output
@@ -376,7 +350,6 @@ When generated code must change, modify the source and regenerate when possible.
 # 19. Formatting and Linting
 
 Follow the project's existing:
-
 * Formatter
 * Linter
 * Import ordering
@@ -394,7 +367,6 @@ Run the project's standard formatting/linting checks when relevant.
 Code changes should be verified at the appropriate level.
 
 At minimum:
-
 * Run relevant tests
 * Run relevant type checks
 * Run relevant lint/build checks when applicable
@@ -410,7 +382,6 @@ Do not claim that code works without performing the relevant verification.
 Agents must stay within the assigned scope.
 
 If unrelated issues are discovered:
-
 * Do not silently fix them.
 * Report them.
 * Fix them only if they block the current task or the task explicitly includes them.
@@ -424,7 +395,6 @@ This is especially important when multiple agents are working in parallel.
 Unless explicitly required, existing behavior should remain unchanged.
 
 Before changing behavior, determine:
-
 * Why the behavior exists
 * Who depends on it
 * Whether tests cover it
@@ -437,7 +407,6 @@ Avoid accidental behavior changes caused by cleanup or refactoring.
 # 23. Code Review Expectations
 
 Reviewers should evaluate:
-
 * Correctness
 * Maintainability
 * Readability
@@ -449,7 +418,6 @@ Reviewers should evaluate:
 * Consistency with project architecture
 
 Reviewers should evaluate code against:
-
 1. Project requirements
 2. Project-specific rules
 3. Global rules
@@ -462,7 +430,6 @@ Personal coding preferences should not be treated as requirements.
 # 24. Agent Uncertainty
 
 When an agent is uncertain about an important implementation decision:
-
 1. Inspect more context.
 2. Search the codebase.
 3. Check project documentation.
@@ -477,7 +444,6 @@ Do not invent project conventions.
 # 25. Final Verification
 
 Before reporting completion, the implementing agent should verify:
-
 * Requested functionality works
 * Relevant tests pass
 * Type checks pass when applicable

@@ -11,7 +11,6 @@ You do NOT implement the task.
 You do NOT modify project files.
 
 You only:
-
 1. Run the intake gate: clarify ambiguous requirements with the user (a word the owner uses that is not in "Domain Terms" of `.ai/project.md`, or maps to two things: ask once and add the row), capture explicit acceptance criteria, and ensure `.ai/project.md` exists (create it from the template for a new project). Then run the readiness check `bash .claude/hooks/doctor.sh` in the project root. If the script is missing or fails, route to `workflows/onboarding.md` first (see Routing Rule 15).
 2. Understand the task.
 3. Assess complexity and risk.
@@ -41,7 +40,6 @@ Increase workflow complexity only when the task requires it.
 Use when the task is small and low risk.
 
 Typical characteristics:
-
 - One or very few files.
 - Clear implementation.
 - No architecture changes.
@@ -52,7 +50,6 @@ Typical characteristics:
 Choose SIMPLE only when all of the above hold and the fix is obvious. Any of these forces at least BUILD_REVIEW: touches 3+ files, crosses a layer, changes architecture/API/data model, touches data integrity or security, or needs investigation. If unsure whether a signal holds, treat it as present.
 
 Examples:
-
 - Change text.
 - Rename a variable.
 - Adjust spacing.
@@ -64,11 +61,8 @@ Examples:
 Execution:
 
 Task
-
 → One agent
-
 → Verify
-
 → Done
 
 Default agent count: 1
@@ -80,7 +74,6 @@ Default agent count: 1
 Use for normal development tasks where an independent review improves reliability.
 
 Typical characteristics:
-
 - Multiple files may change.
 - Implementation is straightforward.
 - Some regression risk exists.
@@ -90,21 +83,15 @@ Typical characteristics:
 Execution:
 
 Task
-
 → Builder
-
 → Tests
-
 → Reviewer
-
 → Fix findings
-
 → Final verification
 
 Default agent count: 2
 
 Roles:
-
 - builder
 - reviewer
 
@@ -115,7 +102,6 @@ Roles:
 Use when there are multiple reasonable implementation approaches and the best solution is uncertain.
 
 Typical characteristics:
-
 - Multiple viable architectures.
 - Significant implementation trade-offs.
 - The task is important enough to justify independent solutions.
@@ -124,15 +110,10 @@ Typical characteristics:
 Execution:
 
 Task
-
 → Agent A implements independently
-
 → Agent B implements independently
-
 → Compare solutions
-
 → Select or merge
-
 → Final verification
 
 Default agent count: 2 implementation agents + 1 comparison/review agent.
@@ -150,7 +131,6 @@ Do not give Agent B the solution produced by Agent A before B completes its own 
 Use for large, cross-layer, architectural, or high-risk tasks.
 
 Typical characteristics:
-
 - Frontend and backend are both affected.
 - Database changes are required.
 - Architecture changes.
@@ -166,29 +146,18 @@ Typical characteristics:
 Execution:
 
 Task
-
 → Investigation
-
 → Planning
-
 → Architecture review
-
 → Task decomposition
-
 → Parallel implementation
-
 → Integration
-
 → Tests
-
 → Review
-
 → QA
-
 → Final verification
 
 Possible roles:
-
 - architect
 - frontend
 - backend
@@ -235,7 +204,6 @@ How many parts of the system are affected?
 ## Architecture Impact
 
 Does the task change:
-
 - component structure?
 - API contracts?
 - data models?
@@ -263,7 +231,6 @@ What happens if the implementation is wrong?
 - critical
 
 Consider:
-
 - regression risk
 - data integrity
 - security
@@ -278,7 +245,6 @@ risk and the reason in the routing decision.
 ## Verification Requirements
 
 Determine whether the task needs:
-
 - unit tests
 - integration tests
 - end-to-end tests
@@ -296,7 +262,6 @@ Specialized capabilities are optional. The Router may activate one when the task
 Each is a method in `skills/` or a tool the agent runtime provides; no third-party plugin is required. Do not activate a capability merely because the task is complex. Choose based on the actual problem.
 
 A capability is different from an agent role:
-
 - Agent role (architect, builder, frontend, backend, critic, reviewer, tester, qa) = WHO is responsible.
 - Capability = WHAT extra methodology or tooling is applied.
 
@@ -334,7 +299,6 @@ Claude = frontend
 Codex = backend
 
 Instead select the agent based on:
-
 - task requirements
 - available capabilities
 - current context
@@ -342,23 +306,8 @@ Instead select the agent based on:
 - reliability
 - project constraints
 
-Examples:
-
-Frontend task:
-
-Claude or Codex
-
-Backend task:
-
-Claude or Codex
-
-Architecture:
-
-Claude or Codex
-
-Review:
-
-Claude or Codex
+Any available agent (Claude or Codex) can take any role: frontend, backend,
+architecture or review.
 
 The workflow determines the role.
 
@@ -404,9 +353,7 @@ Documentation
 Bad example:
 
 Backend API
-
 → frontend implementation
-
 → dependent integration
 
 Do not parallelize tasks with strong dependencies unless the dependency has been explicitly managed.
@@ -418,13 +365,11 @@ Do not parallelize tasks with strong dependencies unless the dependency has been
 Every workflow must end with verification. PROTOTYPE is the one exception: it ends with a demo and findings, and its code never ships.
 
 Minimum:
-
 - run relevant tests
 - inspect changed files
 - confirm requested behavior
 
 For higher-risk tasks additionally consider:
-
 - integration tests
 - end-to-end tests
 - browser QA
@@ -522,7 +467,6 @@ Reason:
 # Routing Approval Gate
 
 After producing the routing decision, before dispatching any worker:
-
 - **SIMPLE**, **PROTOTYPE**, and **BUILD_REVIEW with low or medium risk** —
   announce the decision in one line (the route line below, then the reason) and proceed.
   Do not wait.
@@ -554,7 +498,6 @@ change need no line. A session that continues a task (after `/clear`, from
 change.
 
 This gate is about the workflow choice. It is separate from, and earlier than:
-
 - the COMPLEX Plan Approval Gate (approve the plan/decomposition before spawning
   parallel workers — see `workflows/complex.md`), and
 
