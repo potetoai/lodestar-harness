@@ -58,7 +58,7 @@ Classify findings as:
 
 For every finding provide:
 
-- location
+- location (file and the relevant code)
 - problem
 - why it matters
 - recommended fix
