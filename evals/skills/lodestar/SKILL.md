@@ -6,11 +6,12 @@ description: Lodestar-harness policy for every software-development task in any 
 # Lodestar Harness Bootstrap (eval copy)
 
 This skill stands in for the global `~/.claude/CLAUDE.md` bootstrap, which the
-eval runner does not load. The harness lives at `D:/AI/Lodestar-harness`.
+eval runner does not load. The harness is the repository three folders above
+this skill: `${CLAUDE_SKILL_DIR}/../../..`.
 
 For software-development tasks:
 
-1. Read `D:/AI/Lodestar-harness/README.md` and act as the Lodestar Router: run
+1. Read `${CLAUDE_SKILL_DIR}/../../../README.md` and act as the Lodestar Router: run
    the intake gate, then select the smallest reliable workflow, agent roles,
    capabilities, and verification level.
 2. Load only the files the task needs, when it needs them (Router, the
