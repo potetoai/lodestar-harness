@@ -272,12 +272,14 @@ shows the pass output.
   rules included. The reviewer applies it when the diff touches UI files and
   reports a 0-10 rating with the gaps to a 10, as MINOR or SUGGESTION.
 - Idea 48 widens that trigger: UI code, design tokens, design docs, and
-  text the user sees (labels, messages, "Use for" notes). Pure code with no
-  visible change gets none. The checklist adds what can be measured, by
-  script or test, not by eye: text contrast 4.5:1 (large text and controls
-  3:1), every state against what is around it, touch area. A language check
-  uses the app's languages in `.ai/project.md`, not the owner's chat
-  language. A state that cannot be seen is a bug, not an option.
+  text the user sees (labels, messages, usage notes in design docs). Pure
+  code with no visible change gets none. The checklist adds what can be
+  measured: the reviewer computes it from the tokens or code, not by eye
+  (no new hook or CI step): text contrast 4.5:1 (large text and controls
+  3:1), every state against what is around it, touch area 44px. A language
+  check uses the app's languages in `.ai/project.md`, not the owner's chat
+  language. A state that cannot be told apart from what is around it is a
+  MAJOR finding to fix, not an option to offer.
 - Router intake gate (idea 27): for COMPLEX tasks or requirements still
   unclear after one question, ask in numbered rounds, each question with a
   recommended answer that "yes" accepts; only decisions the owner can make,
@@ -286,8 +288,8 @@ shows the pass output.
   carries only the checklist.
 
 Done when: merged; a dry run on one recent App01 `apps/mobile` diff (read
-only) shows the checklist output, and a dry run on its #141 (tokens and
-"Use for" texts only) shows the trigger fires.
+only) shows the checklist output, and a dry run on App01 #141 (tokens and
+their usage notes only) shows the trigger fires.
 
 ### Phase 4 — Repo audit in maintenance (idea 8, only if Q3 is yes)
 
@@ -468,7 +470,7 @@ this plan to `plans/completed/`, once phase 5c is merged or dropped.
 | 2026-11-03 | DESIGN:OS only as a fallback to impeccable; no text copied from it | They overlap; PolyForm Shield bars a competing product; one maintainer |
 | 2026-11-03 | App01 commits its design skills only after the trial | An untried skill adds reading cost in every session |
 | 2026-11-03 | Router eval: all 13 pass fully with Lodestar, 10 of 13 without is evidence for routing only, not for code or design quality | One run per case, 13 cases written with the policy, regex on the route line; limits in `evals/router/scores.md` |
-| 2026-11-04 | Idea 48: a design review is phase 3b's checklist with a wider trigger (tokens, design docs, user-facing text) and measured checks; no designer role, no new workflow, no skill pick before gate DS-1 | 17 of App01's last 40 merged PRs touch UI or design files, one known miss (#141, texts in a docs-only PR) and two related misses in its feedback log (low-contrast state, app language assumed); a reviewer checklist costs tokens only on those PRs, a new role costs a run each; skills wait for the phase 5b trial |
+| 2026-11-04 | Idea 48: a design review is phase 3b's checklist with a wider trigger and measured checks; no designer role, no new workflow, no skill pick before gate DS-1 | Evidence in the idea file; a checklist costs tokens only on PRs people see, a new role costs a run each; skills wait for the phase 5b trial |
 | 2026-11-03 | vn30 LSP starts with a read-only pyright count; no TypeScript LSP | Owner; vn30's frontend is JavaScript; a noisy LSP costs tokens on every edit |
 | 2026-11-03 | Skill trials compare with a no-skill baseline run; only new, correct, actionable findings count; unproven value means DROP; 30k tokens per run cap | Owner's review of #132; a finding the plain model also makes is not the skill's value |
 | 2026-11-03 | Drop idea 45 (pyright LSP) and a `reportOptional*`-only CI step | Owner; 226 noisy errors would enter context after each edit; the 20 Optional errors were all safe, so CI would only make agents add asserts |
