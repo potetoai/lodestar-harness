@@ -547,37 +547,14 @@ Architectural changes should generally receive broader verification than ordinar
 
 # 23. Reviewer Testing Responsibility
 
-The Reviewer should verify that:
-* Appropriate tests exist
-* Tests cover important behavior
-* Tests are meaningful
-* Tests are not merely written to satisfy coverage
-* Relevant verification was actually executed
-
-The Reviewer should distinguish between:
-* Missing tests
-* Incorrect tests
-* Failing tests
-* Untested behavior
+What the reviewer checks in the tests: `agents/reviewer.md`, Responsibilities
+(test coverage).
 
 ---
 
 # 24. QA Responsibility
 
-QA should focus on behavior from the user's perspective.
-
-QA should verify where applicable:
-* Main user flow
-* Edge cases
-* Error states
-* Loading states
-* Empty states
-* UI behavior
-* Accessibility
-* Responsive behavior
-* Acceptance criteria
-
-QA should not duplicate every unit test.
+What QA checks, from the user's point of view: `agents/qa.md`.
 
 ---
 
