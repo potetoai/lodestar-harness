@@ -22,10 +22,25 @@ state() { # the working files (tracked and untracked, not ignored) as a tree, th
   rm -f "$held.index"
   tr -d '0-9' <<<"$1"
 }
-# A pass is remembered the same way: when nothing changed since 'make verify'
-# last passed (for example the agent only answered a question), do not run
-# it again. The full run takes minutes in real projects.
+# A pass is remembered as its tree: when nothing changed since 'make verify'
+# last passed (for example the agent only answered a question), or only notes
+# changed (see docs_only), do not run it again. The full run takes minutes in
+# real projects.
 passed=${held%held}passed
+# True when every file that differs between tree $1 and tree $2 is a note:
+# .ai/ or docs/ at the project root, or a *.md file. Code cannot break on
+# them; the edit hook formats each file, and CI still runs everything.
+# Plain-text match (no regex: a folder name may hold [ or .), and -z so git
+# does not quote accented names. No list (diff-tree failed): not docs only.
+docs_only() {
+  local pre f any=
+  pre=$(git rev-parse --show-prefix 2>/dev/null) || return 1
+  while IFS= read -r -d '' f; do
+    any=1
+    case $f in "$pre".ai/*|"$pre"docs/*|*.md) ;; *) return 1 ;; esac
+  done < <(git diff-tree -r -z --name-only "$1" "$2" 2>/dev/null)
+  [ -n "$any" ]
+}
 # Files whose failure was already let go once: later stops on them (the agent
 # waiting for the owner, answering questions) do not run verify again only to
 # get the same failure. Any change runs it again.
@@ -33,7 +48,7 @@ released=${held%held}released
 # 'make verify' ends with this script --record-pass (top-level make only), so
 # a run the agent made itself counts: the stop right after does not repeat it.
 if [ "$1" = --record-pass ]; then
-  [ -n "$held" ] && { rm -f "$held" "$released"; state "" | git hash-object --stdin > "$passed"; }
+  [ -n "$held" ] && { rm -f "$held" "$released"; state "" > "$passed"; }
   exit 0
 fi
 
@@ -161,8 +176,12 @@ if ! err=$(make -n verify 2>&1 >/dev/null); then
   echo "Run 'bash .claude/hooks/doctor.sh' to see why, fix it, then finish." >&2
   exit 2
 fi
-if [ -n "$held" ] && [ -f "$passed" ] && [ "$(cat "$passed")" = "$(state "" | git hash-object --stdin)" ]; then
-  finish
+if [ -n "$held" ] && [ -f "$passed" ]; then
+  was=$(cat "$passed"); now=$(state "")
+  if [ "$was" = "$now" ] || docs_only "$was" "$now"; then
+    [ "$was" = "$now" ] || echo "Lodestar: only notes (.ai/, docs/, *.md) changed since 'make verify' passed; not run again (CI runs it)." >&2
+    finish
+  fi
 fi
 if [ -n "$held" ] && [ -f "$released" ] && [ "$(cat "$released")" = "$(state "" | git hash-object --stdin)" ]; then
   echo "Lodestar: 'make verify' failed on these same files and the stop was let go; not run again until a file changes." >&2
@@ -183,5 +202,5 @@ if ! out=$(make --no-print-directory verify 2>&1); then
   echo "$out" | tail -n 60 >&2
   exit 2
 fi
-[ -n "$held" ] && { rm -f "$held" "$released"; state "" | git hash-object --stdin > "$passed"; }
+[ -n "$held" ] && { rm -f "$held" "$released"; state "" > "$passed"; }
 finish

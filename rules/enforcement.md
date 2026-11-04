@@ -40,7 +40,9 @@ runs it and can hold again. CI stays the gate.
 
 A pass is remembered the same way: when the files did not change since
 `verify` last passed (the agent only answered a question), the Stop hook does
-not run it again. `make verify` records its own pass (its last line runs
+not run it again. Nor does it when only notes changed since that pass:
+`.ai/` or `docs/` at the project root, or `*.md` files (CI still runs
+everything on the PR). `make verify` records its own pass (its last line runs
 `verify-before-stop.sh --record-pass`, top-level make only), so when the agent
 just ran it, the Stop hook does not run it a second time (doctor A10b). The
 state is the working files only, so a commit after the run does not count as

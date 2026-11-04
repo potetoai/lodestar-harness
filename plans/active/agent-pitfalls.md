@@ -292,3 +292,4 @@ or change it.
 | 2026-10-27 | Item 4 drop stands | Owner questions 0.40 per session, was 0.36 |
 | 2026-10-27 | Phase 2, `--friction` use and the critic limit (PR #94, #95): wait, recount about 2026-11-05; plan stays active | Owner: decide where data is enough, wait elsewhere. No PROTOTYPE use yet, one `--friction` run, critic limit live since 2026-10-27 |
 | 2026-10-28 | The phase 5 waits become data gates P5-a..c (minimum, check 2026-11-05, stop 2026-11-26) | Owner: plans fix their start on data, not only a date; a recount on a fixed day could decide on a thin count |
+| 2026-11-04 | Stop hook skips `make verify` when only notes (`.ai/`, `docs/` at the project root, `*.md`) changed since its last pass | Owner: stops took ~80 s each in App01 on a docs branch (verify-before-stop.sh 79097 ms in the session log). Notes cannot break code; the edit hook formats each file; CI stays the gate. The pass record is now the tree, so changes since it can be listed |

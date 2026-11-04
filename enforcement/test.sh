@@ -257,6 +257,31 @@ t "stop hook skips make verify after the agent ran it, then committed" [ $? = 0 
 touch -d @1700000000 "$c/a.txt"; git -C "$c" update-index -q --refresh; touch -d @1700000000 "$c/.git/index"
 rec verify; n=$(runs); echo g > "$c/a.txt"; touch -d @1700000000 "$c/a.txt"; cstop
 t "stop hook sees a same-size edit in the index's clock tick" [ "$(runs)" = $((n + 1)) ]
+# Only notes (.ai/, docs/ at the root, *.md) changed since the pass: no rerun.
+printf 'verify:
+	@echo run >> "$$RUNS"
+' > "$c/Makefile"; cstop; n=$(runs); mkdir -p "$c/docs" "$c/.ai" "$c/src/docs"
+echo n > "$c/notes.md"; echo n > "$c/docs/x.txt"; echo n > "$c/.ai/plan.txt"; cstop
+t "stop hook skips make verify when only notes changed since a pass" [ $? = 0 -a "$(runs)" = "$n" ]
+echo n > "$c/docs/y.txt"; cstop; t "stop hook: more notes still compare with the same pass" [ "$(runs)" = "$n" ]
+echo n > "$c/src/docs/z.txt"; cstop; t "stop hook: a docs/ folder below the root counts as code" [ "$(runs)" = $((n + 1)) ]
+echo m > "$c/notes.md"; echo h > "$c/a.txt"; cstop; t "stop hook: notes plus code runs make verify" [ "$(runs)" = $((n + 2)) ]
+echo old > "$c/.git/lodestar-verify-passed"; echo o > "$c/notes.md"; cstop
+t "stop hook: an old-format pass record runs make verify once" [ "$(runs)" = $((n + 3)) ]
+echo n > "$c/docs/tài liệu.md"; cstop; t "stop hook: an accented note name is a note" [ "$(runs)" = $((n + 3)) ]
+git -C "$c" add -A; git -C "$c" -c user.name=t -c user.email=t@t commit -qm notes; cstop
+git -C "$c" mv a.txt a.md; cstop; t "stop hook: code renamed to .md runs make verify" [ "$(runs)" = $((n + 4)) ]
+# In a subfolder project the notes are .ai/ and docs/ of that folder; its
+# name is matched as plain text (dot and [ are not patterns).
+q=$tmp/mononotes; s='a.b[c'; mkdir -p "$q/$s/.ai" "$q/aXb[c/docs"; git -C "$q" init -q; cp "$c/Makefile" "$q/$s/"
+echo a > "$q/$s/a.txt"; git -C "$q" add -A; git -C "$q" -c user.name=t -c user.email=t@t commit -qm init
+qstop() { RUNS=$tmp/passcache.runs CLAUDE_PROJECT_DIR=$q/$s bash "$here/agents/claude/hooks/verify-before-stop.sh" 2>/dev/null <<<'{"stop_hook_active":false}'; }
+n=$(runs); qstop; echo n > "$q/$s/.ai/plan.txt"; qstop
+t "stop hook in a subfolder project skips make verify when only its notes changed" [ "$(runs)" = $((n + 1)) ]
+echo n > "$q/aXb[c/docs/x.txt"; qstop
+t "stop hook in a subfolder project: a look-alike folder's docs/ is not its notes" [ "$(runs)" = $((n + 2)) ]
+mkdir -p "$q/.ai"; echo n > "$q/.ai/x.txt"; qstop
+t "stop hook in a subfolder project: .ai/ of the repo root is not its notes" [ "$(runs)" = $((n + 3)) ]
 # The project may be a subfolder of the repo (git prints paths from the root).
 q=$tmp/monorepo; mkdir -p "$q/sub"; git -C "$q" init -q; cp "$p/Makefile" "$q/sub/"
 echo a > "$q/sub/code.txt"; git -C "$q" add -A; git -C "$q" -c user.name=t -c user.email=t@t commit -qm init
