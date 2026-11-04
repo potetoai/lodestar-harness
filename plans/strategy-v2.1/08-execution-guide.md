@@ -138,7 +138,7 @@ Use this guide as an index, not a new tracking application. Before an activity s
 
 | Activity | Owner / capacity | Start / check / stop | Evidence source | Status |
 |---|---|---|---|---|
-| S1 | Agent works, owner approves; Normal (4 h/week) | Start 2026-11-04 / check 2026-12-04 / stop 2026-12-25 | De-identified summaries indexed here; raw transcripts/code in private consented storage | Week 1 audit |
+| S1 | Agent works, owner approves; Normal (4 h/week) | Start 2026-11-04 / check 2026-12-04 / stop 2026-12-25 | De-identified summaries indexed here; raw transcripts/code in private consented storage | Week 1 audit done ([s1-week1-audit.md](s1-week1-audit.md)); Week 2 waits for owner |
 | S2–S4 | Unassigned | Not started; instantiate 04 formulas per stage | Not collected | Strategy only |
 | Benchmark cohorts | Allocation not selected | Not started | Required manifest/run records below | No runs authorized by this document |
 | C1 Optional commercial gate (07) | Unassigned | Not started; instantiate +30 / +51 if activated | No demand records | Deferred |
@@ -155,6 +155,7 @@ Minimum record shapes (reuse an existing issue, PR attachment or consented local
 |---|---|---|
 | 2026-11-04 | Revision 2.1 | Nine-file strategy and independent review completed; PR #141 |
 | 2026-11-04 | S1 start | Capacity, owner, dates and evidence storage recorded; PR #144 |
+| 2026-11-04 | S1 week 1 | Repository audit: [s1-week1-audit.md](s1-week1-audit.md); PR pending |
 
 ## Decision log
 
