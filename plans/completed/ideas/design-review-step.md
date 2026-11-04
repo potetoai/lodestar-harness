@@ -1,5 +1,8 @@
 # Idea: design review step
 
+> **Rated 2026-11-04** in `plans/active/skill-harvest.md` (idea 48,
+> decision log): folded into phase 3b; no new role or workflow.
+
 Reported by App01, 2026-11-04 (`lodestar-no-design-review-step`). Not yet
 rated.
 

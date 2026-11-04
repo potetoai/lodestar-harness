@@ -138,6 +138,7 @@ Rating: **Do** · **Check** (measure first, act only if the number says so) ·
 | 45 | LSP plugins (pyright, typescript) | Type and compile errors while editing | `lint-file.sh` after each edit | **Drop** (2026-11-03): vn30 pre-check too noisy, 0 real bugs |
 | 46 | LibreUIUX, designer-skills, superdesign | Large design bundles; vendor skill | Ideas 42-44 | **Drop**: too many skills, overlap, vendor-written ranking |
 | 47 | spec-kit, Feature Dev (Anthropic) | Spec-driven development; 7-phase feature workflow with parallel agents | Plans, acceptance criteria, Router workflows | **Covered** |
+| 48 | App01 report `lodestar-no-design-review-step` (`plans/completed/ideas/design-review-step.md`) | Review every change people see: UI code, design tokens, design docs, user-facing text | Idea 24 (phase 3b) checks UI files only; App01 added its own rule (its #142) | **Do**, in phase 3b: widen the trigger and add measured checks; no new role or workflow |
 
 ## 4. Phases
 
@@ -270,6 +271,13 @@ shows the pass output.
 - `agents/frontend.md`: a UI checklist of about 10 lines (idea 24), mobile
   rules included. The reviewer applies it when the diff touches UI files and
   reports a 0-10 rating with the gaps to a 10, as MINOR or SUGGESTION.
+- Idea 48 widens that trigger: UI code, design tokens, design docs, and
+  text the user sees (labels, messages, "Use for" notes). Pure code with no
+  visible change gets none. The checklist adds what can be measured, by
+  script or test, not by eye: text contrast 4.5:1 (large text and controls
+  3:1), every state against what is around it, touch area. A language check
+  uses the app's languages in `.ai/project.md`, not the owner's chat
+  language. A state that cannot be seen is a bug, not an option.
 - Router intake gate (idea 27): for COMPLEX tasks or requirements still
   unclear after one question, ask in numbered rounds, each question with a
   recommended answer that "yes" accepts; only decisions the owner can make,
@@ -278,7 +286,8 @@ shows the pass output.
   carries only the checklist.
 
 Done when: merged; a dry run on one recent App01 `apps/mobile` diff (read
-only) shows the checklist output.
+only) shows the checklist output, and a dry run on its #141 (tokens and
+"Use for" texts only) shows the trigger fires.
 
 ### Phase 4 — Repo audit in maintenance (idea 8, only if Q3 is yes)
 
@@ -443,6 +452,7 @@ this plan to `plans/completed/`, once phase 5c is merged or dropped.
 | 2026-11-03 | 0b | Ideas 36-47 rated (Lodestar OS idea, DESIGN:OS, App01 report, 2026 lists); adoption rule and template table, #131 |
 | 2026-11-03 | 5b | Skill trial with baseline, KEEP / MODIFY / DROP bars, vn30 LSP pre-check, #132 |
 | 2026-11-03 | 5b | vn30 LSP pre-check: 226 app errors, idea 45 dropped, #133 |
+| 2026-11-04 | 3b | Idea 48 (App01 design-review report) rated: folded into phase 3b, PR pending |
 
 ## 8. Decision log
 
@@ -458,6 +468,7 @@ this plan to `plans/completed/`, once phase 5c is merged or dropped.
 | 2026-11-03 | DESIGN:OS only as a fallback to impeccable; no text copied from it | They overlap; PolyForm Shield bars a competing product; one maintainer |
 | 2026-11-03 | App01 commits its design skills only after the trial | An untried skill adds reading cost in every session |
 | 2026-11-03 | Router eval: all 13 pass fully with Lodestar, 10 of 13 without is evidence for routing only, not for code or design quality | One run per case, 13 cases written with the policy, regex on the route line; limits in `evals/router/scores.md` |
+| 2026-11-04 | Idea 48: a design review is phase 3b's checklist with a wider trigger (tokens, design docs, user-facing text) and measured checks; no designer role, no new workflow, no skill pick before gate DS-1 | 17 of App01's last 40 merged PRs touch UI or design files, one known miss (#141, texts in a docs-only PR) and two related misses in its feedback log (low-contrast state, app language assumed); a reviewer checklist costs tokens only on those PRs, a new role costs a run each; skills wait for the phase 5b trial |
 | 2026-11-03 | vn30 LSP starts with a read-only pyright count; no TypeScript LSP | Owner; vn30's frontend is JavaScript; a noisy LSP costs tokens on every edit |
 | 2026-11-03 | Skill trials compare with a no-skill baseline run; only new, correct, actionable findings count; unproven value means DROP; 30k tokens per run cap | Owner's review of #132; a finding the plain model also makes is not the skill's value |
 | 2026-11-03 | Drop idea 45 (pyright LSP) and a `reportOptional*`-only CI step | Owner; 226 noisy errors would enter context after each edit; the 20 Optional errors were all safe, so CI would only make agents add asserts |
