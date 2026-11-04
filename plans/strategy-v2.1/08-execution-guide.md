@@ -159,7 +159,7 @@ Minimum record shapes (reuse an existing issue, PR attachment or consented local
 | 2026-11-04 | S1 week 2 step 1 | README quick start; PR #147 |
 | 2026-11-04 | S1 week 2 step 2 | Setup guide: where tested, removal steps verified on a scratch project and home; PR #148 |
 | 2026-11-04 | S1 week 2 step 3 | Reporting: README section and SECURITY.md (issues; private vulnerability reporting); F4; PR #149 |
-| 2026-11-04 | S1 week 2 step 4 | Fresh-clone test and first-task example (setup guide step 5); F7, F9; PR # |
+| 2026-11-04 | S1 week 2 step 4 | Fresh-clone test and first-task example (setup guide step 5); F7, F9; PR #150 |
 
 ## Decision log
 
