@@ -125,6 +125,15 @@ Never build an orchestration system; use the runtime's.
 
 ---
 
+## Reporting Problems
+
+- Bugs, questions, ideas: open a
+  [GitHub issue](https://github.com/potetoai/lodestar-harness/issues).
+- Security problems (for example, a way to bypass an approval check): do not
+  open a public issue; follow [SECURITY.md](SECURITY.md).
+
+---
+
 ## License
 
 MIT (`LICENSE`). Tools it calls but does not include are listed in
