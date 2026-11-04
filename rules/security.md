@@ -8,8 +8,9 @@ Scope: All projects using Lodestar-harness
 ## Purpose
 
 Define baseline security discipline for all agents, and the security-review gate
-for sensitive changes. These rules extend `rules/coding.md` (section 10) with a
-concrete checklist and an explicit gate; they never replace project-specific
+for sensitive changes. This file holds the security rules for coding
+(`rules/coding.md`, section 10, links here): a concrete checklist and an
+explicit gate; they never replace project-specific
 security requirements, which take precedence.
 
 Security is never simplified away, even under a minimal-change or lazy default.

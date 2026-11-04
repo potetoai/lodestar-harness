@@ -177,157 +177,15 @@ what the user agreed to, not what the Router assumed.
 
 # 5. Workflow Mapping
 
-## SIMPLE
+When each workflow fits and its steps: `router/ROUTER.md`, Workflow Types,
+and `workflows/<name>.md`. Every worker ends with `worker_done` (section 12).
+In Orca:
 
-Use when:
-* Scope is small.
-* Risk is low.
-* Dependencies are limited.
-* One worker can safely complete the task.
-
-Execution:
-```text
-Router
-  ↓
-Simple Workflow
-  ↓
-One Worker
-  ↓
-Implement
-  ↓
-Test
-  ↓
-Verify
-  ↓
-worker_done
-```
-
-Normally use one Orca worker.
-
----
-
-## BUILD_REVIEW
-
-Use when:
-* Implementation is meaningful.
-* Independent review provides useful confidence.
-* Architecture or regression risk is moderate.
-
-Execution:
-```text
-Router
-  ↓
-Build Review Workflow
-  ↓
-Builder
-  ↓
-Implementation
-  ↓
-Testing
-  ↓
-Reviewer
-  ↓
-Findings
-  ↓
-Builder Fix
-  ↓
-Verification
-  ↓
-worker_done
-```
-
-Builder and Reviewer must have clearly defined ownership.
-
----
-
-## INDEPENDENT_COMPARE
-
-Use when:
-* Multiple technically valid approaches are possible.
-* Comparing independent solutions provides meaningful value.
-* The task is important enough to justify additional work.
-
-Execution:
-```text
-Router
-        ↓
-Independent Compare
-        ↓
-   ┌────┴────┐
-   ▼         ▼
-Worker A   Worker B
-   │         │
-   └────┬────┘
-        ▼
-     Compare
-        ↓
-Select / Merge / Reimplement
-        ↓
-Final Verification
-```
-
-Independent workers should not see each other's solution before independent work is complete.
-
----
-
-## COMPLEX
-
-Use when:
-* Architecture is affected.
-* Multiple modules are involved.
-* Investigation is required.
-* Multiple specialists are useful.
-* Verification requirements are significant.
-
-Execution:
-```text
-Router
-   ↓
-Complex Workflow
-   ↓
-Investigation
-   ↓
-Planning / Architecture
-   ↓
-Decomposition
-   ↓
-Parallel Implementation
-   ↓
-Integration
-   ↓
-Verification
-   ↓
-QA / Review
-   ↓
-Final Verification
-```
-
-Only parallelize genuinely independent work.
-
-Orca's orchestration guide recommends parallel waves for independent work and dependencies only where real ordering exists.
-
----
-
-## PROTOTYPE
-
-Use when the owner wants to see or try an idea before deciding
-(`router/ROUTER.md`, section 5 and Routing Rule 17).
-
-Execution:
-```text
-Router
-  ↓
-Prototype Workflow (workflows/prototype.md)
-  ↓
-One Worker on a local proto/<name> branch
-  ↓
-Demo + findings
-  ↓
-Worktree and branch deleted
-```
-
-No review, no tests, nothing merged. The findings start a new task with its
-own routing decision.
+* SIMPLE and PROTOTYPE: normally one Orca worker.
+* BUILD_REVIEW: Builder and Reviewer must have clearly defined ownership.
+* INDEPENDENT_COMPARE: one worker per solution; neither sees the other's
+  solution before independent work is complete.
+* COMPLEX: parallel workers only for genuinely independent work (section 10).
 
 ---
 
@@ -491,23 +349,13 @@ Do not manually recreate lifecycle state that Orca already manages.
 
 # 10. Parallel Execution
 
-Parallel execution is allowed only when tasks are sufficiently independent.
+When work is independent enough to run in parallel: `router/ROUTER.md`,
+Parallelism, and `workflows/complex.md`, Phase 5. Frontend and backend run in
+parallel only when the interfaces are already defined.
 
-Good:
-```text
-Frontend implementation
-        +
-Backend implementation
-```
-
-when the interfaces are already defined.
-
-Good:
-```text
-Independent implementation A
-        +
-Independent implementation B
-```
+In Orca, use dependencies for actual ordering requirements, and prefer
+parallel waves over unnecessarily deep chains, as Orca's orchestration guide
+recommends.
 
 Bad:
 ```text
@@ -519,10 +367,6 @@ Builder
 ```
 
 if the second Builder cannot start until the first has completed.
-
-Use dependencies for actual ordering requirements.
-
-Prefer parallel waves over unnecessarily deep chains.
 
 ---
 

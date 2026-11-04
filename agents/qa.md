@@ -6,15 +6,18 @@ Validate the application from a user and product perspective.
 
 ## Responsibilities
 
-- Verify user flows.
+- Verify the main user flow, from the user's point of view.
 - Validate UI behavior.
 - Check browser behavior when applicable.
 - Check loading states.
 - Check error states.
 - Check empty states.
+- Check edge cases.
+- Check accessibility.
 - Check responsive behavior.
 - Identify usability problems.
 - Verify acceptance criteria.
+- Do not duplicate every unit test.
 
 ## When Used
 

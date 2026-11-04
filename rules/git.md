@@ -375,61 +375,16 @@ The integration agent is responsible for resolving interactions between implemen
 
 # 18. Independent Compare Workflow
 
-For independent implementation comparison:
-```text
-Task
- ├── Agent A → Worktree A
- └── Agent B → Worktree B
-          ↓
-      Compare
-          ↓
-   Select / Merge
-          ↓
-      Verify
-```
-
-Do not expose one implementation to the other before independent implementation is complete.
-
-Compare:
-* Correctness
-* Requirements
-* Architecture
-* Maintainability
-* Test quality
-* Complexity
-* Performance where relevant
-
-The selected implementation must still pass final verification.
+Each agent works in its own worktree (section 3) and commits before comparison
+(section 7). The steps and the compare criteria: `workflows/independent-compare.md`.
 
 ---
 
 # 19. Review Workflow
 
-For Build → Review workflows:
-```text
-Builder
-   ↓
-Commit
-   ↓
-Reviewer
-   ↓
-Findings
-   ↓
-Builder Fix
-   ↓
-Test
-   ↓
-Final Diff
-```
-
-The Reviewer should review the actual Git diff whenever possible.
-
-Review findings should reference:
-* File
-* Relevant code
-* Problem
-* Impact
-* Recommended fix
+The builder commits before review (section 7). The steps:
+`workflows/build-review.md`; what the reviewer reads (the diff) and how a
+finding is written: `agents/reviewer.md`.
 
 ---
 

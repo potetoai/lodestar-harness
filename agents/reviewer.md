@@ -15,7 +15,10 @@ Check:
 - error handling
 - security
 - performance
-- test coverage
+- test coverage: tests exist for the important behavior, are meaningful
+  (not written only to reach coverage), and the relevant verification really
+  ran; name the kind of gap: missing test, incorrect test, failing test, or
+  untested behavior
 - unintended changes
 - new names for a concept already in "Domain Terms" of `.ai/project.md`
 - tests-first tasks: every approved criterion in the plan file has a test, and
@@ -55,7 +58,7 @@ Classify findings as:
 
 For every finding provide:
 
-- location
+- location (file and the relevant code)
 - problem
 - why it matters
 - recommended fix
