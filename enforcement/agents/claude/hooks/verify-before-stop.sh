@@ -43,7 +43,8 @@ case $(git symbolic-ref --short -q HEAD 2>/dev/null) in proto/*) exit 0 ;; esac
 
 # Prevent an endless loop: if the agent was already sent back once, let it
 # stop. CI is the final gate.
-[ "$(jq -j '.stop_hook_active // false')" = "true" ] && exit 0
+input=$(cat)
+[ "$(jq -j '.stop_hook_active // false' <<<"$input")" = "true" ] && exit 0
 
 # Tests locked by the last VALID Tests-First commit (it carries an owner-
 # approved plan) stay unchanged while the task is active (a plan in
@@ -101,7 +102,7 @@ push_check() {
 # owner's "duyệt", so they would type it twice. Send the agent back once per
 # plan and criteria, so it adds the line (or re-runs the critic) before asking.
 review_check() {
-  local p h gd mark out=""
+  local p h gd mark out="" new=""
   [ -f .claude/hooks/lodestar-lib.sh ] && . .claude/hooks/lodestar-lib.sh || return 0
   gd=$(git rev-parse --absolute-git-dir 2>/dev/null) && mark=$gd/lodestar-review-held
   for p in .ai/plans/active/*.md; do
@@ -110,10 +111,11 @@ review_check() {
     criteria_reviewed < "$p" || continue
     review_covers "$h" < "$p" && continue
     [ -n "$mark" ] && grep -qxF "$p $h" "$mark" 2>/dev/null && continue
-    [ -n "$mark" ] && echo "$p $h" >> "$mark"
-    out+="  $p (criteria hash $h)"$'\n'
+    out+="  $p (criteria hash $h)"$'\n'; new+="$p $h"$'\n'
   done
-  [ -n "$out" ] || return 0
+  [ -n "$out" ] && asks_approval || return 0
+  # Only a hold uses up the plan's one hold for these criteria.
+  [ -n "$mark" ] && printf '%s' "$new" >> "$mark"
   echo "Not done yet: these plans have a '## Criteria review' but no '- Reviewed criteria:' line for" >&2
   echo "their criteria as they are now, so the approval hook would refuse the owner's approval word:" >&2
   printf '%s' "$out" >&2
@@ -121,6 +123,18 @@ review_check() {
   echo "with '- Reviewed criteria: <hash>'; if the criteria changed after it, re-run the critic first" >&2
   echo "(lodestar-harness agents/critic.md, Output). Not asking for approval yet? Then just finish." >&2
   return 2
+}
+
+# Does the agent's last message ask the owner for an approval word? Asking for
+# the next critic run ("duyệt critic") or a merge ("duyệt merge PR") is not
+# one: after fixed findings only a new critic run can write the line, so a
+# hold there costs a turn for nothing. Without the message, assume it does.
+asks_approval() {
+  local m
+  m=$(jq -j '.last_assistant_message // empty' <<<"$input" 2>/dev/null)
+  [ -n "$m" ] || return 0
+  grep -oiE '(duyệt|duyet|approve)[[:alpha:]]*([^[:alnum:]]+[[:alnum:]-]+)?' <<<"$m" |
+    grep -qviE '[^[:alnum:]](critic|merge)$'
 }
 
 # The checks every allowed stop runs; either one sends the agent back.
