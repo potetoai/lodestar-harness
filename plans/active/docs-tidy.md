@@ -121,7 +121,7 @@ for any miss traced to a moved rule. None: move this plan to
 | 2026-10-16 | 1 | Four rated idea plans moved to `plans/completed/ideas/`; paths updated in `AGENTS.md`, `token-efficiency.md` (line 10; its 2026-10-02 decision rows kept as history) and `subagent-cost.md` (path only); `plans/ideas/` is now empty. Links pass |
 | 2026-10-16 | 1 | PR #45 merged (0dba3f4) on green CI; `plans/ideas/` kept in git with a README |
 | 2026-11-04 | 2 | Blank lines inside lists, arrow chains and label-to-list/example gaps removed in the six files (16-20% fewer, not a third: the rest sit between paragraphs and blocks); `ROUTER.md` Agent Selection one sentence; PR #135 |
-| 2026-11-04 | 3 | Pairs 1-4 now one text plus a link (one commit each); pair 5 kept with links; PR #TBD |
+| 2026-11-04 | 3 | Pairs 1-4 now one text plus a link (one commit each); pair 5 kept with links; PR #139 |
 
 ## 7. Decision log
 
