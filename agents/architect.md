@@ -159,6 +159,8 @@ Possible approaches include:
 
 Do not force backend architecture patterns onto the frontend.
 
+What every frontend change must do: `rules/architecture.md`, section 5.
+
 ---
 
 # Backend Architecture
@@ -184,6 +186,8 @@ Possible approaches include:
 - domain-driven design
 
 Do not introduce distributed systems or microservices unless justified by the requirements.
+
+What every backend change must do: `rules/architecture.md`, section 6.
 
 ---
 

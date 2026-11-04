@@ -121,6 +121,7 @@ for any miss traced to a moved rule. None: move this plan to
 | 2026-10-16 | 1 | Four rated idea plans moved to `plans/completed/ideas/`; paths updated in `AGENTS.md`, `token-efficiency.md` (line 10; its 2026-10-02 decision rows kept as history) and `subagent-cost.md` (path only); `plans/ideas/` is now empty. Links pass |
 | 2026-10-16 | 1 | PR #45 merged (0dba3f4) on green CI; `plans/ideas/` kept in git with a README |
 | 2026-11-04 | 2 | Blank lines inside lists, arrow chains and label-to-list/example gaps removed in the six files (16-20% fewer, not a third: the rest sit between paragraphs and blocks); `ROUTER.md` Agent Selection one sentence; PR #135 |
+| 2026-11-04 | 3 | Pairs 1-4 now one text plus a link (one commit each); pair 5 kept with links; PR #TBD |
 
 ## 7. Decision log
 
@@ -133,3 +134,4 @@ for any miss traced to a moved rule. None: move this plan to
 | 2026-10-27 | Phases 2-3 run about 2026-11-05, with the agent-pitfalls phase 5 recount | Owner; phase 5 was only partly measured on 2026-10-27 (PR #99), the rest waits for more data |
 | 2026-10-28 | Phases 2-3 start on gate DT-1: only files that agent-pitfalls P5-a..c still measure wait for those gates | Owner: plans start on data, not only a date; the policy-reading numbers are already taken, so the other files need no wait |
 | 2026-11-04 | Phase 2 stops at 16-20% fewer blank lines, below the one-third target | The target was an estimate; the remaining blank lines separate paragraphs and blocks (`AGENTS.md`: one blank line between blocks), and joining them would merge paragraphs, which the phase does not allow |
+| 2026-11-04 | Phase 3 pair 5 (`agents/architect.md` Frontend/Backend Architecture vs `rules/architecture.md` sections 5-6) kept; the role links the rule | Not the same text: the role lists what to evaluate per layer and which patterns fit; the rule lists what every change must do. They share a few words, not a rule that can drift; merging would grow one file without removing a place |
