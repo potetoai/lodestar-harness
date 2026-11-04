@@ -322,7 +322,10 @@ rh=$(. "$here/agents/claude/hooks/lodestar-lib.sh"; criteria_hash < "$rp")
 t "review check: names the plan and its hash" grep -q "r.md (criteria hash $rh)" <<<"$out"
 pstop >/dev/null; t "review check: holds once per plan and criteria" [ $? = 0 ]
 sed -i 's/^- \[ \] a$/- [ ] b/' "$rp"; rh=$(. "$here/agents/claude/hooks/lodestar-lib.sh"; criteria_hash < "$rp")
-pstop >/dev/null; t "review check: changed criteria hold again" [ $? = 2 ]
+mstop() { CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/verify-before-stop.sh" 2>&1 >/dev/null <<<"$(jq -nc --arg m "$1" '{stop_hook_active:false,last_assistant_message:$m}')"; }
+mstop 'Fixed both findings. Type "duyệt critic r" for run 4.' >/dev/null; t "review check: asking for a critic run lets the stop end" [ $? = 0 ]
+mstop 'Merged. Next: type "duyệt merge PR 12".' >/dev/null; t "review check: asking for a merge lets the stop end" [ $? = 0 ]
+mstop 'Criteria updated. Reply "Duyệt" to approve them.' >/dev/null; t "review check: changed criteria hold again when approval is asked" [ $? = 2 ]
 printf -- '- Reviewed criteria: %s\n' "$rh" >> "$rp"
 pstop >/dev/null; t "review check: the hash line lets the stop end" [ $? = 0 ]
 sed -i 's/^- \[ \] b$/- [ ] c/' "$rp"; rh=$(. "$here/agents/claude/hooks/lodestar-lib.sh"; criteria_hash < "$rp")
