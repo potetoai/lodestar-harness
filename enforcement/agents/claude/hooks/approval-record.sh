@@ -29,9 +29,17 @@ grep -qE '(chưa|chua|không|khong|đừng|dung|not|don.t|do not)[[:space:]]+(du
 # without a PR number falls through to the plan approval below.
 # Only numbers right after "merge PR"/"merge #", or listed straight after one
 # ("merge PR 9, PR 10", "merge #9 và #10"): "see issue #12" or "but not
-# PR 6" approve nothing. Only the first "merge" counts ("không merge PR 6").
-nums=$(grep -oE '(^|[^[:alpha:]])merge[[:space:]]+(pr[[:space:]]*#?|#)[0-9]+([[:space:]]*(,|and|và|&)[[:space:]]*(pr[[:space:]]*#?|#)?[0-9]+)*' <<<"$low" |
-  head -n1 | sed -E 's/^[^m]*merge//' | grep -oE '[0-9]+')
+# PR 6" approve nothing. Only the first "merge" of a line counts ("không
+# merge PR 6"). Each line that itself starts with the approval word is one
+# approval ("duyệt merge PR 1" / "duyệt merge PR 2" on two lines approves both);
+# other lines approve nothing.
+nums=$(while IFS= read -r line; do
+  ls=${line#"${line%%[![:space:][:punct:]]*}"}
+  grep -qE '^(duyệt|duyet|approve|approved)([^[:alpha:]]|$)' <<<"$ls" || continue
+  grep -qE '(chưa|chua|không|khong|đừng|dung|not|don.t|do not)[[:space:]]+(duyệt|duyet|approve)' <<<"$ls" && continue
+  grep -oE '(^|[^[:alpha:]])merge[[:space:]]+(pr[[:space:]]*#?|#)[0-9]+([[:space:]]*(,|and|và|&)[[:space:]]*(pr[[:space:]]*#?|#)?[0-9]+)*' <<<"$ls" |
+    head -n1 | sed -E 's/^[^m]*merge//' | grep -oE '[0-9]+'
+done <<<"$low" | awk '!seen[$0]++')
 if [ -n "$nums" ]; then
   now=$(date '+%Y-%m-%d %H:%M')
   mkdir -p .ai
