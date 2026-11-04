@@ -1,5 +1,8 @@
 # Idea: design review step
 
+> **Rated 2026-11-04** in `plans/active/skill-harvest.md` (idea 48,
+> decision log): folded into phase 3b; no new role or workflow.
+
 Reported by App01, 2026-11-04 (`lodestar-no-design-review-step`). Not yet
 rated.
 
@@ -17,3 +20,9 @@ whether it is a reviewer checklist line, a skill pick in
 `skills/capabilities.md` (design critique, UX copy, accessibility), or a new
 role. Rate it in an active plan, with App01's PR history as evidence, before
 any work.
+
+Evidence at rating (2026-11-04): 17 of App01's last 40 merged PRs touch UI
+or design files; one known miss (App01 #141, texts in a docs-only PR); two
+related misses in its feedback log (`low-contrast-state-shipped`,
+`app-language-assumed`); App01 added its own rule (App01 #142,
+`docs/design/README.md` "Design review").
