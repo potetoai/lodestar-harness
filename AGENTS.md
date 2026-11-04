@@ -49,7 +49,7 @@ Code alone, or Orca when present).
 - Docs must pass `bash scripts/check-links.sh` (CI runs both).
 - Run the Router eval suite (`evals/README.md`) only in a PR that changes
   `router/ROUTER.md`, when the day-to-day model changes, or before cutting
-  Router text. In a `ROUTER.md` PR, compare with `evals/router/scores.md` and
+  Router text (to show the cut changes no score). In a `ROUTER.md` PR, compare with `evals/router/scores.md` and
   add `Lodestar evals: router <branch score> (main <score>), <N>k tokens` to
   the PR text; fix or explain a drop before merge; a merged change updates
   `scores.md`. Never on other PRs, every push, or a schedule. CI and
