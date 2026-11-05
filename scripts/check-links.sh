@@ -6,7 +6,7 @@
 # neither are backtick paths in plans/ (plans name files that do not exist yet).
 # Usage: bash scripts/check-links.sh [repo-dir]    Exit 1 on a broken link.
 cd "${1:-$(dirname "$0")/..}" || exit 1
-tops=$(git ls-files | cut -d/ -f1 | sort -u | grep -v '\.' | paste -sd'|')
+tops=$(git ls-files | cut -d/ -f1 | sort -u | grep -v '\.' | paste -sd'|' -)
 broken=0
 while IFS= read -r md; do
   dir=$(dirname "$md")
