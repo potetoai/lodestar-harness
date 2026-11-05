@@ -100,6 +100,17 @@ need_tool() {   # need_tool NAME WINGET_ID HINT
 command -v git >/dev/null 2>&1 && ok "git: $(git --version)" || bad "git is missing. Install Git for Windows: https://git-scm.com"
 need_tool make ezwinports.make "Windows: winget install --exact --id ezwinports.make · macOS: brew install make · Linux: apt install make"
 need_tool jq jqlang.jq "Windows: winget install --exact --id jqlang.jq · macOS: brew install jq · Linux: apt install jq"
+# The hooks need bash 4 or newer; macOS ships bash 3.2. Claude Code runs the
+# hooks with the first bash on PATH.
+bash_major=$(bash -c 'echo "${BASH_VERSINFO[0]}"' 2>/dev/null)
+if [ "${bash_major:-0}" -ge 4 ]; then
+  ok "bash: $(bash -c 'echo "$BASH_VERSION"')"
+elif command -v brew >/dev/null 2>&1 && ask "bash on PATH is ${bash_major:-missing}; hooks need 4 or newer. Install it with brew?"; then
+  brew install bash >/dev/null 2>&1 && warn "installed bash with brew: open a new terminal so it comes first on PATH, then run this again." ||
+    bad "brew install bash did not work. Install it by hand: brew install bash"
+else
+  bad "bash on PATH is ${bash_major:-missing}; hooks need bash 4 or newer. macOS: brew install bash, then open a new terminal."
+fi
 # Keep Windows-native agent terminals independent of the shell that happened
 # to run setup-machine.sh. Git's bin directory supplies bash.exe; the two
 # WinGet package paths supply make.exe and jq.exe.

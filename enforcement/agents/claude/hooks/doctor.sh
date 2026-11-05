@@ -170,10 +170,10 @@ toolchain_pinned() {
   ! grep -qE '(^|/)(requirements[^/]*\.txt|pyproject\.toml)$' <<<"$files" || [ -s .python-version ]
 }
 # .ai/last-maintenance holds the date (YYYY-MM-DD) of the last maintenance run.
-# ponytail: GNU date (Linux, Git Bash); macOS needs `gdate` if it ever matters.
-maintenance_recent() {
-  local d; d=$(tr -d '\r\n' < .ai/last-maintenance 2>/dev/null) || return 1
-  [ $(( ($(date +%s) - $(date -d "$d" +%s)) / 86400 )) -le 14 ]
+maintenance_recent() {   # GNU date (Linux, Git Bash) or BSD date (macOS)
+  local d s; d=$(tr -d '\r\n' < .ai/last-maintenance 2>/dev/null) || return 1
+  s=$(date -d "$d" +%s 2>/dev/null || date -j -f %Y-%m-%d "$d" +%s 2>/dev/null) || return 1
+  [ $(( ($(date +%s) - s) / 86400 )) -le 14 ]
 }
 # A tag (2nd column) seen twice or more whose rows are not all "enforced" or "accepted"
 # (owner agreed no machine rule fits). A new row with another status warns again.

@@ -23,9 +23,11 @@ failed=0
 pass() { echo "PASS $1"; }
 bad()  { echo "FAIL $1"; failed=1; }
 t() { local name=$1; shift; if "$@" >/dev/null; then pass "$name"; else bad "$name [$*]"; fi; }
+# sedi: sedi on GNU (Linux, Git Bash) and BSD (macOS) sed alike.
+sedi() { sed -i.bak "$@" && for a; do rm -f -- "$a.bak"; done; }
 snapshot() { (cd "$1" && find . -path ./.git -prune -o -type f -print | sort | xargs cksum); }
 fill() { # replace template placeholder lines, as onboarding would
-  sed -i -E 's/^([[:space:]]*([*-][[:space:]]*)?)\[[^]]+\][[:space:]]*$/\1filled/' "$@"
+  sedi -E 's/^([[:space:]]*([*-][[:space:]]*)?)\[[^]]+\][[:space:]]*$/\1filled/' "$@"
 }
 
 # 1. Empty project: doctor fails and names what is missing.
@@ -61,7 +63,7 @@ out=$(bash "$p/.claude/hooks/doctor.sh" "$p"); rc=$?
 t "doctor warns on a long AGENTS.md (A11), still ready" bash -c '[ $1 = 0 ] && grep -qE "⚠️ +A11 " <<<"$2"' _ "$rc" "$out"
 cp "$tmp/agents.bak" "$p/AGENTS.md"
 t "template AGENTS.md passes A11b" grep -qE '✅ A11b ' <<<"$out"
-sed -i '/enforcement\.json/d' "$p/AGENTS.md"
+sedi '/enforcement\.json/d' "$p/AGENTS.md"
 out=$(bash "$p/.claude/hooks/doctor.sh" "$p"); rc=$?
 t "doctor warns when AGENTS.md misses the cloud line (A11b), still ready" bash -c '[ $1 = 0 ] && grep -qE "⚠️ +A11b " <<<"$2"' _ "$rc" "$out"
 cp "$tmp/agents.bak" "$p/AGENTS.md"
@@ -254,8 +256,8 @@ echo f > "$c/a.txt"; rec verify; git -C "$c" -c user.name=t -c user.email=t@t co
 t "stop hook skips make verify after the agent ran it, then committed" [ $? = 0 -a "$(runs)" = "$n" ]
 # An edit of the same size in the same clock tick as the index write: git
 # trusts the file times only while the index copy keeps its own time.
-touch -d @1700000000 "$c/a.txt"; git -C "$c" update-index -q --refresh; touch -d @1700000000 "$c/.git/index"
-rec verify; n=$(runs); echo g > "$c/a.txt"; touch -d @1700000000 "$c/a.txt"; cstop
+touch -t 202311142213 "$c/a.txt"; git -C "$c" update-index -q --refresh; touch -t 202311142213 "$c/.git/index"
+rec verify; n=$(runs); echo g > "$c/a.txt"; touch -t 202311142213 "$c/a.txt"; cstop
 t "stop hook sees a same-size edit in the index's clock tick" [ "$(runs)" = $((n + 1)) ]
 # Only notes (.ai/, docs/ at the root, *.md) changed since the pass: no rerun.
 printf 'verify:
@@ -341,19 +343,19 @@ cp "$here/agents/claude/hooks/lodestar-lib.sh" "$p/.claude/hooks/"
 rp=$p/.ai/plans/active/r.md
 printf '# Plan: r\n\n## Acceptance criteria\n- [ ] a\n\n## Criteria review\n- ...\n' > "$rp"
 pstop >/dev/null; t "review check: a plan not reviewed yet lets the stop end" [ $? = 0 ]
-sed -i 's/^- \.\.\.$/- No findings./' "$rp"
+sedi 's/^- \.\.\.$/- No findings./' "$rp"
 out=$(pstop); t "review check: a review without the hash line holds" [ $? = 2 ]
 rh=$(. "$here/agents/claude/hooks/lodestar-lib.sh"; criteria_hash < "$rp")
 t "review check: names the plan and its hash" grep -q "r.md (criteria hash $rh)" <<<"$out"
 pstop >/dev/null; t "review check: holds once per plan and criteria" [ $? = 0 ]
-sed -i 's/^- \[ \] a$/- [ ] b/' "$rp"; rh=$(. "$here/agents/claude/hooks/lodestar-lib.sh"; criteria_hash < "$rp")
+sedi 's/^- \[ \] a$/- [ ] b/' "$rp"; rh=$(. "$here/agents/claude/hooks/lodestar-lib.sh"; criteria_hash < "$rp")
 mstop() { CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/verify-before-stop.sh" 2>&1 >/dev/null <<<"$(jq -nc --arg m "$1" '{stop_hook_active:false,last_assistant_message:$m}')"; }
 mstop 'Fixed both findings. Type "duyệt critic r" for run 4.' >/dev/null; t "review check: asking for a critic run lets the stop end" [ $? = 0 ]
 mstop 'Merged. Next: type "duyệt merge PR 12".' >/dev/null; t "review check: asking for a merge lets the stop end" [ $? = 0 ]
 mstop 'Criteria updated. Reply "Duyệt" to approve them.' >/dev/null; t "review check: changed criteria hold again when approval is asked" [ $? = 2 ]
 printf -- '- Reviewed criteria: %s\n' "$rh" >> "$rp"
 pstop >/dev/null; t "review check: the hash line lets the stop end" [ $? = 0 ]
-sed -i 's/^- \[ \] b$/- [ ] c/' "$rp"; rh=$(. "$here/agents/claude/hooks/lodestar-lib.sh"; criteria_hash < "$rp")
+sedi 's/^- \[ \] b$/- [ ] c/' "$rp"; rh=$(. "$here/agents/claude/hooks/lodestar-lib.sh"; criteria_hash < "$rp")
 echo "2026-01-01 00:00 $rp $rh" > "$p/.ai/approvals.log"
 pstop >/dev/null; t "review check: approved criteria are skipped" [ $? = 0 ]
 
@@ -384,7 +386,7 @@ out=$(remind "$tmp/py")
 t "global hook lists an active plan no commit touched for days" bash -c 'grep -q "active/old.md (last commit 2020-01-01)" <<<"$1" && grep -q "git rm it and add a row to .ai/plans/completed.md" <<<"$1"' _ "$out"
 t "global hook skips a fresh or uncommitted active plan" bash -c '! grep -qE "new.md|draft.md" <<<"$1"' _ "$out"
 # A project on a template before completed.md: its doctor does not ask for the file.
-dr=$tmp/py/.claude/hooks/doctor.sh; cp "$dr" "$tmp/dr.bak"; sed -i 's| \&\& \[ -f .ai/plans/completed.md \]||' "$dr"
+dr=$tmp/py/.claude/hooks/doctor.sh; cp "$dr" "$tmp/dr.bak"; sedi 's| \&\& \[ -f .ai/plans/completed.md \]||' "$dr"
 mv "$tmp/py/.ai/plans/completed.md" "$tmp/py/c.md"; out=$(remind "$tmp/py"); mv "$tmp/py/c.md" "$tmp/py/.ai/plans/completed.md"; cp "$tmp/dr.bak" "$dr"
 t "global hook gives the old close step to a project without completed.md" bash -c 'grep -q "git mv it to .ai/plans/completed/" <<<"$1" && ! grep -q "row to .ai/plans/completed.md" <<<"$1"' _ "$out"
 out=$(LODESTAR_STALE_PLAN_DAYS=99999 remind "$tmp/py")
@@ -594,7 +596,8 @@ g add -A; g commit -qm base
 check() { bash "$here/agents/claude/hooks/ci-checks.sh" main >/dev/null 2>&1; }
 # stamp FILE: the review names the criteria it covers, as they are now.
 stamp() { local h; h=$(. "$here/agents/claude/hooks/lodestar-lib.sh"; criteria_hash < "$1")
-  sed -i -e '/^- Reviewed criteria:/d' -e "s/^- No findings\.\$/&\n- Reviewed criteria: $h/" "$1"; }
+  sedi -e '/^- Reviewed criteria:/d' -e "/^- No findings\.\$/a\\
+- Reviewed criteria: $h" "$1"; }
 # mkplan NAME CRITERION...: a plan with acceptance criteria.
 mkplan() { local n=$1; shift; mkdir -p .ai/plans/active
   { echo "# Plan: $n"; echo; echo "## Acceptance criteria"; printf -- '- [ ] %s\n' "$@"; echo; echo "## Criteria review"; echo "- No findings."; echo; echo "## Steps"; } > ".ai/plans/active/$n.md"; stamp ".ai/plans/active/$n.md"; }
@@ -978,18 +981,18 @@ out=$(rec "duyệt"); t "with 2 plans waiting, a bare 'duyệt' records nothing 
 rec "Duyệt y-z nhé" >/dev/null; t "'duyệt <name>' records only the named plan" bash -c 'grep -q "y-z.md" "$1" && [ $(wc -l < "$1") = 1 ]' _ "$p/.ai/approvals.log"
 out=$(rec "duyệt y-z"); t "naming an already approved plan records nothing, not the other waiting plan" bash -c '[ $(wc -l < "$2") = 1 ] && grep -q "y-z.md, but its criteria .* already approved" <<<"$1" && grep -q "relock" <<<"$1"' _ "$out" "$p/.ai/approvals.log"
 rec "duyệt" >/dev/null; t "with 1 plan left, a bare 'duyệt' records it" [ "$(wc -l < "$p/.ai/approvals.log")" = 2 ]
-sed -i 's/- \[ \] a/- [x] a/' "$p/.ai/plans/active/x.md"
+sedi 's/- \[ \] a/- [x] a/' "$p/.ai/plans/active/x.md"
 t "ticking a criterion off keeps it approved" bash -c 'cd "$1" && . .claude/hooks/lodestar-lib.sh && plan_approved_now .ai/plans/active/x.md' _ "$p"
 printf '# Plan\n\n## Acceptance criteria\n\nProse.\n\n- [ ] c starts here\n      and goes on x 1.37\n\n## Criteria review\n- No findings.\n\n## Steps\n' > "$p/.ai/plans/active/2026-01-03-w.md"; stamp "$p/.ai/plans/active/2026-01-03-w.md"
 rec "duyệt w" >/dev/null
-sed -i 's/x 1.37/x 1\/1.37/' "$p/.ai/plans/active/2026-01-03-w.md"
+sedi 's/x 1.37/x 1\/1.37/' "$p/.ai/plans/active/2026-01-03-w.md"
 t "editing a criterion's second line needs a new approval" bash -c 'cd "$1" && . .claude/hooks/lodestar-lib.sh && ! plan_approved_now .ai/plans/active/2026-01-03-w.md' _ "$p"
 n=$(wc -l < "$p/.ai/approvals.log"); out=$(rec "duyệt w")
 t "criteria changed after the review are not recorded; the agent is told to re-run the critic" bash -c '[ "$(wc -l < "$2")" = "$3" ] && grep -q "does not cover" <<<"$1" && grep -q "agents/critic.md" <<<"$1"' _ "$out" "$p/.ai/approvals.log" "$n"
 stamp "$p/.ai/plans/active/2026-01-03-w.md"
-sed -i 's/^Prose\./Other prose./' "$p/.ai/plans/active/2026-01-03-w.md"; rec "duyệt w" >/dev/null
+sedi 's/^Prose\./Other prose./' "$p/.ai/plans/active/2026-01-03-w.md"; rec "duyệt w" >/dev/null
 t "a review that covers the changed criteria is recorded" [ "$(wc -l < "$p/.ai/approvals.log")" = $((n + 1)) ]
-sed -i 's/^Other prose\./Prose./' "$p/.ai/plans/active/2026-01-03-w.md"
+sedi 's/^Other prose\./Prose./' "$p/.ai/plans/active/2026-01-03-w.md"
 t "editing prose between the criteria keeps them approved" bash -c 'cd "$1" && . .claude/hooks/lodestar-lib.sh && plan_approved_now .ai/plans/active/2026-01-03-w.md' _ "$p"
 printf '# Plan
 
@@ -1003,13 +1006,13 @@ out=$(rec "duyệt v"); t "a plan without a criteria review is not recorded; the
 vh=$(. "$here/agents/claude/hooks/lodestar-lib.sh"; criteria_hash < "$p/.ai/plans/active/2026-01-04-v.md")
 printf -- '- Reviewed criteria: %s\n' "$vh" >> "$p/.ai/plans/active/2026-01-04-v.md"
 rec "duyệt v" >/dev/null; t "a review with only the 'Reviewed criteria' line is not recorded" bash -c '! grep -q "v.md" "$1"' _ "$p/.ai/approvals.log"
-sed -i '$d' "$p/.ai/plans/active/2026-01-04-v.md"
+sedi '$d' "$p/.ai/plans/active/2026-01-04-v.md"
 printf -- '- AC1 had no threshold: added "within 0.1%%".
 ' >> "$p/.ai/plans/active/2026-01-04-v.md"
 out=$(rec "duyệt v"); t "a filled review that does not name the criteria is not recorded" bash -c '! grep -q "v.md" "$2" && grep -q "does not cover" <<<"$1"' _ "$out" "$p/.ai/approvals.log"
 printf -- '- Reviewed criteria: %s\n' "$vh" >> "$p/.ai/plans/active/2026-01-04-v.md"
 rec "duyệt v" >/dev/null; t "the same plan with a filled criteria review is recorded" grep -q "v.md" "$p/.ai/approvals.log"
-sed -i '/^## Criteria review/,$d' "$p/.ai/plans/active/x.md"
+sedi '/^## Criteria review/,$d' "$p/.ai/plans/active/x.md"
 t "a plan approved before the critic existed stays approved" bash -c 'cd "$1" && . .claude/hooks/lodestar-lib.sh && plan_approved_now .ai/plans/active/x.md' _ "$p"
 t "the plan template has no criteria to approve" bash -c '. "$1/agents/claude/hooks/lodestar-lib.sh" && [ -z "$(criteria_hash < "$1/project/.ai/plans/TEMPLATE.md")" ]' _ "$here"
 
@@ -1035,7 +1038,7 @@ fill "$p/AGENTS.md" "$p/.ai/project.md"
 echo "| INV-01 | x | High | test | enforced |" >> "$p/.ai/invariants.md"
 out=$(bash "$p/.claude/hooks/doctor.sh" "$p")
 t "fresh project: no maintenance warnings" bash -c '! grep -qE "⚠️ +D[12] " <<<"$1"' _ "$out"
-date -d '20 days ago' +%F > "$p/.ai/last-maintenance"
+{ date -d '20 days ago' +%F 2>/dev/null || date -v-20d +%F; } > "$p/.ai/last-maintenance"
 out=$(bash "$p/.claude/hooks/doctor.sh" "$p"); rc=$?
 t "doctor warns when maintenance is overdue (D1), still ready" bash -c '[ $1 = 0 ] && grep -qE "⚠️ +D1 " <<<"$2"' _ "$rc" "$out"
 printf '| 2026-09-01 | tz-missing | used date.today() | TD-02 | open |\n| 2026-09-10 | tz-missing | again | TD-02 | open |\n' >> "$p/.ai/feedback-log.md"
@@ -1043,7 +1046,7 @@ out=$(bash "$p/.claude/hooks/doctor.sh" "$p")
 t "doctor warns about a repeated mistake (D2)" grep -qE "⚠️ +D2 " <<<"$out"
 out=$(remind "$p")
 t "global hook reports maintenance due" bash -c 'grep -q "maintenance is due" <<<"$1" && grep -q "D1" <<<"$1"' _ "$out"
-sed -i 's/| open |/| enforced |/' "$p/.ai/feedback-log.md"; date +%F > "$p/.ai/last-maintenance"
+sedi 's/| open |/| enforced |/' "$p/.ai/feedback-log.md"; date +%F > "$p/.ai/last-maintenance"
 out=$(bash "$p/.claude/hooks/doctor.sh" "$p")
 t "enforced repeats and fresh maintenance clear D1/D2" bash -c '! grep -qE "⚠️ +D[12] " <<<"$1"' _ "$out"
 printf '| 2026-09-13 | asked-late | guessed intent | - | accepted |\n| 2026-09-14 | asked-late | again | - | accepted |\n' >>"$p/.ai/feedback-log.md"
@@ -1052,7 +1055,7 @@ t "repeats the owner accepted without a machine rule do not trigger D2" bash -c 
 printf '| 2026-09-15 | asked-late | third time | - | open |\n' >>"$p/.ai/feedback-log.md"
 out=$(bash "$p/.claude/hooks/doctor.sh" "$p")
 t "a new row after acceptance triggers D2 again" grep -qE "⚠️ +D2 " <<<"$out"
-sed -i '/third time/d' "$p/.ai/feedback-log.md"
+sedi '/third time/d' "$p/.ai/feedback-log.md"
 printf '| 2026-09-11 | orca-x | missing step | - | reported |\n| 2026-09-12 | lodestar-x | again | - | reported |\n' >>"$p/.ai/feedback-log.md"
 out=$(bash "$p/.claude/hooks/doctor.sh" "$p")
 t "repeated lodestar- and old orca- tags do not trigger D2" bash -c '! grep -qE "⚠️ +D2 " <<<"$1"' _ "$out"
@@ -1140,7 +1143,7 @@ cd "$here"
 p=$tmp/critic; mkdir -p "$p/.claude/hooks"; cd "$p"
 cp "$here/agents/claude/hooks/lodestar-lib.sh" .claude/hooks/
 mkplan c "a works"; pl=.ai/plans/active/c.md
-runs() { local i; for i in $(seq "$1" "$2"); do sed -i "/^## Criteria review/a - Run $i (narrowed, 2026-10-27): read the plan." $pl; done; }
+runs() { local i; for i in $(seq "$1" "$2"); do sedi "/^## Criteria review/a - Run $i (narrowed, 2026-10-27): read the plan." $pl; done; }
 crit() { CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/critic-limit.sh" 2>/dev/null \
   <<<"$(jq -n --arg b "$1" --arg s "${2:-general-purpose}" '{tool_name:"Agent",tool_input:{subagent_type:$s,prompt:$b}}')"; }
 brief="You are the critic (role file: D:\\AI\\Lodestar-harness\\agents\\critic.md). Plan: $(native "$p")\\.ai\\plans\\active\\c.md"
@@ -1526,9 +1529,9 @@ for f in src/auth/login.py db/init.sql tests/test_pay.py .github/workflows/ci.ym
 done
 mp 7 '7 fix/m aaaaaaa false main 0000000\nsrc/authors.py\ndocs/sql.md\ntests/test_other.py\napp/payroll.py'; t "merge-pr merges files outside the owner-only list" [ $? = 0 ]
 mp 7 '7 fix/m aaaaaaa false main 0000000\n.claude/docs/data.md\n.Claude/Docs/Run.md\nREADME.md'; t "merge-pr merges .claude/ files that are all in .claude/docs/" [ $? = 0 ]
-sed -i 's#^sensitive_paths:#&\n  - .claude/#' "$m/.ai/project.md"
+sedi 's#^sensitive_paths:#&\n  - .claude/#' "$m/.ai/project.md"
 mp 7 '7 fix/m aaaaaaa false main 0000000\n.claude/docs/data.md'; t "merge-pr refuses .claude/docs/ when sensitive_paths lists .claude/" [ $? = 1 ]
-sed -i '/^  - \.claude\/$/d' "$m/.ai/project.md"
+sedi '/^  - \.claude\/$/d' "$m/.ai/project.md"
 mp 7 '7 fix/m aaaaaaa false main 0000000\nrenamed|docs/ci.yml||.github/workflows/ci.yml'; t "merge-pr refuses a rename away from a safety file (old path listed)" [ $? = 1 ]
 mp 7 '7 fix/m aaaaaaa false\nREADME.md'; t "merge-pr stops when gh gives no base branch" [ $? = 1 ]
 # The lock may grow without the owner. Removing or changing a line, deleting
@@ -1651,7 +1654,7 @@ done
 cx PreToolUse protect-tests "$(patch "*** Begin Patch
 +x
 *** End Patch")"; t "codex: a patch with no file line is blocked (cannot be checked)" [ $? = 2 ]
-sed -i 's|^  - \[path/or/glob\]|  - app/money.py|' "$p/.ai/project.md"
+sedi 's|^  - \[path/or/glob\]|  - app/money.py|' "$p/.ai/project.md"
 cx PreToolUse sensitive-gate "$(patch "*** Begin Patch
 *** Add File: ../app/money.py
 +x
@@ -1699,7 +1702,7 @@ t "bootstrap keeps the project's own Codex hooks" jq -e '[.hooks.Stop[].hooks[].
 # 24. Templates checked out as CRLF (Windows, core.autocrlf=true) install as
 # LF, and --upgrade does not rewrite a file whose content is the same.
 src=$tmp/crlfsrc; mkdir -p "$src"; cp -r "$here" "$src/enforcement"; cp -r "$here/../project" "$src/project"
-sed -i 's/$/\r/' "$src/enforcement/github/ci.yml" "$src/enforcement/agents/claude/settings.json" "$src/enforcement/project/AGENTS.md"
+sedi 's/$/\r/' "$src/enforcement/github/ci.yml" "$src/enforcement/agents/claude/settings.json" "$src/enforcement/project/AGENTS.md"
 p=$tmp/crlf; mkdir -p "$p"; git -C "$p" init -q
 bash "$src/enforcement/bootstrap.sh" "$p" --stack node-ts >/dev/null
 # Not grep: Git Bash's grep drops the CR before matching.

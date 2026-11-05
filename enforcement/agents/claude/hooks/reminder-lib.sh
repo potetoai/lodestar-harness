@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Shared advisory plumbing. Persist only hashed identifiers and context counters.
 advisory_unavailable() { echo "Lodestar advisory unavailable: $*" >&2; }
+# sha256sum on Linux and Git Bash; shasum on macOS.
+sha256() { if command -v sha256sum >/dev/null; then sha256sum; else shasum -a 256; fi; }
 reminder_input() {
-  command -v jq >/dev/null && command -v sha256sum >/dev/null || return 1
+  command -v jq >/dev/null && { command -v sha256sum || command -v shasum; } >/dev/null || return 1
   # One jq call: these hooks run on every tool call or stop.
   { IFS= read -r transcript && IFS= read -r session; } < <(jq -r 'select(type == "object" and (.session_id | type == "string" and length > 0) and (.transcript_path | type == "string" and length > 0)) | .transcript_path, .session_id' 2>/dev/null | tr -d '\r') || return 1
   [ -r "$transcript" ] && [ -s "$transcript" ] || return 1
@@ -17,7 +19,7 @@ reminder_input() {
 reminder_state() {
   reminder_home=${reminder_home//\\//}
   if [ -d "$reminder_home" ]; then reminder_home=$(cd "$reminder_home" && { pwd -W 2>/dev/null || pwd; }); fi
-  reminder_key=$(printf '%s\0%s\0%s' "$runtime" "$reminder_home" "$session" | sha256sum) || return 1
+  reminder_key=$(printf '%s\0%s\0%s' "$runtime" "$reminder_home" "$session" | sha256) || return 1
   reminder_key=${reminder_key%% *}
   # A project hook keeps its state in the project's git dir (reminder_project_dir).
   reminder_dir=${LODESTAR_STATE_DIR:-${reminder_project_dir:-$reminder_home}/lodestar-state}
@@ -30,7 +32,7 @@ reminder_create() { ( set -C; : > "$1" ) 2>/dev/null; }
 reminder_claim() {
   local kind=$1 identity=$2 key state lock previous attempt
   reminder_state || return 2
-  key=$(printf '%s' "$identity" | sha256sum) || return 2
+  key=$(printf '%s' "$identity" | sha256) || return 2
   key=${key%% *}
   state="$reminder_dir/$reminder_key-$kind"
   mkdir -p "$reminder_dir" 2>/dev/null || return 2
