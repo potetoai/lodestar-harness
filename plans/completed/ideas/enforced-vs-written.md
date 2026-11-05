@@ -1,6 +1,6 @@
 # Idea: which rules a machine checks, and which are only written
 
-> **Idea plan, rated.** Rated in `plans/active/harness-health.md`
+> **Idea plan, rated.** Rated in `plans/completed/harness-health.md`
 > (2026-10-29, section "Rated idea: enforced vs written"); F1 built there in
 > a smaller form than written below.
 

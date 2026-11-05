@@ -1,6 +1,6 @@
 # Idea: behavior evals for the Router, reviewer and text-only rules
 
-> **Idea plan, rated.** Rated in `plans/active/harness-health.md`
+> **Idea plan, rated.** Rated in `plans/completed/harness-health.md`
 > (2026-11-02, section "Rated idea: behavior evals"); built in
 > `plans/active/behavior-evals.md`, Router suite first.
 
