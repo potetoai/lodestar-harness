@@ -95,7 +95,7 @@ if [ ${#hits[@]} -gt 0 ]; then
   elif [ $plan_ok = 0 ]; then
     fail "Sensitive paths changed without an owner-approved plan in this PR:"
     printf '     %s\n' "${hits[@]}"
-    echo "   Add .ai/plans/active/<task>.md with the criteria, approved by the owner (they reply \"duyệt\" or \"approve\")."
+    echo "   Add .ai/plans/active/<task>.md with the criteria, approved by the owner (they reply \"approve\", or \"duyệt\")."
   else
     echo "✅ sensitive paths changed, with tests and an approved plan"
   fi

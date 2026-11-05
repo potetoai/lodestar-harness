@@ -28,7 +28,7 @@ In high-risk tasks the tester works **before** the builder
 (`rules/testing.md`, "Tests-first mode"):
 
 - Start from the acceptance criteria the owner approved (they replied
-  "duyệt" or "approve"; the approval is in `.ai/approvals.log`). Write one test per
+  "approve" or "duyệt"; the approval is in `.ai/approvals.log`). Write one test per
   criterion, and nothing that is not in the criteria. Write no test before
   that approval: red tests then hold every stop (`make verify` fails).
 - Run the tests and confirm they **fail** on the current code. Report the

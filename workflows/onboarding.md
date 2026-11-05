@@ -85,7 +85,7 @@ branch and commit conventions if it has them (for example
    the hooks, save the change list as the acceptance criteria of
    `.ai/plans/active/<date>-onboarding.md` with
    `No-Test-Reason: onboarding, behavior unchanged`, and ask the owner to
-   reply with the approval word ("duyệt" or "approve") once more so the hook
+   reply with the approval word ("approve", or "duyệt") once more so the hook
    records it. Only then may the baseline
    fixes touch sensitive files.
 6. **Shared steps S1–S3** below. Keep the tools the project already uses and

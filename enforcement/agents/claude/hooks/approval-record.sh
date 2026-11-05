@@ -93,8 +93,8 @@ if grep -qE '^(duyệt|duyet|approve|approved)[[:space:]]+critic([^[:alnum:]-]|$
   [ ${#said[@]} = 0 ] && [ ${#all[@]} = 1 ] && said=("${all[@]}")
   if [ ${#said[@]} = 0 ]; then
     echo "Lodestar: the owner allowed another critic run, but ${#all[@]} plans are active, so nothing was recorded."
-    echo "Ask the owner to type one of these lines (the plan's name, with or without its date):"
-    for p in "${all[@]}"; do echo "  duyệt critic $(short_name "$p")"; done
+    echo "Ask the owner to type one of these lines (the plan's name, with or without its date; \"duyệt critic\" when owner_language is vi):"
+    for p in "${all[@]}"; do echo "  approve critic $(short_name "$p")"; done
     exit 0
   fi
   now=$(date '+%Y-%m-%d %H:%M')

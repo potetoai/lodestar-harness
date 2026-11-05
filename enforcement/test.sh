@@ -1178,13 +1178,13 @@ t "'duyệt critic-x' approves the plan named critic-x" bash -c 'grep -qE " .ai/
 mkplan 2026-10-31-share-x "s works"; pl=.ai/plans/active/2026-10-31-share-x.md; runs 1 13
 brief="You are the critic. Plan: .ai/plans/active/2026-10-31-share-x.md"
 out=$(CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/critic-limit.sh" 2>&1 >/dev/null <<<"$(jq -n --arg b "$brief" '{tool_input:{subagent_type:"critic",prompt:$b}}')")
-t "the critic block message names the line the owner types" grep -q "duyệt critic share-x$" <<<"$out"
+t "the critic block message names the line the owner types" grep -q "approve critic share-x$" <<<"$out"
 CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"duyệt critic 2026-10-31-share-x"}' >/dev/null
 t "'duyệt critic' with the dated name records the run count" grep -q " critic-run .ai/plans/active/2026-10-31-share-x.md 13$" .ai/approvals.log
 crit "$brief"; t "one 'duyệt critic' allows the next run past old runs" [ $? = 0 ]
 runs 14 14; crit "$brief"; t "the run after it is blocked again" [ $? = 2 ]
-CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"duyệt critic share-x"}' >/dev/null
-crit "$brief"; t "'duyệt critic' with the short name allows the next run" [ $? = 0 ]
+CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"approve critic share-x"}' >/dev/null
+crit "$brief"; t "'approve critic' with the short name allows the next run" [ $? = 0 ]
 CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"duyệt 2026-10-31-share-x"}' >/dev/null
 t "an approval naming a dated plan in full approves its criteria" grep -qE " .ai/plans/active/2026-10-31-share-x.md [0-9a-f]{40}$" .ai/approvals.log
 cd "$here"

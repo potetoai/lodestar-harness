@@ -142,7 +142,7 @@ while IFS=$'\t' read -r ch f; do
 done <<<"$files"
 if [ -n "$hit" ] && ! tr -d '\r' 2>/dev/null < "$proj/.ai/approvals.log" | grep -qE "[[:space:]]merge-pr[[:space:]]+$n[[:space:]]+$oid\$"; then
   die "PR #$n changes $hit (sensitive code, a locked test or a safety file), so only the owner approves its merge." \
-    "Tell the owner what the PR changes and how it was checked, then ask them to type \"duyệt merge PR $n\" (or \"approve merge PR $n\"). A new push needs a new approval."
+    "Tell the owner what the PR changes and how it was checked, then ask them to type \"approve merge PR $n\" (\"duyệt merge PR $n\" when owner_language is vi). A new push needs a new approval."
 fi
 
 # CI: right after a push GitHub may not list the checks yet; ask again.
