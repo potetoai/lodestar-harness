@@ -131,6 +131,36 @@ PRs that ran CI (both private repos had no Actions minutes from 2026-10-25 to
 Done when: one report per project is in the progress log, and the owner has
 decided whether it becomes a maintenance step.
 
+Report 2026-11-05 (merged PRs and transcripts 2026-10-01..11-05; App01 =
+`save-organize-app`, 144 PRs, 720 transcripts; vn30, 152 PRs, 466
+transcripts). Block counts are hook messages, so one fault that blocks three
+stop attempts counts three; reminders (200k, task-done) are left out.
+
+| Measure | App01 | vn30 |
+|---|---|---|
+| PRs with a review-fix commit (`fix`/`test` commit naming review) | 42 | 9 |
+| PRs with commits after the commit the review line names | 30 of 56 | 6 of 37 |
+| CI red, then a code or test fix before merge | 4 (#20, #60, #82, #84) | 2 (#99, #145) |
+| CI red from the checks or tools, not the code | 5: secret scan #10, #11, #51; Node/doc-paths #132, #145 | 3: gitleaks #95, ruff version #67, doctor A4d #179 |
+| CI red at merge, CI ran | 2 (#125, #126, owner merged) | 1 (#144) |
+| `fix` PRs that name an earlier merged PR | 7 (4 are late review rounds: #24, #29, #31, #32) | 3 (#51, #77, #190) |
+| `fix` PRs in all | 16 | 32 (most fix data-source faults older than 10-01) |
+| Feedback rows (`lodestar-` rows) | 30 (10) | 34 (14) |
+| Hook blocks in all | about 490 | about 380 |
+| Blocks that were right: verify fails / unpushed commits / lint (not unused) | 154 / 57 / 41 | 73 / 33 / 126 |
+| Blocks that were right: tests-first, locks, owner merge approval | 19 criteria line, 4 locks, 4 owner approval | 14 sensitive gate, 5 locks, 13 owner approval |
+| False positives, fixed | 35 merge text (0 after #83), 7 Tests-First commit (removed), 145 unused-name lint mid-edit (#116, #118) | 16 merge text (0 after #83), 22 stop at tests-first HEAD (fixed 10-23), 49 unused-name lint, 3 push text (at least 1 false) |
+
+Reading: review catches the most (App01 42 PRs, vn30 9, where most work is
+data checks the owner reviews); CI caught 6 code faults but raised 8 false
+alarms from its own checks; the lint and merge-text false positives were the
+largest cost and are fixed (unused-name lint blocks since 11-03: App01 0,
+vn30 1, only two days of data). After merge, most faults the owner found are
+agent judgement (feedback rows), not code that slipped past the checks.
+How: GraphQL merged PRs with per-commit check suites; transcript scan of
+`hook_blocking_error`, `PreToolUse ... hook error` and `Stop hook feedback`
+by message text. Neither is `usage-report.py`; about 40k tokens this run.
+
 ### Rated idea: enforced vs written (2026-10-29)
 
 `plans/completed/ideas/enforced-vs-written.md` lists rules a machine checks
@@ -197,6 +227,7 @@ Done when: `plans/active/behavior-evals.md` is merged.
 | 2026-11-02 | 1 | Release 2.9.5 (PR #122), same day as 2.9.4: bootstrap pins the project .venv python, not the first one on PATH |
 | 2026-11-02 | idea | Idea behavior-evals rated: Router suite in `plans/active/behavior-evals.md`; reviewer and text-only suites wait for gate EV-3 |
 | 2026-11-05 | 3 gate | HH-3 met: merged PRs since 10-01 with CI that ran: vn30 129 of 152, App01 108 of 144. Left out: CI that never started (failed in 5 s or less, out of minutes): vn30 23, App01 36. App01 #125, #126 ran and failed, then merged (11-01) |
+| 2026-11-05 | 3 | Report per project written in phase 3 (owner "2. làm"); Q2 waits for the owner |
 
 ## 7. Decision log
 
