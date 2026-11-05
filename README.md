@@ -21,15 +21,15 @@ For a person setting it up:
 
 1. **Set up the machine once** with the
    [setup guide](enforcement/setup-guide.md): install Git, Claude Code and
-   the GitHub CLI, clone this repo, run `enforcement/setup-machine.sh`. The
-   guide is written for Windows (Git Bash).
+   the GitHub CLI, clone this repo, run `enforcement/setup-machine.sh`. It covers
+   Windows (Git Bash), macOS and Linux; macOS needs `brew install bash`.
 2. **Open Claude Code in your project** and ask for a task. In a project that
    is not ready yet, the agent first runs
    [onboarding](workflows/onboarding.md); after that, each task goes through
    the Router. The setup guide's step 5 walks through a first task.
 3. **Approve when asked.** Some steps wait for you, such as merging a pull
    request that changes safety files. Start your own message with `approve`
-   or `duyệt`, for example `approve merge PR 12`.
+   (or `duyệt` in Vietnamese), for example `approve merge PR 12`.
 
 The setup guide is the single start. `enforcement/README.md` (manual install,
 upgrade) and `workflows/onboarding.md` are reference.
