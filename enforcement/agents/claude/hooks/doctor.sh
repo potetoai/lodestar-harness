@@ -106,7 +106,7 @@ codex_home=${CODEX_HOME:-$HOME/.codex}
 codex_trust() {
   command -v codex >/dev/null || { echo "Codex not installed"; return 0; }
   local root out list bad to=
-  command -v timeout >/dev/null && to="timeout 20"
+  if command -v timeout >/dev/null; then to="timeout 20"; elif command -v gtimeout >/dev/null; then to="gtimeout 20"; fi
   root=$(pwd -W 2>/dev/null || pwd)
   out=$(mktemp) || return 1
   # Keep stdin open until the answer arrives (closing it stops the server).
