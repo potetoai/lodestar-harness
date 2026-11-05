@@ -153,7 +153,7 @@ gates (`rules/documentation.md`, section 6; set 2026-10-28), not on a date:
 
 | Gate | Measure (source) | Minimum | Check | Stop | Status |
 |---|---|---|---|---|---|
-| SH-0 Start | `agent-pitfalls.md` P5-a..c met or stopped; `docs-tidy.md` phases 2-3 merged | Both recorded | 2026-11-05 | 2026-11-26 (P5 stop) | waiting (P5-b met; P5-a, P5-c not) |
+| SH-0 Start | `agent-pitfalls.md` P5-a..c met or stopped; `docs-tidy.md` phases 2-3 merged | Both recorded | 2026-11-05 | 2026-11-26 (P5 stop) | waiting (P5-b met; P5-a, P5-c not; docs-tidy phases 2-3 merged, #135, #139) |
 | SH-base Phase 0 baseline | Days since the batch release; reviewer and critic runs in that window, all projects (`usage-report.py`, transcripts) | 7 days and 10 runs of each role | Start day | Start + 14 days | waiting (0) |
 | SH-12 Phases 1-2, before phase 3 merges | Owner-facing turns and subagent reports after phases 1-2 merge (phase 6 bars) | 7 days, 50 owner-facing turns, 10 reports of each of reviewer, tester, critic | Merge + 7 days | Merge + 21 days | waiting (0) |
 | SH-6 Phase 6 | Phase 0 measures after phase 3 merges (phase 6 bars) | 14 days, 10 builder PRs, 10 reviewer runs | Merge + 14 days | Merge + 35 days | waiting (0) |
