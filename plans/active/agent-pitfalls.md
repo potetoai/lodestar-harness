@@ -183,7 +183,7 @@ Data gates for the parts not yet decided (`rules/documentation.md`, section
 
 | Gate | Measure (source) | Minimum | Check | Stop | Status |
 |---|---|---|---|---|---|
-| P5-a Phase 2 (PROTOTYPE) | Sessions routed PROTOTYPE in all projects (`usage-report.py` route lines, PR route lines) | 3 uses | 2026-11-05 | 2026-11-26 | waiting (0; next check 2026-11-19) |
+| P5-a Phase 2 (PROTOTYPE) | Sessions routed PROTOTYPE in all projects (`usage-report.py` route lines, PR route lines) | 3 uses | 2026-11-05 | 2026-11-26 | waiting (0; next check 2026-11-19); owner chose merge at the stop day |
 | P5-b `--friction` | Maintenance runs that ran `usage-report.py --friction` (grep transcripts for the command), and fixes that came from its output (feedback rows, PRs, read by hand) | 3 runs, from 2 projects | 2026-11-05 | 2026-11-26 | met 2026-11-05: 3 runs (vn30 2, App01 1); 1 fix (#116, follow-up #118) |
 | P5-c Critic limit (#94, #95) | Plans with critic runs since 2026-10-27: runs per plan, findings per narrowed run (`- Run <n>` lines in plan `## Criteria review`; findings counted by hand in critic reports) | 8 plans from 2 projects, 3 of them with `critic-limit.sh` installed (batch release) | 2026-11-05 | 2026-11-26, or release + 21 days if the batch ships after 2026-11-05 | waiting (10 plans: App01 7, vn30 3; 2 with the hook, both App01; next check 2026-11-19) |
 
@@ -296,3 +296,4 @@ or change it.
 | 2026-10-28 | The phase 5 waits become data gates P5-a..c (minimum, check 2026-11-05, stop 2026-11-26) | Owner: plans fix their start on data, not only a date; a recount on a fixed day could decide on a thin count |
 | 2026-11-04 | Stop hook skips `make verify` when only notes (`.ai/`, `docs/` at the project root, `*.md`) changed since its last pass | Owner: stops took ~80 s each in App01 on a docs branch (verify-before-stop.sh 79097 ms in the session log). Notes cannot break code; the edit hook formats each file; CI stays the gate. The pass record is now the tree, so changes since it can be listed |
 | 2026-11-05 | P5-b: keep the maintenance `--friction` step | Owner "1. giữ". Gate met: 3 runs from 2 projects, one fix came out of it (#116, follow-up #118); cheap (about 4k tokens per run) |
+| 2026-11-05 | P5-a: at 2026-11-26, merge PROTOTYPE into the other routes (keep `proto/*` as a step any workflow may use, drop the separate route); not now | Owner "ok làm như bạn khuyến nghị". 0 routed uses; the one `proto/*` build (App01 10-27) ran inside a COMPLEX task. Waiting costs nothing and lets one Router eval run cover any other Router change before the stop day |
