@@ -67,6 +67,8 @@ person stays "not yet shown".
 |---|---|---|
 | 2026-11-05 | Start | Owner: "làm cả hai" (approval words and macOS/Linux) |
 | 2026-11-05 | 1 | Approval words English first; PR #158 |
+| 2026-11-05 | 2–4 | macOS/Linux: probe #157 (closed) found BSD-tool failures; fixes, CI on both, setup guide; PR #159 |
+| 2026-11-05 | Close | All phases done; plan moved to completed |
 
 ## 6. Decision log
 
