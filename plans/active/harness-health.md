@@ -126,7 +126,7 @@ PRs that ran CI (both private repos had no Actions minutes from 2026-10-25 to
 
 | Gate | Measure (source) | Minimum | Check | Stop | Status |
 |---|---|---|---|---|---|
-| HH-3 Quality numbers | Merged PRs since 2026-10-01 whose CI ran, per project (`gh pr list --state merged --search "merged:>=2026-10-01" --json number,statusCheckRollup`); PRs merged with no CI run left out and counted apart | 20 per project (App01, vn30) | 2026-11-05 | 2026-11-26 | waiting (0) |
+| HH-3 Quality numbers | Merged PRs since 2026-10-01 whose CI ran, per project (`gh pr list --state merged --search "merged:>=2026-10-01" --json number,statusCheckRollup`); PRs merged with no CI run left out and counted apart | 20 per project (App01, vn30) | 2026-11-05 | 2026-11-26 | met 2026-11-05: vn30 129, App01 108 |
 
 Done when: one report per project is in the progress log, and the owner has
 decided whether it becomes a maintenance step.
@@ -196,6 +196,7 @@ Done when: `plans/active/behavior-evals.md` is merged.
 | 2026-11-02 | 1 | Release 2.9.4 (PR #120), same day as 2.9.3: doctor requires a pinned Node/Python version (App01 CI broke when `lts/*` moved to Node 26) |
 | 2026-11-02 | 1 | Release 2.9.5 (PR #122), same day as 2.9.4: bootstrap pins the project .venv python, not the first one on PATH |
 | 2026-11-02 | idea | Idea behavior-evals rated: Router suite in `plans/active/behavior-evals.md`; reviewer and text-only suites wait for gate EV-3 |
+| 2026-11-05 | 3 gate | HH-3 met: merged PRs since 10-01 with CI that ran: vn30 129 of 152, App01 108 of 144. Left out: CI that never started (failed in 5 s or less, out of minutes): vn30 23, App01 36. App01 #125, #126 ran and failed, then merged (11-01) |
 
 ## 7. Decision log
 
