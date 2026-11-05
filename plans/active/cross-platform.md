@@ -66,6 +66,7 @@ person stays "not yet shown".
 | Date | Phase | Note |
 |---|---|---|
 | 2026-11-05 | Start | Owner: "làm cả hai" (approval words and macOS/Linux) |
+| 2026-11-05 | 1 | Approval words English first; PR #158 |
 
 ## 6. Decision log
 
