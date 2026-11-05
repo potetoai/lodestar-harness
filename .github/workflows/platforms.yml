@@ -1,0 +1,32 @@
+name: Platform probe
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Tools
+        run: |
+          echo "PATH bash: $(command -v bash)"; bash --version | head -1
+          /bin/bash --version | head -1
+          for t in make jq git gh python python3 node sed grep awk date; do printf '%s: ' $t; command -v $t || echo missing; done
+          sed --version 2>&1 | head -1; date --version 2>&1 | head -1
+      - name: Machine setup (scratch home)
+        continue-on-error: true
+        run: SETUP_HOME="$RUNNER_TEMP/home" bash enforcement/setup-machine.sh --yes --no-selftest
+      - name: Self-test with /bin/bash (stock shell)
+        continue-on-error: true
+        run: /bin/bash enforcement/test.sh 2>&1 | tail -40
+      - name: Self-test with PATH bash
+        continue-on-error: true
+        run: bash enforcement/test.sh 2>&1 | tail -40
