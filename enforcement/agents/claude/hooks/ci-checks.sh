@@ -233,16 +233,13 @@ fi
 
 # 6. Mutation testing on changed sensitive files: report only, never fails.
 mfiles=$(while IFS= read -r f; do [ -f "$f" ] && sensitive "$f" && echo "$f"; done <<<"$changed")
-# time_limit SECONDS CMD...: exit 124 when CMD runs past SECONDS. macOS has no
-# GNU timeout unless coreutils is installed; perl stands in.
+# time_limit SECONDS CMD...: GNU timeout, named gtimeout on macOS (brew install
+# coreutils). Without either, the run has no time limit.
 time_limit() {
-  if command -v timeout >/dev/null; then timeout -k 10 "$@"
-  elif command -v gtimeout >/dev/null; then gtimeout -k 10 "$@"
-  else perl -e 'my $t = shift; my $pid = fork // exit 125;
-    if (!$pid) { setpgrp; exec @ARGV or exit 127 }
-    $SIG{ALRM} = sub { kill "TERM", -$pid; for (1..10) { waitpid($pid, 1) and exit 124; sleep 1 } kill "KILL", -$pid; exit 124 };
-    alarm $t; waitpid $pid, 0; exit($? & 127 ? 128 + ($? & 127) : $? >> 8)' "$@"
-  fi
+  local s=$1; shift
+  if command -v timeout >/dev/null; then timeout -k 10 "$s" "$@"
+  elif command -v gtimeout >/dev/null; then gtimeout -k 10 "$s" "$@"
+  else "$@"; fi
 }
 if [ "${LODESTAR_TEST_MUTATION:-}" != true ]; then
   mut="Mutation testing off (add the PR label 'test-mutation' to run it)."

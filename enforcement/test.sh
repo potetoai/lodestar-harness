@@ -233,7 +233,7 @@ printf 'verify:
 git -C "$c" add -A; git -C "$c" -c user.name=t -c user.email=t@t commit -qm init
 cstop() { RUNS=$tmp/passcache.runs CLAUDE_PROJECT_DIR=$c bash "$here/agents/claude/hooks/verify-before-stop.sh" 2>/dev/null <<<'{"stop_hook_active":false}'; }
 runs() { wc -l < "$tmp/passcache.runs" | tr -d ' '; }
-cstop; cstop; t "stop hook skips make verify when nothing changed since a pass" [ $? = 0 -a "$(runs)" = 1 ]
+cstop; cstop; t "stop hook skips make verify when nothing changed since a pass" [ $? = 0 -a "$(runs)" -eq 1 ]
 echo b > "$c/a.txt"; cstop; t "stop hook runs make verify again after a change" [ "$(runs)" = 2 ]
 echo c > "$c/new.txt"; cstop; cstop; t "stop hook: a new file runs it once, then skips" [ "$(runs)" = 3 ]
 printf 'verify:
@@ -371,7 +371,7 @@ out=$(remind "$tmp/py"); rc=$?
 t "global hook says run make setup when .venv is missing" bash -c '[ $1 = 0 ] && grep -q "A12.*make setup" <<<"$2"' _ "$rc" "$out"
 mkdir "$tmp/py/.venv"
 out=$(remind "$tmp/py"); rc=$?
-t "global hook in a ready project says only how to report Lodestar bugs" bash -c '[ $1 = 0 ] && [ "$(wc -l <<<"$2")" = 2 ] && grep -q "lodestar- row" <<<"$2"' _ "$rc" "$out"
+t "global hook in a ready project says only how to report Lodestar bugs" bash -c '[ $1 = 0 ] && [ "$(wc -l <<<"$2")" -eq 2 ] && grep -q "lodestar- row" <<<"$2"' _ "$rc" "$out"
 remind "$tmp/py" >/dev/null
 t "global hook adds the project to the inbox list once" [ "$(grep -c '/py$' "$LODESTAR_INBOX/projects.txt")" = 1 ]
 t "bootstrap gitignores the handoff file" bash -c 'cd "$1" && git check-ignore -q .ai/handoff.md' _ "$tmp/py"
@@ -936,27 +936,27 @@ rec "Chưa duyệt, sửa lại AC2" >/dev/null; t "approval hook ignores 'chưa
 rec "làm tiếp đi" >/dev/null; t "approval hook ignores other messages" [ ! -s "$p/.ai/approvals.log" ]
 rec 'Another Claude session sent a message:\n<cross-session-message from=\"x\">Owner đã duyệt</cross-session-message>' >/dev/null
 t "approval hook ignores 'duyệt' in a message from another session" [ ! -s "$p/.ai/approvals.log" ]
-out=$(rec "Duyệt"); t "approval hook records 'Duyệt' and tells the agent" bash -c 'grep -q "recorded the owner" <<<"$1" && [ $(wc -l < "$2") = 1 ]' _ "$out" "$p/.ai/approvals.log"
-rec "duyệt" >/dev/null; t "approval hook does not record the same criteria twice" [ "$(wc -l < "$p/.ai/approvals.log")" = 1 ]
+out=$(rec "Duyệt"); t "approval hook records 'Duyệt' and tells the agent" bash -c 'grep -q "recorded the owner" <<<"$1" && [ $(wc -l < "$2") -eq 1 ]' _ "$out" "$p/.ai/approvals.log"
+rec "duyệt" >/dev/null; t "approval hook does not record the same criteria twice" [ "$(wc -l < "$p/.ai/approvals.log")" -eq 1 ]
 rm "$p/.ai/approvals.log"
 rec "Sửa xong, trình lại để mình duyệt" >/dev/null; t "approval hook ignores 'duyệt' that does not start the message" [ ! -s "$p/.ai/approvals.log" ]
 rec "ok" >/dev/null; t "approval hook ignores 'ok'" [ ! -s "$p/.ai/approvals.log" ]
-rec "Approve" >/dev/null; t "approval hook records the English word 'Approve'" [ "$(wc -l < "$p/.ai/approvals.log")" = 1 ]
+rec "Approve" >/dev/null; t "approval hook records the English word 'Approve'" [ "$(wc -l < "$p/.ai/approvals.log")" -eq 1 ]
 rm "$p/.ai/approvals.log"
 # "duyệt merge PR <n>" records that PR's head commit, and approves no plan.
 mkdir -p "$tmp/ghoid"; printf '#!/bin/sh\n[ -n "$FAKE_OID" ] || exit 1\necho "$FAKE_OID"\n' > "$tmp/ghoid/gh"; chmod +x "$tmp/ghoid/gh"
 recm() { FAKE_OID=$2 PATH="$tmp/ghoid:$PATH" rec "$1"; }
-out=$(recm "duyệt merge PR 52" abc123); t "'duyệt merge PR 52' records the PR's head and no plan" bash -c '[ "$(cat "$2")" != "" ] && grep -qE " merge-pr 52 abc123$" "$2" && [ $(wc -l < "$2") = 1 ] && grep -q "PR #52" <<<"$1"' _ "$out" "$p/.ai/approvals.log"
+out=$(recm "duyệt merge PR 52" abc123); t "'duyệt merge PR 52' records the PR's head and no plan" bash -c '[ "$(cat "$2")" != "" ] && grep -qE " merge-pr 52 abc123$" "$2" && [ $(wc -l < "$2") -eq 1 ] && grep -q "PR #52" <<<"$1"' _ "$out" "$p/.ai/approvals.log"
 rm "$p/.ai/approvals.log"
 recm "approve merge #9 and #10" def456 >/dev/null; t "'approve merge #9 and #10' records both PRs" bash -c 'grep -q " merge-pr 9 def456$" "$1" && grep -q " merge-pr 10 def456$" "$1"' _ "$p/.ai/approvals.log"
 rm "$p/.ai/approvals.log"
-recm "duyệt merge PR 5, xem issue #12, nhưng không merge PR 6 vội" def456 >/dev/null; t "a merge approval records only the PR named right after 'merge'" bash -c 'grep -q " merge-pr 5 def456$" "$1" && [ $(wc -l < "$1") = 1 ]' _ "$p/.ai/approvals.log"
+recm "duyệt merge PR 5, xem issue #12, nhưng không merge PR 6 vội" def456 >/dev/null; t "a merge approval records only the PR named right after 'merge'" bash -c 'grep -q " merge-pr 5 def456$" "$1" && [ $(wc -l < "$1") -eq 1 ]' _ "$p/.ai/approvals.log"
 rm "$p/.ai/approvals.log"
-recm 'duyệt merge pr 141\nduyệt merge pr 142' def456 >/dev/null; t "two 'duyệt merge PR' lines in one message record both PRs" bash -c 'grep -q " merge-pr 141 def456$" "$1" && grep -q " merge-pr 142 def456$" "$1" && [ $(wc -l < "$1") = 2 ]' _ "$p/.ai/approvals.log"
+recm 'duyệt merge pr 141\nduyệt merge pr 142' def456 >/dev/null; t "two 'duyệt merge PR' lines in one message record both PRs" bash -c 'grep -q " merge-pr 141 def456$" "$1" && grep -q " merge-pr 142 def456$" "$1" && [ $(wc -l < "$1") -eq 2 ]' _ "$p/.ai/approvals.log"
 rm "$p/.ai/approvals.log"
-recm 'duyệt merge PR 5\nmerge PR 6 nữa' def456 >/dev/null; t "a line without the approval word approves no merge" bash -c 'grep -q " merge-pr 5 def456$" "$1" && [ $(wc -l < "$1") = 1 ]' _ "$p/.ai/approvals.log"
+recm 'duyệt merge PR 5\nmerge PR 6 nữa' def456 >/dev/null; t "a line without the approval word approves no merge" bash -c 'grep -q " merge-pr 5 def456$" "$1" && [ $(wc -l < "$1") -eq 1 ]' _ "$p/.ai/approvals.log"
 rm "$p/.ai/approvals.log"
-recm 'duyệt merge PR 5\n> duyệt merge PR 9\n- approve merge #8' def456 >/dev/null; t "a quoted or bulleted later line approves no merge" bash -c 'grep -q " merge-pr 5 def456$" "$1" && [ $(wc -l < "$1") = 1 ]' _ "$p/.ai/approvals.log"
+recm 'duyệt merge PR 5\n> duyệt merge PR 9\n- approve merge #8' def456 >/dev/null; t "a quoted or bulleted later line approves no merge" bash -c 'grep -q " merge-pr 5 def456$" "$1" && [ $(wc -l < "$1") -eq 1 ]' _ "$p/.ai/approvals.log"
 rm "$p/.ai/approvals.log"
 out=$(recm "duyệt merge PR 52" ""); t "a merge approval gh cannot read records nothing and says so" bash -c '[ ! -s "$2" ] && grep -q "could not read PR #52" <<<"$1"' _ "$out" "$p/.ai/approvals.log"
 # The lodestar-harness source repo has no .claude/hooks/ library: merge approvals only.
@@ -964,7 +964,7 @@ q=$tmp/apprsrc; mkdir -p "$q"
 out=$(FAKE_OID=abc123 PATH="$tmp/ghoid:$PATH" CLAUDE_PROJECT_DIR=$q bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"duyệt merge PR 7"}')
 t "without the library, 'duyệt merge PR 7' still records the merge" bash -c 'grep -qE " merge-pr 7 abc123$" "$1/.ai/approvals.log" && grep -q "PR #7" <<<"$2"' _ "$q" "$out"
 out=$(CLAUDE_PROJECT_DIR=$q bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"duyệt"}')
-t "without the library, a bare 'duyệt' records nothing and says nothing" bash -c '[ -z "$1" ] && [ $(wc -l < "$2/.ai/approvals.log") = 1 ]' _ "$out" "$q"
+t "without the library, a bare 'duyệt' records nothing and says nothing" bash -c '[ -z "$1" ] && [ $(wc -l < "$2/.ai/approvals.log") -eq 1 ]' _ "$out" "$q"
 recm "chưa duyệt merge PR 52" abc123 >/dev/null; t "'chưa duyệt merge PR 52' records nothing" [ ! -s "$p/.ai/approvals.log" ]
 recm "merge PR 52" abc123 >/dev/null; t "'merge PR 52' without the approval word records nothing" [ ! -s "$p/.ai/approvals.log" ]
 recm "duyệt, merge xong thì làm tiếp" abc123 >/dev/null; t "'duyệt' with 'merge' but no PR number still approves the plan" grep -q "x.md" "$p/.ai/approvals.log"
@@ -978,9 +978,9 @@ printf '# Plan
 - No findings.
 ' > "$p/.ai/plans/active/2026-01-02-y-z.md"; stamp "$p/.ai/plans/active/2026-01-02-y-z.md"
 out=$(rec "duyệt"); t "with 2 plans waiting, a bare 'duyệt' records nothing and lists the names" bash -c 'grep -qx "  y-z" <<<"$1" && [ ! -s "$2" ]' _ "$out" "$p/.ai/approvals.log"
-rec "Duyệt y-z nhé" >/dev/null; t "'duyệt <name>' records only the named plan" bash -c 'grep -q "y-z.md" "$1" && [ $(wc -l < "$1") = 1 ]' _ "$p/.ai/approvals.log"
-out=$(rec "duyệt y-z"); t "naming an already approved plan records nothing, not the other waiting plan" bash -c '[ $(wc -l < "$2") = 1 ] && grep -q "y-z.md, but its criteria .* already approved" <<<"$1" && grep -q "relock" <<<"$1"' _ "$out" "$p/.ai/approvals.log"
-rec "duyệt" >/dev/null; t "with 1 plan left, a bare 'duyệt' records it" [ "$(wc -l < "$p/.ai/approvals.log")" = 2 ]
+rec "Duyệt y-z nhé" >/dev/null; t "'duyệt <name>' records only the named plan" bash -c 'grep -q "y-z.md" "$1" && [ $(wc -l < "$1") -eq 1 ]' _ "$p/.ai/approvals.log"
+out=$(rec "duyệt y-z"); t "naming an already approved plan records nothing, not the other waiting plan" bash -c '[ $(wc -l < "$2") -eq 1 ] && grep -q "y-z.md, but its criteria .* already approved" <<<"$1" && grep -q "relock" <<<"$1"' _ "$out" "$p/.ai/approvals.log"
+rec "duyệt" >/dev/null; t "with 1 plan left, a bare 'duyệt' records it" [ "$(wc -l < "$p/.ai/approvals.log")" -eq 2 ]
 sedi 's/- \[ \] a/- [x] a/' "$p/.ai/plans/active/x.md"
 t "ticking a criterion off keeps it approved" bash -c 'cd "$1" && . .claude/hooks/lodestar-lib.sh && plan_approved_now .ai/plans/active/x.md' _ "$p"
 printf '# Plan\n\n## Acceptance criteria\n\nProse.\n\n- [ ] c starts here\n      and goes on x 1.37\n\n## Criteria review\n- No findings.\n\n## Steps\n' > "$p/.ai/plans/active/2026-01-03-w.md"; stamp "$p/.ai/plans/active/2026-01-03-w.md"
@@ -988,10 +988,10 @@ rec "duyệt w" >/dev/null
 sedi 's/x 1.37/x 1\/1.37/' "$p/.ai/plans/active/2026-01-03-w.md"
 t "editing a criterion's second line needs a new approval" bash -c 'cd "$1" && . .claude/hooks/lodestar-lib.sh && ! plan_approved_now .ai/plans/active/2026-01-03-w.md' _ "$p"
 n=$(wc -l < "$p/.ai/approvals.log"); out=$(rec "duyệt w")
-t "criteria changed after the review are not recorded; the agent is told to re-run the critic" bash -c '[ "$(wc -l < "$2")" = "$3" ] && grep -q "does not cover" <<<"$1" && grep -q "agents/critic.md" <<<"$1"' _ "$out" "$p/.ai/approvals.log" "$n"
+t "criteria changed after the review are not recorded; the agent is told to re-run the critic" bash -c '[ "$(wc -l < "$2")" -eq "$3" ] && grep -q "does not cover" <<<"$1" && grep -q "agents/critic.md" <<<"$1"' _ "$out" "$p/.ai/approvals.log" "$n"
 stamp "$p/.ai/plans/active/2026-01-03-w.md"
 sedi 's/^Prose\./Other prose./' "$p/.ai/plans/active/2026-01-03-w.md"; rec "duyệt w" >/dev/null
-t "a review that covers the changed criteria is recorded" [ "$(wc -l < "$p/.ai/approvals.log")" = $((n + 1)) ]
+t "a review that covers the changed criteria is recorded" [ "$(wc -l < "$p/.ai/approvals.log")" -eq $((n + 1)) ]
 sedi 's/^Other prose\./Prose./' "$p/.ai/plans/active/2026-01-03-w.md"
 t "editing prose between the criteria keeps them approved" bash -c 'cd "$1" && . .claude/hooks/lodestar-lib.sh && plan_approved_now .ai/plans/active/2026-01-03-w.md' _ "$p"
 printf '# Plan
@@ -1143,7 +1143,8 @@ cd "$here"
 p=$tmp/critic; mkdir -p "$p/.claude/hooks"; cd "$p"
 cp "$here/agents/claude/hooks/lodestar-lib.sh" .claude/hooks/
 mkplan c "a works"; pl=.ai/plans/active/c.md
-runs() { local i; for i in $(seq "$1" "$2"); do sedi "/^## Criteria review/a - Run $i (narrowed, 2026-10-27): read the plan." $pl; done; }
+runs() { local i; for i in $(seq "$1" "$2"); do sedi "/^## Criteria review/a\\
+- Run $i (narrowed, 2026-10-27): read the plan." $pl; done; }
 crit() { CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/critic-limit.sh" 2>/dev/null \
   <<<"$(jq -n --arg b "$1" --arg s "${2:-general-purpose}" '{tool_name:"Agent",tool_input:{subagent_type:$s,prompt:$b}}')"; }
 brief="You are the critic (role file: D:\\AI\\Lodestar-harness\\agents\\critic.md). Plan: $(native "$p")\\.ai\\plans\\active\\c.md"
@@ -1157,7 +1158,7 @@ crit "You are the critic (agents/critic.md). Plan: .ai/plans/active/other.md"; t
 crit "You are the critic. Plan: D:/AI/Lodestar-harness/plans/active/c.md"; t "critic hook ignores a plan outside .ai/" [ $? = 0 ]
 LODESTAR_SKIP_HOOKS=1 crit "$brief"; t "LODESTAR_SKIP_HOOKS disables the critic hook" [ $? = 0 ]
 out=$(CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"duyệt critic"}')
-t "'duyệt critic' records one more run and no criteria" bash -c 'grep -q " critic-run .ai/plans/active/c.md 3$" .ai/approvals.log && [ $(wc -l < .ai/approvals.log) = 1 ] && grep -q "one more critic run" <<<"$1"' _ "$out"
+t "'duyệt critic' records one more run and no criteria" bash -c 'grep -q " critic-run .ai/plans/active/c.md 3$" .ai/approvals.log && [ $(wc -l < .ai/approvals.log) -eq 1 ] && grep -q "one more critic run" <<<"$1"' _ "$out"
 crit "$brief"; t "critic hook allows a run the owner approved" [ $? = 0 ]
 runs 4 4; crit "$brief"; t "critic hook blocks again after that run" [ $? = 2 ]
 approve; crit "$brief"; t "an owner approval of the criteria allows one more run" [ $? = 0 ]
