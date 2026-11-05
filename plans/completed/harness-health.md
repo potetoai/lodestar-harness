@@ -104,7 +104,7 @@ words; "state" = git, files, GitHub API, exit codes. Fixes counted from
 Not hooks (libraries or tools): `doctor.sh`, `lodestar-lib.sh`,
 `reminder-lib.sh`, `codex-owner.jq`, `global/install.sh`.
 
-### Phase 3: Quality numbers (after phase 2)
+### Phase 3: Quality numbers (done 2026-11-05)
 
 Count, per project, from what already exists (feedback logs, `gh` PR data,
 `gh-sweep.sh`, transcripts read by `scripts/usage-report.py`):
@@ -197,7 +197,8 @@ Done when: `plans/active/behavior-evals.md` is merged.
   cannot be undone (push to main, a forged approval). **Answered
   2026-10-23: yes, as recommended** (decision log).
 - **Q2 (phase 3):** after one report, make it a maintenance step, or stop?
-  Decide after seeing the numbers.
+  Decide after seeing the numbers. **Answered 2026-11-05: stop as a
+  recurring step; maybe rerun once when P5 closes** (decision log).
 
 ## 5. Not in scope
 
@@ -228,6 +229,7 @@ Done when: `plans/active/behavior-evals.md` is merged.
 | 2026-11-02 | idea | Idea behavior-evals rated: Router suite in `plans/active/behavior-evals.md`; reviewer and text-only suites wait for gate EV-3 |
 | 2026-11-05 | 3 gate | HH-3 met: merged PRs since 10-01 with CI that ran: vn30 129 of 152, App01 108 of 144. Left out: CI that never started (failed in 5 s or less, out of minutes): vn30 23, App01 36. App01 #125, #126 ran and failed, then merged (11-01) |
 | 2026-11-05 | 3 | Report per project written in phase 3 (owner "2. làm"); Q2 waits for the owner |
+| 2026-11-05 | 3 | Q2 answered: not a maintenance step; all phases done, plan moved to `plans/completed/` |
 
 ## 7. Decision log
 
@@ -251,3 +253,4 @@ Done when: `plans/active/behavior-evals.md` is merged.
 | 2026-11-02 | Release 2.9.5 the same day as 2.9.4 | Follow-up to 2.9.4: #122 makes the pin written by `--upgrade` match the project .venv; planned in the handoff, owner said "continue" |
 | 2026-11-02 | Release 2.9.6 in the fix PR #124, the same day as 2.9.5 | App01 is blocked by the critic limit and waits for it; one PR means one owner merge approval |
 | 2026-11-02 | Behavior evals: Router suite only, run by hand on Router PRs, not in CI | Owner asked for a plan after the smoke test showed `claude plugin eval` works; `ROUTER.md` is the most edited policy file and has no behavior check |
+| 2026-11-05 | Q2: the quality count is not a maintenance step; it may run once more when `agent-pitfalls.md` P5 closes | Owner "làm đi" on the recommendation. The count needs custom GraphQL and transcript scans (about 40k tokens a run), not the "few lines" phase 3 allowed; the first report already showed review catches most and the big false positives are fixed |
