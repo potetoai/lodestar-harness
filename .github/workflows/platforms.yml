@@ -26,7 +26,10 @@ jobs:
         run: SETUP_HOME="$RUNNER_TEMP/home" bash enforcement/setup-machine.sh --yes --no-selftest
       - name: Self-test with /bin/bash (stock shell)
         continue-on-error: true
-        run: /bin/bash enforcement/test.sh 2>&1 | tail -40
-      - name: Self-test with PATH bash
+        run: /bin/bash enforcement/test.sh 2>&1 | grep -E 'FAIL|passed|failed|line [0-9]+:|substitution|invalid|illegal|unbound|not found' | head -120
+      - name: Self-test with bash 5
         continue-on-error: true
-        run: bash enforcement/test.sh 2>&1 | tail -40
+        run: |
+          if [ "$RUNNER_OS" = macOS ]; then brew install bash >/dev/null 2>&1; export PATH="$(brew --prefix)/bin:$PATH"; fi
+          bash --version | head -1
+          bash enforcement/test.sh 2>&1 | grep -E 'FAIL|passed|failed|line [0-9]+:|substitution|invalid|illegal|unbound|not found' | head -120
