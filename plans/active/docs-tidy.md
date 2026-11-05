@@ -54,7 +54,7 @@ measured (PR #99), so only files that phase 5 still counts wait:
 
 | Gate | Measure (source) | Minimum | Check | Stop | Status |
 |---|---|---|---|---|---|
-| DT-1 Start phases 2-3 | `agent-pitfalls.md` gates P5-a..c (PROTOTYPE workflow, maintenance `--friction` step, critic role) | Edits to `workflows/prototype.md`, `workflows/maintenance.md`, `agents/critic.md`: after those gates are met or stopped. Other files: no wait | 2026-11-05 | 2026-11-26 (P5 stop) | waiting (0) |
+| DT-1 Start phases 2-3 | `agent-pitfalls.md` gates P5-a..c (PROTOTYPE workflow, maintenance `--friction` step, critic role) | Edits to `workflows/prototype.md`, `workflows/maintenance.md`, `agents/critic.md`: after those gates are met or stopped. Other files: no wait | 2026-11-05 | 2026-11-26 (P5 stop) | waiting (P5-b met; P5-a, P5-c not) |
 
 ### Phase 2: Padding (item 9, blank lines only)
 
