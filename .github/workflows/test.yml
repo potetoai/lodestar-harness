@@ -10,8 +10,16 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
+      # macOS ships bash 3.2 and no timeout; the hooks need bash 4+ (setup guide).
+      - if: runner.os == 'macOS'
+        run: brew install bash coreutils && echo "$(brew --prefix)/bin" >> "$GITHUB_PATH"
+      - run: SETUP_HOME="$RUNNER_TEMP/home" bash enforcement/setup-machine.sh --yes --no-selftest
       - run: bash enforcement/test.sh
       - run: bash scripts/check-links.sh

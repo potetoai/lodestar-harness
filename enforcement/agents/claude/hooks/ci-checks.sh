@@ -233,6 +233,14 @@ fi
 
 # 6. Mutation testing on changed sensitive files: report only, never fails.
 mfiles=$(while IFS= read -r f; do [ -f "$f" ] && sensitive "$f" && echo "$f"; done <<<"$changed")
+# time_limit SECONDS CMD...: GNU timeout, named gtimeout on macOS (brew install
+# coreutils). Without either, the run has no time limit.
+time_limit() {
+  local s=$1; shift
+  if command -v timeout >/dev/null; then timeout -k 10 "$s" "$@"
+  elif command -v gtimeout >/dev/null; then gtimeout -k 10 "$s" "$@"
+  else "$@"; fi
+}
 if [ "${LODESTAR_TEST_MUTATION:-}" != true ]; then
   mut="Mutation testing off (add the PR label 'test-mutation' to run it)."
 elif [ -z "$mfiles" ]; then
@@ -241,7 +249,7 @@ elif ! make -n test-mutation FILES=x >/dev/null 2>&1; then
   mut="Mutation testing not set up (no 'make test-mutation' target)."
 else
   # ponytail: paths with spaces split here and in the Makefiles; quote them if a project needs it.
-  mut=$(timeout -k 10 "${LODESTAR_TEST_MUTATION_TIMEOUT:-900}" make -s test-mutation FILES="$(echo $mfiles)" 2>&1); rc=$?
+  mut=$(time_limit "${LODESTAR_TEST_MUTATION_TIMEOUT:-900}" make -s test-mutation FILES="$(echo $mfiles)" 2>&1); rc=$?
   # A run stopped mid-mutation leaves a broken file; later CI steps need the real code.
   git checkout -q -- $mfiles
   [ $rc = 0 ] || mut+=$'\n'"Mutation testing did not finish (exit $rc; 124 = time limit)."

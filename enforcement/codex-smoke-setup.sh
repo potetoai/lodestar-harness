@@ -18,7 +18,7 @@ git config core.autocrlf false
 bash "$here/bootstrap.sh" . --stack python >/dev/null
 
 # Placeholders filled so doctor reports Ready.
-sed -i -E 's/^([[:space:]]*([*-][[:space:]]*)?)\[([^]]+)\][[:space:]]*$/\1Smoke fixture: \3/' AGENTS.md
+sed -i.bak -E 's/^([[:space:]]*([*-][[:space:]]*)?)\[([^]]+)\][[:space:]]*$/\1Smoke fixture: \3/' AGENTS.md && rm -f AGENTS.md.bak
 cat > .ai/project.md <<'EOF'
 # Project: Lodestar Codex smoke
 

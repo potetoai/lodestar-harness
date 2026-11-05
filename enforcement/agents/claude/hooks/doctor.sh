@@ -106,7 +106,7 @@ codex_home=${CODEX_HOME:-$HOME/.codex}
 codex_trust() {
   command -v codex >/dev/null || { echo "Codex not installed"; return 0; }
   local root out list bad to=
-  command -v timeout >/dev/null && to="timeout 20"
+  if command -v timeout >/dev/null; then to="timeout 20"; elif command -v gtimeout >/dev/null; then to="gtimeout 20"; fi
   root=$(pwd -W 2>/dev/null || pwd)
   out=$(mktemp) || return 1
   # Keep stdin open until the answer arrives (closing it stops the server).
@@ -170,10 +170,10 @@ toolchain_pinned() {
   ! grep -qE '(^|/)(requirements[^/]*\.txt|pyproject\.toml)$' <<<"$files" || [ -s .python-version ]
 }
 # .ai/last-maintenance holds the date (YYYY-MM-DD) of the last maintenance run.
-# ponytail: GNU date (Linux, Git Bash); macOS needs `gdate` if it ever matters.
-maintenance_recent() {
-  local d; d=$(tr -d '\r\n' < .ai/last-maintenance 2>/dev/null) || return 1
-  [ $(( ($(date +%s) - $(date -d "$d" +%s)) / 86400 )) -le 14 ]
+maintenance_recent() {   # GNU date (Linux, Git Bash) or BSD date (macOS)
+  local d s; d=$(tr -d '\r\n' < .ai/last-maintenance 2>/dev/null) || return 1
+  s=$(date -d "$d" +%s 2>/dev/null || date -j -f %Y-%m-%d "$d" +%s 2>/dev/null) || return 1
+  [ $(( ($(date +%s) - s) / 86400 )) -le 14 ]
 }
 # A tag (2nd column) seen twice or more whose rows are not all "enforced" or "accepted"
 # (owner agreed no machine rule fits). A new row with another status warns again.

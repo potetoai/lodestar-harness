@@ -15,7 +15,7 @@ if [ "$runtime" = codex ]; then
   last=$(jq -cs -f "$here/codex-owner.jq" "$transcript" 2>/dev/null) || { advisory_unavailable 'unsupported owner transcript'; exit 0; }
 else
   # Read backwards and stop at the owner's last message; long transcripts stay cheap.
-  last=$(tac "$transcript" | jq -Rc 'fromjson? | select(.type == "user" and (.message.content | type) == "string" and (.isMeta | not)) | {id:(.promptId // .uuid), text:.message.content}' 2>/dev/null | head -n1 | tr -d '\r')
+  last=$({ if command -v tac >/dev/null; then tac "$transcript"; else tail -r "$transcript"; fi; } | jq -Rc 'fromjson? | select(.type == "user" and (.message.content | type) == "string" and (.isMeta | not)) | {id:(.promptId // .uuid), text:.message.content}' 2>/dev/null | head -n1 | tr -d '\r')
   [ -n "$last" ] || last=null
 fi
 [ "$last" != null ] || exit 0

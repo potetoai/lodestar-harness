@@ -1,6 +1,7 @@
 # Set up lodestar-harness on a new machine
 
-Step-by-step guide for a Windows machine. Do it once per machine. On a
+Step-by-step guide for a Windows machine; on macOS or Linux, steps 1–4 are
+in [macOS and Linux](#macos-and-linux) below. Do it once per machine. On a
 machine that is already set up, run only step 3 as a health check: the script
 only reports and changes nothing.
 
@@ -11,8 +12,8 @@ Facts only; no support promise beyond them.
 | Environment | What is tested | How |
 |---|---|---|
 | Windows 11, Git Bash (Git for Windows) | Full setup and daily use | The maintainer's machine. Last checked 2026-11-04: Git 2.55.0, Claude Code 2.1.318, Codex 0.166.0; fresh-clone run in step 5 |
-| Linux (GitHub `ubuntu-latest`) | Self-test only (`enforcement/test.sh`) and doc links | CI on every pull request and push to `main`. No machine setup |
-| macOS, desktop Linux, WSL | Nothing recorded | `setup-machine.sh` is written to run in any bash and skips the Windows-only steps (winget, user `PATH`); install `make` and `jq` yourself (`brew` or `apt`). If you try one, report the result as a GitHub issue |
+| Linux (GitHub `ubuntu-latest`), macOS (GitHub `macos-latest`, Apple Silicon) | Machine setup into a scratch home (`setup-machine.sh --yes`), the self-test (`enforcement/test.sh`) and doc links | CI on every pull request and push to `main`. On macOS, CI first runs `brew install bash coreutils`, as the steps below say. Claude Code itself is not installed there, so no live session runs |
+| A person's macOS or desktop Linux machine, WSL | Nothing recorded | If you try one, report the result as a GitHub issue |
 
 Codex hook parity is checked by hand; see the
 [runtime parity guide](runtime-parity.md) for the version it was verified on.
@@ -95,6 +96,25 @@ jq --version
 
 Then, from the project folder, `make verify` and
 `bash .claude/hooks/doctor.sh` run directly.
+
+## macOS and Linux
+
+Steps 1–4 differ; step 5 onward is the same.
+
+1. Install Git, Claude Code and `gh` (links in step 1), then the tools:
+   - macOS (with [Homebrew](https://brew.sh)): `brew install bash jq coreutils`.
+     macOS ships bash 3.2; the hooks need bash 4 or newer. `coreutils` adds
+     `gtimeout`, which the daily GitHub sweep and the mutation test limit use.
+   - Debian or Ubuntu: `sudo apt install make jq` (bash and `timeout` are
+     already there).
+2. Clone: `git clone https://github.com/potetoai/lodestar-harness.git ~/lodestar-harness`
+3. Run `bash ~/lodestar-harness/enforcement/setup-machine.sh`. It checks the
+   bash version and says what is missing; there is no winget or `PATH` step.
+4. Open a new terminal and restart Claude Code. `bash --version` must show 4
+   or newer there, because Claude Code runs the hooks with the first `bash` on
+   `PATH`. On macOS, Homebrew's folder (`/opt/homebrew/bin` on Apple Silicon,
+   `/usr/local/bin` on Intel) must come before `/bin`: Homebrew's install
+   message gives the `brew shellenv` line that does this.
 
 ## Step 5: A first task (example)
 
