@@ -17,8 +17,8 @@ any test or code is written (high-risk tasks).
 
 - [ ] ...
 
-The owner approves this list by replying with the approval word ("duyệt" or
-"approve"). A hook records the approval in `.ai/approvals.log` (never edit
+The owner approves this list by replying with the approval word ("approve", or
+"duyệt"). A hook records the approval in `.ai/approvals.log` (never edit
 that file). Changing the criteria later needs a new approval.
 
 ## Criteria review

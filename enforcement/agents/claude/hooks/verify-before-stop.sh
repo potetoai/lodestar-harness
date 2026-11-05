@@ -76,7 +76,7 @@ if ls .ai/plans/active/*.md >/dev/null 2>&1 && [ -f .claude/hooks/lodestar-lib.s
       echo "Not done yet: tests locked by commit $(git log -1 --format='%h %s' "$c") were changed:" >&2
       echo "$touched" >&2
       echo "Undo those changes (git checkout $c -- <file>). If a test or criterion is wrong, ask the" >&2
-      echo "owner to approve changed criteria (they reply \"duyệt\" or \"approve\"); then the tester commits a new" >&2
+      echo "owner to approve changed criteria (they reply \"approve\", or \"duyệt\"); then the tester commits a new" >&2
       echo "Tests-First round that includes the updated plan." >&2
       exit 2
     fi
