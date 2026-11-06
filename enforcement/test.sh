@@ -273,6 +273,38 @@ t "stop hook: an old-format pass record runs make verify once" [ "$(runs)" = $((
 echo n > "$c/docs/tài liệu.md"; cstop; t "stop hook: an accented note name is a note" [ "$(runs)" = $((n + 3)) ]
 git -C "$c" add -A; git -C "$c" -c user.name=t -c user.email=t@t commit -qm notes; cstop
 git -C "$c" mv a.txt a.md; cstop; t "stop hook: code renamed to .md runs make verify" [ "$(runs)" = $((n + 4)) ]
+# With a verify-quick target the stop runs it (not verify), given the changed
+# files that still exist; while CI is marked off it runs the full verify.
+k=$tmp/quick; mkdir -p "$k"; git -C "$k" init -q -b main
+printf 'verify:\n\t@echo full >> "$$RUNS"\nverify-quick:\n\t@echo "quick $(CHANGED)" >> "$$RUNS"; [ ! -f "$$QFAIL" ]\n' > "$k/Makefile"
+echo a > "$k/a.txt"; echo d > "$k/gone.txt"; git -C "$k" add -A; git -C "$k" -c user.name=t -c user.email=t@t commit -qm init
+git -C "$k" update-ref refs/remotes/origin/main HEAD; git -C "$k" symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main
+git -C "$k" switch -qc feat/x; echo b > "$k/b.txt"; git -C "$k" add b.txt; git -C "$k" -c user.name=t -c user.email=t@t commit -qm b
+echo a2 > "$k/a.txt"; echo n > "$k/new file.txt"; rm "$k/gone.txt"
+kstop() { RUNS=$tmp/quick.runs QFAIL=$tmp/quick.fail CLAUDE_PROJECT_DIR=$k bash "$here/agents/claude/hooks/verify-before-stop.sh" 2>&1 >/dev/null <<<'{"stop_hook_active":false}'; }
+kruns() { cat "$tmp/quick.runs" 2>/dev/null; }
+kstop >/dev/null; t "stop hook runs verify-quick, not verify, when the project has it" bash -c '[ "$(grep -c . <<<"$1")" = 1 ] && grep -q "^quick " <<<"$1"' _ "$(kruns)"
+t "stop hook: verify-quick gets the branch's commits, edits and new files, not deleted ones" bash -c 'for f in a.txt b.txt new file.txt; do grep -qw -- "$f" <<<"$1" || exit 1; done; ! grep -q gone <<<"$1"' _ "$(kruns)"
+kstop >/dev/null; t "stop hook: a quick pass is remembered" [ "$(kruns | wc -l | tr -d ' ')" = 1 ]
+touch "$tmp/quick.fail"; echo a3 > "$k/a.txt"; out=$(kstop); rc=$?; rm -f "$tmp/quick.fail"
+t "stop hook holds a failing verify-quick and names it" bash -c '[ $1 = 2 ] && grep -q "make verify-quick'"'"' fails" <<<"$2"' _ "$rc" "$out"
+kstop >/dev/null; t "stop hook: the quick check passes after the fix" [ $? = 0 ]
+CLAUDE_PROJECT_DIR=$k bash "$here/agents/claude/hooks/verify-before-stop.sh" --ci-off "no minutes" 2>/dev/null </dev/null
+t "--ci-off writes the mark in the git folder" grep -q "no minutes" "$k/.git/lodestar-ci-off"
+n=$(kruns | wc -l); out=$(kstop); t "while CI is off, a quick pass does not skip the full verify" bash -c '[ "$(tail -n1 <<<"$1")" = full ] && grep -q "unable to run" <<<"$2"' _ "$(kruns)" "$out"
+CLAUDE_PROJECT_DIR=$k bash "$here/agents/claude/hooks/verify-before-stop.sh" --ci-on 2>/dev/null </dev/null
+n=$(kruns | wc -l); kstop >/dev/null; t "--ci-on: back to quick, and a full pass covers it" bash -c '[ ! -f "$1" ] && [ "$(wc -l < "$2")" = "$3" ]' _ "$k/.git/lodestar-ci-off" "$tmp/quick.runs" "$n"
+w=$tmp/quick-wt; git -C "$k" worktree add -q "$w" -b feat/wt; CLAUDE_PROJECT_DIR=$w bash "$here/agents/claude/hooks/verify-before-stop.sh" --ci-off 2>/dev/null </dev/null
+t "--ci-off in a worktree marks the shared git folder" test -f "$k/.git/lodestar-ci-off"; rm -f "$k/.git/lodestar-ci-off"
+# The stack Makefiles' related tests: Python picks the changed tests and the
+# tests named after changed modules.
+y=$tmp/pyrel; mkdir -p "$y/pkg" "$y/tests"; git -C "$y" init -q; cp "$here/stacks/python/Makefile" "$y/"
+touch "$y/pkg/calc.py" "$y/pkg/other.py" "$y/tests/test_calc.py" "$y/tests/test_other.py" "$y/tests/test_misc.py"
+out=$(make -s -C "$y" test-related PY=echo CHANGED="pkg/calc.py tests/test_misc.py README.md" 2>&1)
+t "python test-related runs the changed module's and changed tests only" bash -c 'grep -q "tests/test_calc.py" <<<"$1" && grep -q "tests/test_misc.py" <<<"$1" && ! grep -q other <<<"$1"' _ "$out"
+out=$(make -s -C "$y" test-related PY=echo CHANGED="README.md" 2>&1); t "python test-related with no related tests runs none" grep -q "no tests for the changed files" <<<"$out"
+out=$(make -s -C "$y" -n verify-quick 2>&1); t "python stack has verify-quick" [ $? = 0 ]
+out=$(make -s -C "$here/stacks/node-ts" test-related CHANGED= 2>&1); t "node test-related with no changed files runs nothing" grep -q "no changed files" <<<"$out"
 # In a subfolder project the notes are .ai/ and docs/ of that folder; its
 # name is matched as plain text (dot and [ are not patterns).
 q=$tmp/mononotes; s='a.b[c'; mkdir -p "$q/$s/.ai" "$q/aXb[c/docs"; git -C "$q" init -q; cp "$c/Makefile" "$q/$s/"
@@ -570,6 +602,11 @@ out=$(make -s -C "$p" verify 2>&1)
 t "multi: verify runs in every part" bash -c 'grep -q backend-verify <<<"$1" && grep -q frontend-verify <<<"$1"' _ "$out"
 out=$(make -s -C "$p" typecheck 2>&1); rc=$?
 t "multi: part without a target is skipped" bash -c '[ $1 = 0 ] && [ "$2" = frontend-typecheck ]' _ "$rc" "$out"
+printf 'verify-quick:\n\t@echo "backend-quick $(CHANGED)"\n' >> "$p/backend/Makefile"
+out=$(make -s -C "$p" verify-quick CHANGED="backend/app/a.py README.md" 2>&1)
+t "multi: verify-quick gives a part its own files and skips unchanged parts" bash -c '[ "$1" = "backend-quick app/a.py" ]' _ "$out"
+out=$(make -s -C "$p" verify-quick CHANGED="frontend/src/a.ts" 2>&1)
+t "multi: a changed part without verify-quick runs its verify" [ "$out" = frontend-verify ]
 out=$(make -s -C "$p" lint-file FILE='C:\x\proj\frontend\src\a.js' 2>&1)
 t "multi: lint-file goes to the owning part" grep -q '^frontend-lint' <<<"$out"
 printf 'test-mutation:\n\t@echo "backend-test-mutation $(FILES)"\n' >> "$p/backend/Makefile"
@@ -1486,6 +1523,8 @@ case "$*" in
     [ -n "$has" ] || { echo "gh: Not Found (HTTP 404)" >&2; exit 1; }
     [ "$v" = ERR ] && { echo "gh: Server Error (HTTP 502)" >&2; exit 1; }
     printf '%b\n' "$v" ;;
+  *check-runs/*/annotations*) printf '%s\n' "$FAKE_ANNOT" ;;
+  *commits/*/check-runs*) [ -n "$FAKE_ANNOT" ] && echo 99 ;;
   api*) printf '%b\n' "$FAKE_GH" | tail -n +2 | jq -cR 'select(length > 0) | split("|") |
       if length == 1 then {filename: .[0], status: "modified"} else
         {filename: .[1]} + (if .[0] == "-" then {} else {status: .[0]} end)
@@ -1525,6 +1564,14 @@ for a in "" "x" "7 8" "7 --auto" "7 --admin"; do
   mp "$a" "$pr7"; t "merge-pr refuses the arguments '$a'" [ $? = 1 ]
 done
 FAKE_CHECKS=1 mp 7 "$pr7"; t "merge-pr does not merge on a red CI" [ $? = 1 ]
+t "merge-pr: a red CI that ran marks nothing" test ! -f "$m/.git/lodestar-ci-off"
+FAKE_ANNOT="The job was not started because recent account payments have failed or your spending limit needs to be increased." FAKE_CHECKS=1 mp 7 "$pr7"
+t "merge-pr: CI that GitHub did not start (billing) marks CI off" bash -c '[ $1 = 1 ] && grep -q "PR #7" "$2"' _ $? "$m/.git/lodestar-ci-off"
+FAKE_ANNOT="The job exceeded the maximum execution time of 360 minutes." FAKE_CHECKS=1 mp 7 "$pr7"
+t "merge-pr: a timed-out job is not a billing stop (the mark stays as it was)" grep -q "PR #7" "$m/.git/lodestar-ci-off"
+mp 7 "$pr7"; t "merge-pr: a green CI clears the CI-off mark" bash -c '[ $1 = 0 ] && [ ! -f "$2" ]' _ $? "$m/.git/lodestar-ci-off"
+rm -f "$m/.git/lodestar-ci-off"; FAKE_ANNOT="Job failed: exceeded 360 minutes" FAKE_CHECKS=1 mp 7 "$pr7"
+t "merge-pr: a timed-out job marks nothing" test ! -f "$m/.git/lodestar-ci-off"
 out=$(cd "$m" && FAKE_DIR=$tmp FAKE_GH=$pr7 FAKE_CHECKS=1 LODESTAR_CHECKS_RETRY=0 PATH="$tmp/ghpr:$PATH" CLAUDE_PROJECT_DIR=$m bash "$here/agents/claude/hooks/merge-pr.sh" 7 2>&1)
 t "merge-pr on a red CI names the local checks for a CI that cannot run" bash -c 'grep -q "PR_NUMBER=7 .*ci-checks.sh origin/main" <<<"$1" && grep -q "only the owner merges" <<<"$1"' _ "$out"
 FAKE_BODY='' mp 7 "$pr7"; t "merge-pr refuses a PR with no text" [ $? = 1 ]

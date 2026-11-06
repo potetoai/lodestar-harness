@@ -17,7 +17,8 @@ belong to the project.
 | `make setup` | Install dependencies and tools | CI, new developers | Required |
 | `make lint` | Linter and custom rules, whole project | `verify` | Required |
 | `make test` | Unit and smoke tests | `verify` | Required |
-| `make verify` | **Fast** checks (target under ~3 minutes) | Stop hook | Required |
+| `make verify` | **Fast** checks (target under ~3 minutes) | CI; Stop hook without `verify-quick` or while CI cannot run | Required |
+| `make verify-quick CHANGED=...` | Quick checks for the changed files: format, lint, types, related tests (seconds) | Stop hook | Recommended |
 | `make lint-file FILE=...` | Format, then lint, one file, for the edit hook | PostToolUse hook | Recommended |
 | `make format-check` | Check formatting, change nothing | `verify` | Recommended |
 | `make typecheck` | Type check, where the language has one | `verify` | Recommended |
@@ -28,8 +29,20 @@ belong to the project.
 never into the system Python or global npm, and must work on a clean machine
 such as CI.
 
-`verify` stays fast so the Stop hook never stalls a session. Slow tests go in
-`verify-full`, which CI enforces.
+`verify` stays fast; slow tests go in `verify-full`, which CI enforces. The
+Stop hook runs at every stop, so it runs `verify-quick` with `CHANGED` set to
+the project's files changed on the branch or not committed (space-separated,
+relative to the project): a full `verify` at every stop cost App01 and
+ProjectS 12 and 22 hours of waiting, for failures CI catches on the PR. A
+project without `verify-quick` gets the full `verify` (doctor A10c warns).
+While CI cannot run (GitHub did not start the jobs: no Actions minutes, a
+spending limit or billing), every stop runs the full `verify` again: the
+stop is then the only check. `merge-pr.sh` sets this mark when GitHub's
+annotations say so and clears it on a green CI; by hand,
+`bash .claude/hooks/verify-before-stop.sh --ci-off` and `--ci-on` (the owner
+says CI is out of minutes, or back). The mark is in the git folder, never
+committed. A full pass also covers the quick check; a quick pass does not
+cover the full one.
 
 The Stop hook holds a failed `verify` once per state: when neither the files
 nor the failure changed since the last hold, the stop ends (for example while
@@ -105,6 +118,7 @@ checked by the onboarding report and review.
 | B6 | `.ai/invariants.md` lists at least one invariant | Required |
 | A10 | `format-check`, `lint-file`, `verify-full` targets | Recommended |
 | A10b | `verify` ends with `verify-before-stop.sh --record-pass` (top-level make only), so a passing run by the agent is not repeated by the Stop hook | Recommended |
+| A10c | `verify-quick` target, so a stop runs the quick check instead of the full `verify` | Recommended |
 | A11 | `AGENTS.md` under 200 lines; detail moves to `.claude/rules/` (scoped with `paths:`) or docs | Recommended |
 | A11b | `AGENTS.md` tells a cloud or web session to clone the `repo` in `.ai/enforcement.json` when `source` is missing (template line) | Recommended |
 | A12 | Stack tools installed (`.venv` / `node_modules`); else run `make setup` | Recommended |

@@ -132,7 +132,7 @@ if [ ${#parts[@]} -gt 0 ]; then
 # A passing top-level verify records itself, so the Stop hook skips a rerun.
 PARTS := ${parts[*]}
 TARGETS := setup lint format-check typecheck test verify verify-full
-.PHONY: \$(TARGETS) lint-file test-mutation
+.PHONY: \$(TARGETS) lint-file test-mutation verify-quick
 
 \$(TARGETS):
 EOF
@@ -141,6 +141,16 @@ EOF
 	  if $(MAKE) -s -C $$p -n $@ >/dev/null 2>&1; then $(MAKE) --no-print-directory -C $$p $@ || exit 1; fi; \
 	done
 	@[ "$@" != verify ] || [ "$(MAKELEVEL)" != 0 ] || [ ! -f .claude/hooks/verify-before-stop.sh ] || bash .claude/hooks/verify-before-stop.sh --record-pass
+
+# Quick checks for the Stop hook: each part with changed files gets its own
+# files, relative to the part; a part without verify-quick runs its verify.
+verify-quick:
+	@for p in $(PARTS); do \
+	  f=$$(printf '%s\n' $(CHANGED) | sed -n "s#^$$p/##p"); \
+	  [ -n "$$f" ] || continue; \
+	  if $(MAKE) -s -C $$p -n verify-quick >/dev/null 2>&1; then $(MAKE) --no-print-directory -C $$p verify-quick CHANGED="$$(echo $$f)" || exit 1; \
+	  elif $(MAKE) -s -C $$p -n verify >/dev/null 2>&1; then $(MAKE) --no-print-directory -C $$p verify || exit 1; fi; \
+	done
 
 # Mutation testing: each part gets its own files, relative to the part.
 test-mutation:

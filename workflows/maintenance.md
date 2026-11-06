@@ -47,7 +47,9 @@ Stop early when nothing is worth a PR.
    template 2.7.9; open PRs need the line too). `--upgrade` never
    touches [project] files, so compare them with the new templates in
    `enforcement/project/` and `enforcement/stacks/` (for example the
-   `.ai/feedback-log.md` columns, or the `lint-file` recipe) and
+   `.ai/feedback-log.md` columns, the `lint-file` recipe, or the
+   `verify-quick` and `test-related` targets the Stop hook runs (doctor
+   A10c; with several parts, the root one is in `bootstrap.sh`) and
    bring them up to date by hand in the same PR. If `.ai/project.md` has no
    `owner_language:` line, ask the owner which language they want to talk in
    and add it. If it has no "Domain Terms" table, add it as onboarding

@@ -1,11 +1,29 @@
 #!/usr/bin/env bash
 # Managed by lodestar-harness. Edit in lodestar-harness/enforcement, not by hand.
-# Stop: do not let the agent finish while `make verify` fails, while commits
+# Stop: do not let the agent finish while the checks fail, while commits
 # exist only on this machine (push them; rules/git.md section 12), or while a
 # reviewed plan lacks its "- Reviewed criteria:" line (agents/critic.md, Output).
+# The checks are 'make verify-quick CHANGED="<files>"' when the project has
+# that target (format, lint, types, the tests of the changed files: seconds,
+# not minutes; CI runs everything on the PR), else 'make verify'. While CI
+# cannot run (no GitHub Actions minutes: merge-pr.sh marks it, or
+# --ci-off), every stop runs the full 'make verify' instead. Switches:
+#   --ci-off [reason]  CI cannot run: stops run the full 'make verify'
+#   --ci-on            CI runs again: back to verify-quick
 [ "$LODESTAR_SKIP_HOOKS" = "1" ] && exit 0
 cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
 export NO_COLOR=1 FORCE_COLOR=0  # plain text for the agent
+
+# The CI-off mark lives in the shared git folder (all worktrees see it), never
+# in a commit. Without git there is no mark: the full verify always runs.
+ci_off= && cgd=$(git rev-parse --git-common-dir 2>/dev/null) && [ -n "$cgd" ] && cgd=$(cd "$cgd" && pwd) && ci_off=$cgd/lodestar-ci-off
+case ${1:-} in
+  --ci-off) [ -n "$ci_off" ] || { echo "verify-before-stop: not a git folder; nothing to mark." >&2; exit 1; }
+    echo "${2:-marked by hand} ($(date +%Y-%m-%d))" > "$ci_off"
+    echo "Lodestar: CI marked as unable to run; every stop now runs the full 'make verify'. Undo: --ci-on." >&2; exit 0 ;;
+  --ci-on) [ -z "$ci_off" ] || rm -f "$ci_off"
+    echo "Lodestar: CI marked as running; stops run 'make verify-quick' again (when the project has it)." >&2; exit 0 ;;
+esac
 
 # Hold once per state. When the files and the failure (digits ignored, so
 # timings do not count) are the same as at the last hold, nothing was done
@@ -27,6 +45,7 @@ state() { # the working files (tracked and untracked, not ignored) as a tree, th
 # changed (see docs_only), do not run it again. The full run takes minutes in
 # real projects.
 passed=${held%held}passed
+quick=${held:+${held%held}quick-passed}  # a pass of verify-quick: counts only in quick mode
 # True when every file that differs between tree $1 and tree $2 is a note:
 # .ai/ or docs/ at the project root, or a *.md file. Code cannot break on
 # them; the edit hook formats each file, and CI still runs everything.
@@ -179,31 +198,65 @@ if ! err=$(make -n verify 2>&1 >/dev/null); then
   echo "Run 'bash .claude/hooks/doctor.sh' to see why, fix it, then finish." >&2
   exit 2
 fi
-if [ -n "$held" ] && [ -f "$passed" ]; then
-  was=$(cat "$passed"); now=$(state "")
-  if [ "$was" = "$now" ] || docs_only "$was" "$now"; then
-    [ "$was" = "$now" ] || echo "Lodestar: only notes (.ai/, docs/, *.md) changed since 'make verify' passed; not run again (CI runs it)." >&2
-    finish
-  fi
+# Which check: verify-quick when the project has it and CI runs; the full
+# verify without git (no changed-file list), or while CI is marked off.
+target=verify
+if [ -n "$ci_off" ] && [ -f "$ci_off" ]; then
+  echo "Lodestar: CI is marked as unable to run ($(head -n1 "$ci_off")); this stop runs the full 'make verify'. When CI runs again: bash .claude/hooks/verify-before-stop.sh --ci-on" >&2
+elif [ -n "$held" ] && make -n verify-quick >/dev/null 2>&1; then
+  target=verify-quick
 fi
-if [ -n "$held" ] && [ -f "$released" ] && [ "$(cat "$released")" = "$(state "" | git hash-object --stdin)" ]; then
-  echo "Lodestar: 'make verify' failed on these same files and the stop was let go; not run again until a file changes." >&2
+# skip_passed FILE: true when FILE holds a pass for the files as they are now
+# (or only notes changed since).
+skip_passed() {
+  local was now
+  [ -f "$1" ] || return 1
+  was=$(cat "$1"); now=$(state "")
+  [ "$was" = "$now" ] || docs_only "$was" "$now" || return 1
+  [ "$was" = "$now" ] || echo "Lodestar: only notes (.ai/, docs/, *.md) changed since 'make $target' passed; not run again (CI runs it)." >&2
+}
+# A full pass covers the quick check too; a quick pass never covers the full one.
+if [ -n "$held" ]; then
+  skip_passed "$passed" && finish
+  [ $target = verify-quick ] && skip_passed "$quick" && finish
+fi
+if [ -n "$held" ] && [ -f "$released" ] && [ "$(cat "$released")" = "$(state "$target" | git hash-object --stdin)" ]; then
+  echo "Lodestar: 'make $target' failed on these same files and the stop was let go; not run again until a file changes." >&2
   exit 0
 fi
-if ! out=$(make --no-print-directory verify 2>&1); then
-  rm -f "${passed:-/nonexistent}"
+# changed_files: this project's files that differ from where the branch left
+# the default branch, or are not committed, and still exist, space-separated
+# and relative to the project (names with spaces split into words).
+changed_files() {
+  local main base
+  main=$(git symbolic-ref --short -q refs/remotes/origin/HEAD 2>/dev/null) || main=origin/main
+  base=$(git merge-base HEAD "$main" 2>/dev/null) || base=HEAD
+  { git -c core.quotePath=false diff --relative --name-only "$base" -- 2>/dev/null
+    git -c core.quotePath=false ls-files --others --exclude-standard 2>/dev/null; } |
+    sort -u | while IFS= read -r f; do [ -f "$f" ] && printf '%s ' "$f"; done
+}
+if [ $target = verify-quick ]; then
+  out=$(make --no-print-directory verify-quick CHANGED="$(changed_files)" 2>&1)
+else
+  out=$(make --no-print-directory verify 2>&1)
+fi || {
+  [ $target = verify ] && rm -f "${passed:-/nonexistent}"
+  rm -f "${quick:-/nonexistent}"
   if [ -n "$held" ]; then
-    now=$(state "$out" | git hash-object --stdin)
+    now=$(state "$target $out" | git hash-object --stdin)
     if [ -n "$now" ] && [ "$(cat "$held" 2>/dev/null)" = "$now" ]; then
-      echo "Lodestar: 'make verify' still fails, nothing changed since the last hold; stop allowed." >&2
-      state "" | git hash-object --stdin > "$released"
+      echo "Lodestar: 'make $target' still fails, nothing changed since the last hold; stop allowed." >&2
+      state "$target" | git hash-object --stdin > "$released"
       exit 0
     fi
     echo "$now" > "$held"; rm -f "$released"
   fi
-  echo "Not done yet: 'make verify' fails. Fix the problems below, then finish:" >&2
+  echo "Not done yet: 'make $target' fails. Fix the problems below, then finish:" >&2
   echo "$out" | tail -n 60 >&2
   exit 2
+}
+if [ -n "$held" ]; then
+  rm -f "$held" "$released"
+  if [ $target = verify ]; then state "" > "$passed"; else state "" > "$quick"; fi
 fi
-[ -n "$held" ] && { rm -f "$held" "$released"; state "" > "$passed"; }
 finish
