@@ -1572,6 +1572,8 @@ t "merge-pr: a timed-out job is not a billing stop (the mark stays as it was)" g
 mp 7 "$pr7"; t "merge-pr: a green CI clears the CI-off mark" bash -c '[ $1 = 0 ] && [ ! -f "$2" ]' _ $? "$m/.git/lodestar-ci-off"
 rm -f "$m/.git/lodestar-ci-off"; FAKE_ANNOT="Job failed: exceeded 360 minutes" FAKE_CHECKS=1 mp 7 "$pr7"
 t "merge-pr: a timed-out job marks nothing" test ! -f "$m/.git/lodestar-ci-off"
+FAKE_ANNOT="tests/test_billing.py:12 AssertionError: spending limit not applied" FAKE_CHECKS=1 mp 7 "$pr7"
+t "merge-pr: a failing billing test marks nothing" test ! -f "$m/.git/lodestar-ci-off"
 out=$(cd "$m" && FAKE_DIR=$tmp FAKE_GH=$pr7 FAKE_CHECKS=1 LODESTAR_CHECKS_RETRY=0 PATH="$tmp/ghpr:$PATH" CLAUDE_PROJECT_DIR=$m bash "$here/agents/claude/hooks/merge-pr.sh" 7 2>&1)
 t "merge-pr on a red CI names the local checks for a CI that cannot run" bash -c 'grep -q "PR_NUMBER=7 .*ci-checks.sh origin/main" <<<"$1" && grep -q "only the owner merges" <<<"$1"' _ "$out"
 FAKE_BODY='' mp 7 "$pr7"; t "merge-pr refuses a PR with no text" [ $? = 1 ]

@@ -167,7 +167,7 @@ not_started() {
   for id in $(gh api "repos/{owner}/{repo}/commits/$oid/check-runs" \
       -q '.check_runs[] | select(.conclusion == "failure" or .conclusion == "startup_failure") | .id' 2>/dev/null | tr -d '\r'); do
     gh api "repos/{owner}/{repo}/check-runs/$id/annotations" -q '.[].message' 2>/dev/null
-  done | grep -qiE 'job was not started|spending limit|billing'
+  done | grep -qi 'The job was not started because'  # GitHub's own words; a test named billing is no match
 }
 if [ $rc = 0 ]; then
   [ -n "$mark" ] && [ -f "$mark" ] && rm -f "$mark" && echo "merge-pr: CI ran again; the Stop hook is back to its quick check."
