@@ -160,17 +160,21 @@ test_fix_window() {
   local c log
   [ -f .ai/approvals.log ] && c=$(last_valid_tests_first) || return 1
   log=$(git show "$c:.ai/approvals.log" 2>/dev/null | tr -d '\r')
-  tr -d '\r' < .ai/approvals.log | grep -vxFf <(printf '%s\n' "$log") |
-    awk -v f="${1,,}" '$3 == "test-fix" && tolower($4) == f { ok = 1 } END { exit !ok }'
+  new_test_fixes "$log" < .ai/approvals.log | grep -qixF -- "$1"
+}
+
+# Paths of the test-fix lines in an approvals log (stdin) that the log text
+# $1 does not hold. A path may hold spaces: it is the rest of the line.
+new_test_fixes() {
+  tr -d '\r' | grep -vxFf <(printf '%s\n' "$1") |
+    awk '$3 == "test-fix" { print substr($0, index($0, " test-fix ") + 10) }'
 }
 
 # Locked tests the owner approved to fix (one path per line) in round $1 since
 # round $2: test-fix lines in $1's approvals log that $2's log did not hold.
 fresh_test_fixes() {
-  local prev
-  prev=$(git show "$2:.ai/approvals.log" 2>/dev/null | tr -d '\r')
-  git show "$1:.ai/approvals.log" 2>/dev/null | tr -d '\r' |
-    grep -vxFf <(printf '%s\n' "$prev") | awk '$3 == "test-fix" { print $4 }'
+  git show "$1:.ai/approvals.log" 2>/dev/null |
+    new_test_fixes "$(git show "$2:.ai/approvals.log" 2>/dev/null | tr -d '\r')"
 }
 
 # Append-only edit of the test lock (the hook's input JSON in $1): while the

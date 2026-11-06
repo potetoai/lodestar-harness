@@ -84,20 +84,19 @@ fi
 # wrong while the criteria are right (rules/testing.md, "When a test or
 # criterion turns out wrong"). It approves no criteria and uses no critic run.
 # Each name, on the first line, must match one locked path: the whole path,
-# its file name, or the file name up to its first dot. "duyệt sửa 3 test"
-# without names records nothing and lists the lines to type.
+# its file name, or the file name up to its first dot; "*", "?" and "[" match
+# nothing. "duyệt sửa 3 test" without names opens no test and lists the lines.
+# A message that names no locked test may still approve criteria ("approve
+# fix tests for plan login"): it goes on to the plan approval below.
 fixre='^(duyệt|duyet|approve|approved)[[:space:]]+((sửa|sua|fix)[[:space:]]+([0-9]+[[:space:]]+)?tests?|tests?[[:space:]]+fix(es)?)([^[:alnum:]_-]|$)'
 line1=${start%%$'\n'*}
-if grep -qE "$fixre" <<<"$line1"; then
-  if ! { [ -s .ai/test-lock ] && lock_active; }; then
-    echo "Lodestar: the owner approved fixing a test, but no test is locked now, so nothing was recorded."
-    exit 0
-  fi
+if grep -qE "$fixre" <<<"$line1" && [ -s .ai/test-lock ] && lock_active; then
   mapfile -t lockp < <(lock_paths < .ai/test-lock)
   now=$(date '+%Y-%m-%d %H:%M') bad=() n=0
-  for tok in $(sed -E "s/$fixre//" <<<"$line1" | tr ",;\`\"'" '     '); do
+  read -ra toks <<<"$(sed -E "s/$fixre//" <<<"$line1" | tr ",;\`\"'" '     ')"
+  for tok in "${toks[@]}"; do
     tok=${tok%[.:]}
-    case $tok in và|va|and|'&'|'') continue ;; esac
+    case $tok in và|va|and|'&'|'') continue ;; *[][*?]*) bad+=("$tok"); continue ;; esac
     hits=()
     for lp in "${lockp[@]}"; do
       b=${lp##*/}; b=${b,,}
@@ -112,13 +111,16 @@ if grep -qE "$fixre" <<<"$line1"; then
   done
   if [ $n = 0 ] || [ ${#bad[@]} -gt 0 ]; then
     [ ${#bad[@]} -gt 0 ] && echo "Lodestar: these names match no single locked test, so nothing was recorded for them: ${bad[*]}"
-    [ $n = 0 ] && echo "Lodestar: the owner approved fixing tests, but named none that is locked, so nothing was recorded."
-    echo "Ask the owner to type one line per wrong test, with its path from .ai/test-lock"
-    echo "(\"duyệt sửa test\" when owner_language is vi, else \"approve test fix\"), e.g.:"
+    [ $n = 0 ] && echo "Lodestar: the owner approved fixing tests, but named none that is locked, so no test was opened."
+    echo "If a locked test is wrong, ask the owner to type one line per test, with its path from"
+    echo ".ai/test-lock (\"duyệt sửa test\" when owner_language is vi, else \"approve test fix\"), e.g.:"
     echo "  duyệt sửa test ${lockp[0]}"
   fi
-  [ $n -gt 0 ] && echo "The tester fixes only those tests (they must still test their criterion) and commits a new Tests-First round."
-  exit 0
+  if [ $n -gt 0 ]; then
+    echo "The tester fixes only those tests (they must still test their criterion) and commits a new"
+    echo "Tests-First round with the plan and .ai/approvals.log."
+    exit 0
+  fi
 fi
 
 # "duyệt critic <plan>": the owner allows one more critic run of a plan past

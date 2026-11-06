@@ -22,7 +22,9 @@ Check:
 - unintended changes
 - new names for a concept already in "Domain Terms" of `.ai/project.md`
 - tests-first tasks: every approved criterion in the plan file has a test, and
-  the tests check what the criterion says
+  the tests check what the criterion says; a locked test changed after
+  "duyệt sửa test" (listed in the PR summary) still tests its criterion and
+  was not made easier to pass
 - when the PR ran mutation testing (label `test-mutation`): each surviving mutant
   has a new test or a written reason
 - new lint suppressions and TODO/FIXME that CI lists: each has a real reason
