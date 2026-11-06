@@ -32,7 +32,10 @@ test:
 # The tests that import the changed files (CHANGED, set by the Stop hook):
 # Vitest `related`, Jest `--findRelatedTests`; another runner runs them all.
 test-related:
-	@if [ -z "$(strip $(CHANGED))" ]; then echo "test-related: no changed files"; 	elif [ -f node_modules/.bin/vitest ]; then $(NPX) vitest related --run --passWithNoTests $(CHANGED); 	elif [ -f node_modules/.bin/jest ]; then $(NPX) jest --passWithNoTests --findRelatedTests $(CHANGED); 	else npm test; fi
+	@if [ -z "$(strip $(CHANGED))" ]; then echo "test-related: no changed files"; \
+	elif [ -f node_modules/.bin/vitest ]; then $(NPX) vitest related --run --passWithNoTests $(CHANGED); \
+	elif [ -f node_modules/.bin/jest ]; then $(NPX) jest --passWithNoTests --findRelatedTests $(CHANGED); \
+	else npm test; fi
 
 # Quick checks, run by the Stop hook on every stop: seconds, not minutes. CI
 # runs the full verify on the PR; while CI cannot run, the hook runs verify.

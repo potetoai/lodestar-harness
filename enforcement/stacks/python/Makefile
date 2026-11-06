@@ -38,7 +38,13 @@ test:
 # The tests of the changed files (CHANGED, set by the Stop hook): changed test
 # files, and test_<name>.py / <name>_test.py for each changed <name>.py.
 test-related:
-	@t=$$(for f in $(CHANGED); do case $$f in *.py) b=$${f##*/}; b=$${b%.py}; 	  case $$b in test_*|*_test) echo "$$f" ;; *) git ls-files -co --exclude-standard -- "*test_$$b.py" "*$${b}_test.py" ;; esac ;; esac; done | sort -u); 	if [ -n "$$t" ]; then $(PY) -m pytest -q $$t; else echo "test-related: no tests for the changed files (CI runs them all)"; fi
+	@t=; for f in $(CHANGED); do \
+	  case $$f in (*.py) b=$${f##*/}; b=$${b%.py}; \
+	    case $$b in (test_*|*_test) t="$$t $$f" ;; \
+	      (*) t="$$t $$(git ls-files -co --exclude-standard -- "*test_$$b.py" "*$${b}_test.py" | tr '\n' ' ')" ;; esac ;; esac; \
+	done; \
+	t=$$(printf '%s\n' $$t | sort -u); \
+	if [ -n "$$t" ]; then $(PY) -m pytest -q $$t; else echo "test-related: no tests for the changed files (CI runs them all)"; fi
 
 # Quick checks, run by the Stop hook on every stop: seconds, not minutes. CI
 # runs the full verify on the PR; while CI cannot run, the hook runs verify.
