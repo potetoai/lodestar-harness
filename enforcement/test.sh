@@ -910,6 +910,32 @@ guard tests/test_lock.py; t "guard: a second round locks its tests again" [ $? =
 mkplan lock-demo "lock demo works"
 guard tests/test_lock.py; t "guard: criteria put back to an earlier approved version do not open the relock window" [ $? = 2 ]
 lockedit Write '{"content":"tests/test_new.py\n"}'; t "lock: criteria put back to an earlier approved version do not let a line be removed" [ $? = 2 ]
+# A wrong test under right criteria: "duyệt sửa test <name>" opens only that
+# test, until the next round; CI accepts that test's change in that round only.
+g checkout -q -f b6base; g clean -qfd; relock_branch fix-base; add_locked_test; progress_round 'add test_next'
+recfix() { CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/approval-record.sh" <<<"{\"prompt\":\"$1\"}"; }
+n=$(wc -l < .ai/approvals.log); out=$(recfix "duyệt sửa 3 test")
+t "test fix: 'duyệt sửa 3 test' without names records nothing and shows the line to type" bash -c '[ "$(wc -l < .ai/approvals.log)" = "$1" ] && grep -q "duyệt sửa test tests/" <<<"$2"' _ "$n" "$out"
+out=$(recfix "duyệt sửa test nosuch")
+t "test fix: a name that matches no locked test records nothing" bash -c '[ "$(wc -l < .ai/approvals.log)" = "$1" ] && grep -q "nosuch" <<<"$2"' _ "$n" "$out"
+guard tests/test_lock.py; t "test fix: without the owner's approval the test stays locked" [ $? = 2 ]
+out=$(recfix "Duyệt sửa test test_lock")
+t "test fix: 'duyệt sửa test test_lock' records the locked path and no criteria" bash -c 'tail -n1 .ai/approvals.log | grep -qE " test-fix tests/test_lock.py$" && [ "$(wc -l < .ai/approvals.log)" = $(($1 + 1)) ]' _ "$n"
+guard tests/test_lock.py; t "test fix: the approved test opens" [ $? = 0 ]
+guard tests/test_next.py; t "test fix: another locked test stays locked" [ $? = 2 ]
+guard .ai/test-lock; t "test fix: the lock file stays locked" [ $? = 2 ]
+CLAUDE_PROJECT_DIR=$p bash -c '. .claude/hooks/lodestar-lib.sh && test_fix_window tests/test_lock.py' ; t "test fix: the stop hook's window check sees the approval" [ $? = 0 ]
+g add .ai/approvals.log; g commit -qm "owner approved a test fix"; g branch -q fix-approved
+echo 'def test_lock(): assert 2 == 2' > tests/test_lock.py; g commit -qam "fix test outside a round"
+check; t "PR test fix: the fix outside a Tests-First round fails" [ $? = 1 ]
+g checkout -q -B fix-other fix-approved; echo 'def test_next(): assert True' > tests/test_next.py; progress_round 'fix the wrong test'
+check; t "PR test fix: a round that changes a test not approved to fix fails" [ $? = 1 ]
+g checkout -q -B fix-ok fix-approved; echo 'def test_lock(): assert 2 == 2' > tests/test_lock.py; progress_round 'fix the wrong test'
+out=$(bash "$here/agents/claude/hooks/ci-checks.sh" main 2>&1)
+t "PR test fix: a round that changes the approved test passes and lists it" bash -c '[ $1 = 0 ] && grep -q "approved to fix" <<<"$2" && grep -q "tests/test_lock.py" <<<"$2"' _ $? "$out"
+guard tests/test_lock.py; t "test fix: the round uses the approval up (the test locks again)" [ $? = 2 ]
+echo 'def test_lock(): assert 3 == 3' > tests/test_lock.py; progress_round 'fix again'
+check; t "PR test fix: a later round cannot reuse the used approval" [ $? = 1 ]
 g checkout -q -f b6base; g clean -qfd
 mkdir -p .ai/plans/completed; g mv .ai/plans/active/lock-demo.md .ai/plans/completed/
 guard tests/test_lock.py; t "guard: the lock expires when the plan moves to completed/ (the old way)" [ $? = 0 ]

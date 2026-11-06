@@ -217,6 +217,18 @@ the owner changes their mind, a test that cannot work):
 4. The builder continues from step 4. Every change of criteria stays visible
    in the plan, in `.ai/approvals.log`, and in the PR summary.
 
+**A wrong test under right criteria** (it contradicts another locked test, a
+project rule, or its own fixture, so no code can make it pass): the builder
+stops, tells the owner in plain words why the test is wrong and why the
+criterion is right, and gives one line per test to type:
+`duyệt sửa test <path from .ai/test-lock>` (`approve test fix <path>`). The
+hook records it; the criteria stay approved and no critic run is used. Only
+that test opens. The tester fixes it so it still tests its criterion, writes
+the reason in the plan's progress log, and commits a new `Tests-First:` round
+with the plan and approvals log; that round uses the approval up. CI accepts
+the change in that round only and lists the test in the PR summary; the
+reviewer checks the fix did not weaken it.
+
 ### Sensitive changes need tests
 
 CI fails a pull request that changes a file in `sensitive_paths` without

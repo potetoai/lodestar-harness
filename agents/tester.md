@@ -32,7 +32,10 @@ In high-risk tasks the tester works **before** the builder
   criterion, and nothing that is not in the criteria. Write no test before
   that approval: red tests then hold every stop (`make verify` fails).
 - Run the tests and confirm they **fail** on the current code. Report the
-  failing output.
+  failing output. Read each failure: it must come from a missing object or
+  behaviour that the code will add, not from a contradiction no code can fix
+  (with another locked test, a project rule such as access rights, or the
+  test's own fixture). Fix a contradicting test before locking it.
 - Make the tests pass `make lint` and `make typecheck` (where the project
   has it) before locking them: once locked, nobody but the owner can fix
   them, and `make verify` runs both.
@@ -44,6 +47,9 @@ In high-risk tasks the tester works **before** the builder
   must change the plan file (its progress log). No new approval is needed.
 - A new round after the owner approved changed criteria: change only the
   affected tests and commit a new `Tests-First:` round the same way.
+- A round after the owner typed "duyệt sửa test <path>": change only those
+  tests, keep each one testing its criterion, write the reason in the
+  progress log, and commit a new `Tests-First:` round the same way.
 - Do not write the implementation.
 
 ## Reading the plan

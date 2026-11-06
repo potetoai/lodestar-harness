@@ -151,6 +151,28 @@ relock_window() {
   return 1
 }
 
+# Test-fix window for one locked test (path $1): the owner typed "duyệt sửa
+# test <path>" (approval-record.sh wrote "<when> test-fix <path>") after the
+# last valid Tests-First round. The criteria stay as approved; only that test
+# opens, until the tester commits the fix in a new round. A line already in
+# that round's approvals log is used up.
+test_fix_window() {
+  local c log
+  [ -f .ai/approvals.log ] && c=$(last_valid_tests_first) || return 1
+  log=$(git show "$c:.ai/approvals.log" 2>/dev/null | tr -d '\r')
+  tr -d '\r' < .ai/approvals.log | grep -vxFf <(printf '%s\n' "$log") |
+    awk -v f="${1,,}" '$3 == "test-fix" && tolower($4) == f { ok = 1 } END { exit !ok }'
+}
+
+# Locked tests the owner approved to fix (one path per line) in round $1 since
+# round $2: test-fix lines in $1's approvals log that $2's log did not hold.
+fresh_test_fixes() {
+  local prev
+  prev=$(git show "$2:.ai/approvals.log" 2>/dev/null | tr -d '\r')
+  git show "$1:.ai/approvals.log" 2>/dev/null | tr -d '\r' |
+    grep -vxFf <(printf '%s\n' "$prev") | awk '$3 == "test-fix" { print $4 }'
+}
+
 # Append-only edit of the test lock (the hook's input JSON in $1): while the
 # plan is approved, a later step may add its test paths. Every path already
 # in the lock must still be there, unchanged, in the content after the edit.

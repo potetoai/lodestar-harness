@@ -6,7 +6,8 @@
 # - Tests in .ai/test-lock and the lock itself: blocked while the task is
 #   active (a plan in .ai/plans/active/). The lock expires when the last
 #   plan with a Tests-First round leaves active/. It reopens only when the owner approved changed criteria
-#   (relock window), so the tester can write the new round of tests.
+#   (relock window), so the tester can write the new round of tests, or, for
+#   one named test, when the owner approved fixing it ("duyệt sửa test <path>").
 # - The lock may gain lines while an active plan is approved (a later step
 #   of the plan adds its tests); a line already in it cannot change.
 [ "$LODESTAR_SKIP_HOOKS" = "1" ] && exit 0
@@ -35,6 +36,7 @@ locked=0
 lock_paths < .ai/test-lock | grep -qixF -- "$f" && locked=1
 if [ $locked = 1 ]; then
   relock_window && exit 0
+  [ "${f,,}" != ".ai/test-lock" ] && test_fix_window "$f" && exit 0
   if [ "${f,,}" = ".ai/test-lock" ]; then
     lock_append_only "$input" && exit 0
     echo "Blocked: .ai/test-lock is locked by the tests-first mode. While the plan is approved you may" >&2
@@ -44,7 +46,9 @@ if [ $locked = 1 ]; then
   fi
   echo "Blocked: $f is locked by the tests-first mode (.ai/test-lock)." >&2
   echo "Make the code pass the tests; do not change them. If a test or criterion is wrong, stop" >&2
-  echo "and ask the owner. Once they approve the changed criteria, the tester writes a new round." >&2
+  echo "and ask the owner. A wrong criterion: once they approve the changed criteria, the tester writes" >&2
+  echo "a new round. A wrong test under right criteria: they type \"duyệt sửa test $f\" (\"approve" >&2
+  echo "test fix ...\" in English); then the tester fixes only that test (rules/testing.md)." >&2
   exit 2
 fi
 exit 0
