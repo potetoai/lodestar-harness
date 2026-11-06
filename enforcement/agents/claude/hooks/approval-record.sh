@@ -86,8 +86,8 @@ fi
 # Each name, on the first line, must match one locked path: the whole path,
 # its file name, or the file name up to its first dot; "*", "?" and "[" match
 # nothing. "duyệt sửa 3 test" without names opens no test and lists the lines.
-# A message that names no locked test may still approve criteria ("approve
-# fix tests for plan login"): it goes on to the plan approval below.
+# A message that names no locked test but names an active plan ("approve
+# fix tests for plan login") goes on to the plan approval below.
 fixre='^(duyệt|duyet|approve|approved)[[:space:]]+((sửa|sua|fix)[[:space:]]+([0-9]+[[:space:]]+)?tests?|tests?[[:space:]]+fix(es)?)([^[:alnum:]_-]|$)'
 line1=${start%%$'\n'*}
 if grep -qE "$fixre" <<<"$line1" && [ -s .ai/test-lock ] && lock_active; then
@@ -121,6 +121,10 @@ if grep -qE "$fixre" <<<"$line1" && [ -s .ai/test-lock ] && lock_active; then
     echo "Tests-First round with the plan and .ai/approvals.log."
     exit 0
   fi
+  # A mistyped test name must not approve criteria (that opens every locked
+  # test): go on only when the message names an active plan.
+  for p in .ai/plans/active/*.md; do named_in_prompt "$p" && named_plan=1; done
+  [ -n "${named_plan:-}" ] || exit 0
 fi
 
 # "duyệt critic <plan>": the owner allows one more critic run of a plan past

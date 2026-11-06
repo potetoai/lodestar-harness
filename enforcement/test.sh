@@ -938,7 +938,10 @@ t "PR test fix: a round that changes the approved test passes and lists it" bash
 guard tests/test_lock.py; t "test fix: the round uses the approval up (the test locks again)" [ $? = 2 ]
 echo 'def test_lock(): assert 3 == 3' > tests/test_lock.py; progress_round 'fix again'
 check; t "PR test fix: a later round cannot reuse the used approval" [ $? = 1 ]
-g checkout -q -f fix-approved; mkplan lock-demo "lock demo works" "fix tests run offline"; recfix "approve fix tests for plan lock-demo" >/dev/null
+g checkout -q -f fix-approved; mkplan lock-demo "lock demo works" "fix tests run offline"
+n=$(wc -l < .ai/approvals.log); recfix "duyệt sửa test test_lokc" >/dev/null
+t "test fix: a mistyped name does not approve waiting criteria" [ "$(wc -l < .ai/approvals.log)" = "$n" ]
+recfix "approve fix tests for plan lock-demo" >/dev/null
 guard tests/test_next.py; t "test fix: a message naming no locked test still approves changed criteria" [ $? = 0 ]
 g checkout -q -f b6base; g clean -qfd
 mkdir -p .ai/plans/completed; g mv .ai/plans/active/lock-demo.md .ai/plans/completed/
