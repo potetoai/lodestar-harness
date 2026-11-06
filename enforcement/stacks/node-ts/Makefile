@@ -3,7 +3,7 @@
 # project; change them freely.
 # Expects devDependencies: eslint, prettier, typescript, @stryker-mutator/core
 # (installed by `make setup`).
-.PHONY: setup lint lint-file format-check typecheck test verify verify-full test-mutation
+.PHONY: setup lint lint-file format-check typecheck test test-related verify verify-quick verify-full test-mutation
 
 NPX = npx --no-install
 
@@ -29,8 +29,21 @@ typecheck:
 test:
 	npm test
 
-# Fast checks, run by the Stop hook. Keep it under ~3 minutes. The last line
-# records the pass, so the Stop hook does not run it a second time.
+# The tests that import the changed files (CHANGED, set by the Stop hook):
+# Vitest `related`, Jest `--findRelatedTests`; another runner runs them all.
+test-related:
+	@if [ -z "$(strip $(CHANGED))" ]; then echo "test-related: no changed files"; \
+	elif [ -f node_modules/.bin/vitest ]; then $(NPX) vitest related --run --passWithNoTests $(CHANGED); \
+	elif [ -f node_modules/.bin/jest ]; then $(NPX) jest --passWithNoTests --findRelatedTests $(CHANGED); \
+	else npm test; fi
+
+# Quick checks, run by the Stop hook on every stop: seconds, not minutes. CI
+# runs the full verify on the PR; while CI cannot run, the hook runs verify.
+verify-quick: format-check lint typecheck test-related
+
+# All fast checks, run by CI and by the Stop hook while CI cannot run. Keep it
+# under ~3 minutes. The last line records the pass, so the Stop hook does not
+# run it a second time.
 verify: format-check lint typecheck test
 	@[ "$(MAKELEVEL)" != 0 ] || [ ! -f .claude/hooks/verify-before-stop.sh ] || bash .claude/hooks/verify-before-stop.sh --record-pass
 

@@ -221,6 +221,7 @@ check B5  "sensitive_paths declared in .ai/project.md"   fail grep -q '^sensitiv
 check B6  ".ai/invariants.md lists at least one invariant" fail grep -qE '^\| *INV-' .ai/invariants.md
 check A10 "Makefile has format-check, lint-file, verify-full" warn has_targets format-check lint-file verify-full
 check A10b "make verify records its pass (last line: verify-before-stop.sh --record-pass, see the stack Makefile)" warn records_pass
+check A10c "Makefile has verify-quick (the Stop hook's quick check; else every stop runs the full verify, see the stack Makefile)" warn has_targets verify-quick
 check A11 "AGENTS.md under 200 lines (move detail to .claude/rules/ with paths:, or docs)" warn short_agents_md
 check A11b "AGENTS.md says where lodestar-harness is for cloud sessions (template line on .ai/enforcement.json)" warn agents_md_finds_lodestar
 check A12 "stack tools installed (.venv / node_modules), else run make setup" warn stack_env

@@ -15,7 +15,9 @@
 #    approval-record.sh). Locked tests come from .ai/test-lock on GitHub (the
 #    target branch's tip and the PR's base), never the local copy. A test the
 #    PR adds, or a lock that only gains lines, is not owner-only.
-# 3. Waits for CI (gh pr checks --watch); merges only when it exits 0.
+# 3. Waits for CI (gh pr checks --watch); merges only when it exits 0. When
+#    GitHub did not start the jobs (no Actions minutes, billing), it marks CI
+#    off, so every Stop runs the full 'make verify'; a green CI clears it.
 # 4. Merges with --match-head-commit <the head checked above>, so GitHub
 #    refuses a head pushed after the checks.
 # 5. With --delete-branch, the approval lines not yet committed are set
@@ -155,6 +157,24 @@ for try in 1 2 3 4 5 6; do
   grep -qi 'no checks reported' <<<"$out" || break
   [ $try = 6 ] || sleep "${LODESTAR_CHECKS_RETRY:-10}"
 done
+# CI-off mark (verify-before-stop.sh): while GitHub refuses to start the jobs
+# (no Actions minutes, spending limit, billing), every Stop runs the full
+# 'make verify'; a green CI clears it. GitHub says why in the failed check
+# runs' annotations.
+mark=$(git rev-parse --git-common-dir 2>/dev/null) && mark=$(cd "$mark" && pwd)/lodestar-ci-off || mark=
+not_started() {
+  local id
+  for id in $(gh api "repos/{owner}/{repo}/commits/$oid/check-runs" \
+      -q '.check_runs[] | select(.conclusion == "failure" or .conclusion == "startup_failure") | .id' 2>/dev/null | tr -d '\r'); do
+    gh api "repos/{owner}/{repo}/check-runs/$id/annotations" -q '.[].message' 2>/dev/null
+  done | grep -qi 'The job was not started because'  # GitHub's own words; a test named billing is no match
+}
+if [ $rc = 0 ]; then
+  [ -n "$mark" ] && [ -f "$mark" ] && rm -f "$mark" && echo "merge-pr: CI ran again; the Stop hook is back to its quick check."
+elif [ -n "$mark" ] && not_started; then
+  echo "GitHub did not start CI on PR #$n, Actions minutes or billing ($(date +%Y-%m-%d))" > "$mark"
+  echo "merge-pr: GitHub did not start CI (no Actions minutes or a billing limit). Until CI runs again, every stop runs the full 'make verify'." >&2
+fi
 [ $rc = 0 ] || die "CI is not green on PR #$n (gh pr checks exit $rc); not merged." "$(tail -n 15 <<<"$out")
 If CI could not run at all (for example no Actions minutes left), run on the PR's branch:
   make verify && PR_NUMBER=$n GITHUB_REPOSITORY=<owner>/<repo> bash .claude/hooks/ci-checks.sh origin/$bname
