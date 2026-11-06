@@ -18,6 +18,9 @@
 # 3. Waits for CI (gh pr checks --watch); merges only when it exits 0.
 # 4. Merges with --match-head-commit <the head checked above>, so GitHub
 #    refuses a head pushed after the checks.
+# 5. With --delete-branch, the approval lines not yet committed are set
+#    aside so gh can switch to the base branch, then put back. If gh fails
+#    after GitHub merged the PR, it says so and how to finish by hand.
 # After a merge it leaves a marker in the git folder; the global
 # context-nudge.sh hook then asks for a fresh session (task done).
 # Takes as long as CI: run it with a long timeout or in the background.
@@ -159,6 +162,35 @@ Tell the owner both results; only the owner merges it, by hand on GitHub."
 # A push while CI ran: the checks above were for another head.
 read -r _ _ now _ <<<"$(view)"
 [ "$now" = "$oid" ] || die "PR #$n got a new push while CI ran ($oid -> ${now:-unreadable}); not merged." "Run this again${hit:+; the owner must approve the new head}."
-gh pr merge "$n" "$method" $del --match-head-commit "$oid" || die "gh pr merge failed for PR #$n."
+# --delete-branch makes gh switch this folder to the base branch after the
+# merge; git refuses while .ai/approvals.log has the approval lines the hook
+# added (App01 PR #147). Set the log aside, then append its uncommitted
+# lines that the (new) branch's copy lacks; on a failure the copy stays.
+lg=$top/.ai/approvals.log; saved=
+carry_back() {
+  [ -n "$saved" ] || return 0
+  local add
+  add=$(grep -vxFf <(tr -d '\r' < "$lg" 2>/dev/null) <<<"$extra" | grep .)
+  if mkdir -p "${lg%/*}" && touch "$lg" && { [ ! -s "$lg" ] || [ -z "$(tail -c1 "$lg")" ] || echo >> "$lg"; } &&
+    { [ -z "$add" ] || printf '%s\n' "$add" >> "$lg"; }
+  then rm -f "$saved"
+  else printf 'merge-pr: could not put back .ai/approvals.log; its copy is %s\n' "$saved" >&2
+  fi
+  saved=
+}
+if [ -n "$del" ] && [ -f "$lg" ] && [ -n "$(git -C "$top" status --porcelain -- .ai/approvals.log 2>/dev/null)" ]; then
+  saved=$(mktemp) && cp "$lg" "$saved" || die "cannot copy .ai/approvals.log aside; not merged."
+  extra=$(tr -d '\r' < "$lg" | grep -vxFf <(git -C "$top" show HEAD:.ai/approvals.log 2>/dev/null | tr -d '\r'))
+  trap carry_back EXIT
+  if git -C "$top" ls-files --error-unmatch .ai/approvals.log >/dev/null 2>&1; then git -C "$top" checkout -q HEAD -- .ai/approvals.log; else rm -f "$lg"; fi
+fi
+if ! gh pr merge "$n" "$method" $del --match-head-commit "$oid"; then
+  carry_back
+  read -r _ _ _ _ _ _ now <<<"$(view)"
+  [ "$now" = MERGED ] || die "gh pr merge failed for PR #$n."
+  printf 'merge-pr: PR #%s is merged on GitHub, but gh could not finish here (see above).\n%s\n' "$n" \
+    "Finish by hand: commit or stash other changes, git switch $bname, git pull, git branch -D $h${del:+, git push origin --delete $h}." >&2
+fi
+carry_back
 gd=$(cd "$(git rev-parse --git-dir)" 2>/dev/null && pwd) && echo "PR $n merged" > "$gd/lodestar-task-done"
 echo "merge-pr: PR #$n merged at $oid."
