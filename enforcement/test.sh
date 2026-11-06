@@ -1436,7 +1436,9 @@ t "doctor C1 names the GitHub Free limit" grep -q "C1  main cannot be locked: pr
 # arguments to $FAKE_DIR/merged. `gh pr view --json author,body,commits`
 # prints $FAKE_AUTHOR (me), $FAKE_COMMITS (the PR's commit ids; one starting
 # aaaaaaa) and $FAKE_BODY (a BUILD_REVIEW route reviewed at aaaaaaa). Empty
-# $FAKE_GH: every call fails.
+# $FAKE_GH: every call fails. With $FAKE_LOCAL, `gh pr merge --delete-branch`
+# switches to main and deletes the branch, failing as gh does; after a
+# merge in that mode, `gh pr view` says MERGED.
 mkdir -p "$tmp/ghpr"
 cat > "$tmp/ghpr/gh" <<'EOF'
 #!/bin/sh
@@ -1459,13 +1461,16 @@ case "$*" in
   "pr checks"*) : > "$FAKE_DIR/checked"
     [ "$FAKE_CHECKS" = none ] && { echo "no checks reported on the 'x' branch"; exit 1; }
     echo "verify pass"; exit "${FAKE_CHECKS:-0}" ;;
-  "pr merge"*) echo "$*" > "$FAKE_DIR/merged" ;;
+  "pr merge"*) echo "$*" > "$FAKE_DIR/merged"
+    case "$*" in *--delete-branch*) [ -n "$FAKE_LOCAL" ] || exit 0
+      b=$(git branch --show-current); git switch -q main || exit 1; git branch -q -D "$b" ;; esac ;;
   *"--json author,body"*) printf '%b
 ' "${FAKE_AUTHOR:-me} ${FAKE_COMMITS-aaaaaaa0000000000000000000000000000000000}
 ${FAKE_BODY-Lodestar route: BUILD_REVIEW risk=low
 Lodestar review: pass, reviewer, aaaaaaa}" ;;
   *) set -- $first
     [ -n "$FAKE_NEWHEAD" ] && [ -f "$FAKE_DIR/checked" ] && set -- "$1" "$2" "$FAKE_NEWHEAD" "$4" "$5" "$6" "$7"
+    [ -n "$FAKE_LOCAL" ] && [ -f "$FAKE_DIR/merged" ] && set -- "$1" "$2" "$3" "$4" "$5" "$6" MERGED
     echo "$1 $2 $3 $4 $5 $6 ${7:-OPEN}" ;;
 esac
 EOF
@@ -1578,6 +1583,25 @@ echo "2026-10-16 10:00 merge-pr 8 aaaaaaa" > "$m/.ai/approvals.log"
 mp 7 "$auth7"; t "merge-pr refuses when the approval is for another PR" [ $? = 1 ]
 printf '2026-10-16 10:00 merge-pr 7 aaaaaaa\r\n' > "$m/.ai/approvals.log"
 mp 7 "$auth7"; t "merge-pr merges a sensitive PR the owner approved at its head" [ $? = 0 ]
+# App01 PR #147: --delete-branch while the hook's approval lines are not
+# committed. The lines go with the switch to main; if the switch still fails,
+# the PR is reported merged and the log is left as it was.
+w=$tmp/gw; mkdir -p "$w/.ai"; git -C "$w" init -q -b main; git -C "$w" config core.autocrlf false; gc() { git -C "$w" -c user.name=t -c user.email=t@t commit -qam "$1"; }
+echo "A" > "$w/.ai/approvals.log"; echo x > "$w/f.txt"; git -C "$w" add -A; gc base
+git -C "$w" checkout -q -b fix/m; echo "B" >> "$w/.ai/approvals.log"; echo y > "$w/f.txt"; gc pr
+git -C "$w" update-ref refs/remotes/origin/fix/m HEAD
+echo "2026-11-05 10:00 merge-pr 7 aaaaaaa" >> "$w/.ai/approvals.log"
+mpw() { rm -f "$tmp/merged" "$tmp/checked"; out=$(cd "$w" && FAKE_LOCAL=1 FAKE_DIR=$tmp FAKE_GH='7 fix/m aaaaaaa false main 0000000\nsrc/auth/login.py' \
+  LODESTAR_CHECKS_RETRY=0 PATH="$tmp/ghpr:$PATH" CLAUDE_PROJECT_DIR=$w bash "$here/agents/claude/hooks/merge-pr.sh" 7 -d 2>&1); rc=$?; }
+echo z > "$w/f.txt"; cp "$w/.ai/approvals.log" "$tmp/log0"; mpw
+t "merge-pr -d with a dirty f.txt: merged, says what to finish, log kept" bash -c '[ $1 = 0 ] && grep -q "merged on GitHub" <<<"$2" && grep -q "git switch main" <<<"$2" && cmp -s "$3" "$4" && [ "$(git -C "$5" branch --show-current)" = fix/m ]' _ "$rc" "$out" "$tmp/log0" "$w/.ai/approvals.log" "$w"
+git -C "$w" checkout -q -- f.txt; mpw
+t "merge-pr -d carries uncommitted approval lines to main (App01 #147)" bash -c '[ $1 = 0 ] && [ "$(git -C "$2" branch --show-current)" = main ] && ! git -C "$2" show-ref -q refs/heads/fix/m && [ "$(cat "$2/.ai/approvals.log")" = "A
+2026-11-05 10:00 merge-pr 7 aaaaaaa" ]' _ "$rc" "$w"
+rm -rf "$w"; mkdir -p "$w"; git -C "$w" init -q -b main; git -C "$w" config core.autocrlf false; echo x > "$w/f.txt"; git -C "$w" add -A; gc base
+git -C "$w" checkout -q -b fix/m; mkdir "$w/.ai"; echo "B" > "$w/.ai/approvals.log"; git -C "$w" add -A; gc pr
+git -C "$w" update-ref refs/remotes/origin/fix/m HEAD; echo "2026-11-05 10:00 merge-pr 7 aaaaaaa" >> "$w/.ai/approvals.log"; mpw
+t "merge-pr -d puts the uncommitted approval lines back when main has no .ai/" bash -c '[ $1 = 0 ] && [ "$(git -C "$2" branch --show-current)" = main ] && [ "$(cat "$2/.ai/approvals.log")" = "2026-11-05 10:00 merge-pr 7 aaaaaaa" ]' _ "$rc" "$w"
 t "merge-pr pins the approved head" grep -q -- "--match-head-commit aaaaaaa" "$tmp/merged"
 FAKE_NEWHEAD=ccccccc mp 7 "$auth7"; t "merge-pr does not merge an approved PR that got a new push during CI" [ $? = 1 ]
 rm -rf "$m/.ai"
