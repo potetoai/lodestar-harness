@@ -915,14 +915,14 @@ lockedit Write '{"content":"tests/test_new.py\n"}'; t "lock: criteria put back t
 g checkout -q -f b6base; g clean -qfd; relock_branch fix-base; add_locked_test; progress_round 'add test_next'
 recfix() { CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/approval-record.sh" <<<"{\"prompt\":\"$1\"}"; }
 n=$(wc -l < .ai/approvals.log); out=$(recfix "duyệt sửa 3 test")
-t "test fix: 'duyệt sửa 3 test' without names records nothing and shows the line to type" bash -c '[ "$(wc -l < .ai/approvals.log)" = "$1" ] && grep -q "duyệt sửa test tests/" <<<"$2"' _ "$n" "$out"
+t "test fix: 'duyệt sửa 3 test' without names records nothing and shows the line to type" bash -c '[ "$(wc -l < .ai/approvals.log)" -eq "$1" ] && grep -q "duyệt sửa test tests/" <<<"$2"' _ "$n" "$out"
 out=$(recfix "duyệt sửa test nosuch")
-t "test fix: a name that matches no locked test records nothing" bash -c '[ "$(wc -l < .ai/approvals.log)" = "$1" ] && grep -q "nosuch" <<<"$2"' _ "$n" "$out"
+t "test fix: a name that matches no locked test records nothing" bash -c '[ "$(wc -l < .ai/approvals.log)" -eq "$1" ] && grep -q "nosuch" <<<"$2"' _ "$n" "$out"
 recfix "duyệt sửa test tests/*" >/dev/null; recfix "duyệt sửa test test_?ock" >/dev/null
-t "test fix: names with * or ? open no test" [ "$(wc -l < .ai/approvals.log)" = "$n" ]
+t "test fix: names with * or ? open no test" [ "$(wc -l < .ai/approvals.log)" -eq "$n" ]
 guard tests/test_lock.py; t "test fix: without the owner's approval the test stays locked" [ $? = 2 ]
 out=$(recfix "Duyệt sửa test test_lock")
-t "test fix: 'duyệt sửa test test_lock' records the locked path and no criteria" bash -c 'tail -n1 .ai/approvals.log | grep -qE " test-fix tests/test_lock.py$" && [ "$(wc -l < .ai/approvals.log)" = $(($1 + 1)) ]' _ "$n"
+t "test fix: 'duyệt sửa test test_lock' records the locked path and no criteria" bash -c 'tail -n1 .ai/approvals.log | grep -qE " test-fix tests/test_lock.py$" && [ "$(wc -l < .ai/approvals.log)" -eq $(($1 + 1)) ]' _ "$n"
 guard tests/test_lock.py; t "test fix: the approved test opens" [ $? = 0 ]
 guard tests/test_next.py; t "test fix: another locked test stays locked" [ $? = 2 ]
 guard .ai/test-lock; t "test fix: the lock file stays locked" [ $? = 2 ]
@@ -940,7 +940,7 @@ echo 'def test_lock(): assert 3 == 3' > tests/test_lock.py; progress_round 'fix 
 check; t "PR test fix: a later round cannot reuse the used approval" [ $? = 1 ]
 g checkout -q -f fix-approved; mkplan lock-demo "lock demo works" "fix tests run offline"
 n=$(wc -l < .ai/approvals.log); recfix "duyệt sửa test test_lokc" >/dev/null
-t "test fix: a mistyped name does not approve waiting criteria" [ "$(wc -l < .ai/approvals.log)" = "$n" ]
+t "test fix: a mistyped name does not approve waiting criteria" [ "$(wc -l < .ai/approvals.log)" -eq "$n" ]
 recfix "approve fix tests for plan lock-demo" >/dev/null
 guard tests/test_next.py; t "test fix: a message naming no locked test still approves changed criteria" [ $? = 0 ]
 g checkout -q -f b6base; g clean -qfd
