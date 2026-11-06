@@ -80,6 +80,53 @@ if ! ls .ai/plans/active/*.md >/dev/null 2>&1; then
   exit 0
 fi
 
+# "duyệt sửa test <path>...": the owner approves fixing locked tests that are
+# wrong while the criteria are right (rules/testing.md, "When a test or
+# criterion turns out wrong"). It approves no criteria and uses no critic run.
+# Each name, on the first line, must match one locked path: the whole path,
+# its file name, or the file name up to its first dot; "*", "?" and "[" match
+# nothing. "duyệt sửa 3 test" without names opens no test and lists the lines.
+# A message that names no locked test but names an active plan ("approve
+# fix tests for plan login") goes on to the plan approval below.
+fixre='^(duyệt|duyet|approve|approved)[[:space:]]+((sửa|sua|fix)[[:space:]]+([0-9]+[[:space:]]+)?tests?|tests?[[:space:]]+fix(es)?)([^[:alnum:]_-]|$)'
+line1=${start%%$'\n'*}
+if grep -qE "$fixre" <<<"$line1" && [ -s .ai/test-lock ] && lock_active; then
+  mapfile -t lockp < <(lock_paths < .ai/test-lock)
+  now=$(date '+%Y-%m-%d %H:%M') bad=() n=0
+  read -ra toks <<<"$(sed -E "s/$fixre//" <<<"$line1" | tr ",;\`\"'" '     ')"
+  for tok in "${toks[@]}"; do
+    tok=${tok%[.:]}
+    case $tok in và|va|and|'&'|'') continue ;; *[][*?]*) bad+=("$tok"); continue ;; esac
+    hits=()
+    for lp in "${lockp[@]}"; do
+      b=${lp##*/}; b=${b,,}
+      [ "${lp,,}" = "$tok" ] || [ "$b" = "$tok" ] || [ "${b%%.*}" = "$tok" ] && hits+=("$lp")
+    done
+    if [ ${#hits[@]} = 1 ]; then
+      echo "$now test-fix ${hits[0]}" >> .ai/approvals.log; n=$((n + 1))
+      echo "Lodestar: recorded the owner's approval to fix the locked test ${hits[0]} (criteria unchanged)."
+    else
+      bad+=("$tok")
+    fi
+  done
+  if [ $n = 0 ] || [ ${#bad[@]} -gt 0 ]; then
+    [ ${#bad[@]} -gt 0 ] && echo "Lodestar: these names match no single locked test, so nothing was recorded for them: ${bad[*]}"
+    [ $n = 0 ] && echo "Lodestar: the owner approved fixing tests, but named none that is locked, so no test was opened."
+    echo "If a locked test is wrong, ask the owner to type one line per test, with its path from"
+    echo ".ai/test-lock (\"duyệt sửa test\" when owner_language is vi, else \"approve test fix\"), e.g.:"
+    echo "  duyệt sửa test ${lockp[0]}"
+  fi
+  if [ $n -gt 0 ]; then
+    echo "The tester fixes only those tests (they must still test their criterion) and commits a new"
+    echo "Tests-First round with the plan and .ai/approvals.log."
+    exit 0
+  fi
+  # A mistyped test name must not approve criteria (that opens every locked
+  # test): go on only when the message names an active plan.
+  for p in .ai/plans/active/*.md; do named_in_prompt "$p" && named_plan=1; done
+  [ -n "${named_plan:-}" ] || exit 0
+fi
+
 # "duyệt critic <plan>": the owner allows one more critic run of a plan past
 # the run limit (agents/critic.md; critic-limit.sh counts it). It approves no
 # criteria. With several active plans the owner names the plan. Only
@@ -126,8 +173,9 @@ if [ ${#named[@]} = 0 ] && [ ${#named_done[@]} -gt 0 ]; then
     echo "Lodestar: the owner approved $p, but its criteria as they are now were already approved, so nothing was recorded."
   done
   echo "An approval opens a relock window only for changed criteria (rules/testing.md, 'When a test or"
-  echo "criterion turns out wrong'). If a locked test is wrong, update the criterion it got wrong (make it"
-  echo "more precise), run the critic on the change, show the owner, then ask for the approval word again."
+  echo "criterion turns out wrong'). If a locked test is wrong while its criterion is right, ask the owner to"
+  echo "type \"duyệt sửa test <path>\" (\"approve test fix <path>\"). If the criterion is wrong, update it,"
+  echo "run the critic on the change, show the owner, then ask for the approval word again."
   exit 0
 fi
 if [ ${#named[@]} = 0 ] && [ ${#pending[@]} -gt 1 ]; then

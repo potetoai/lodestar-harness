@@ -8,7 +8,8 @@
 #      reason on the same line: "# noqa: F401 -- <reason>".
 #   3. Every "Tests-First:" commit includes a plan whose criteria the owner
 #      approved (.ai/approvals.log). Tests it locks (.ai/test-lock) must not
-#      change later, except in a valid round with freshly approved criteria.
+#      change later, except in a valid round with freshly approved criteria
+#      or a freshly approved fix of that one test.
 #   4. New TODO/FIXME/HACK comments are listed for the reviewer (no failure).
 #   5. A plain-English summary of the criteria and their approval goes to
 #      the PR's check summary, so the owner can read it without code.
@@ -144,8 +145,10 @@ else
 fi
 
 # A valid later round may revise old tests only with fresh approval for a
-# plan it changes. Compare with the preceding valid round, including rounds
-# that only added tests or omitted the lock, so approval cannot be reused.
+# plan it changes, or the one test the owner freshly approved to fix
+# ("duyệt sửa test <path>", fresh_test_fixes). Compare with the preceding
+# valid round, including rounds that only added tests or omitted the lock, so
+# approval cannot be reused.
 fresh_relock_approval() {
   local c=$1 previous=$2 p now then log
   log=$(git show "$previous:.ai/approvals.log" 2>/dev/null)
@@ -170,13 +173,15 @@ for c in $(git log --reverse --format=%H --grep='^Tests-First:' "$from..HEAD"); 
   [ -n "$lock" ] || continue
   previous_round=$c
   for later in $(git rev-list --reverse "$c..HEAD"); do
-    relock_ok=0
+    relock_ok=0 fixes=""
     if valid_tests_first "$later"; then
       fresh_relock_approval "$later" "$previous_round" && relock_ok=1
+      fixes=$(fresh_test_fixes "$later" "$previous_round")
       previous_round=$later
     fi
     [ "$relock_ok" = 1 ] && continue
-    touched=$(git diff-tree --root --no-commit-id --name-only -r "$later" | grep -Fxf <(printf '%s\n' "$lock"))
+    touched=$(git diff-tree --root --no-commit-id --name-only -r "$later" | grep -Fxf <(printf '%s\n' "$lock") |
+      grep -vxFf <(printf '%s\n' "$fixes"))
     if [ -n "$touched" ]; then
       fail "Commit $(git log -1 --format='%h %s' "$later") changes locked tests:"
       printf '     %s\n' $touched
@@ -190,11 +195,14 @@ if base_round=$(active_tests_first "$from"); then
   lock=$(git show "$base_round:.ai/test-lock" 2>/dev/null | lock_paths)
   previous_round=$base_round
   for later in $([ -n "$lock" ] && git rev-list --reverse "$from..HEAD"); do
+    fixes=""
     if valid_tests_first "$later"; then
       fresh_relock_approval "$later" "$previous_round" && { previous_round=$later; continue; }
+      fixes=$(fresh_test_fixes "$later" "$previous_round")
       previous_round=$later
     fi
-    touched=$(git diff-tree --root --no-commit-id --name-only -r "$later" | grep -Fxf <(printf '%s\n' "$lock"))
+    touched=$(git diff-tree --root --no-commit-id --name-only -r "$later" | grep -Fxf <(printf '%s\n' "$lock") |
+      grep -vxFf <(printf '%s\n' "$fixes"))
     if [ -n "$touched" ]; then
       fail "Commit $(git log -1 --format='%h %s' "$later") changes tests locked by $(git log -1 --format='%h' "$base_round") (a plan with a round is still active):"
       printf '     %s\n' $touched
@@ -226,6 +234,8 @@ while IFS= read -r f; do
   else status="❌ Not approved by the owner, or changed after approval"; fi
   summary+=$(printf '### Acceptance criteria: `%s`\n%s\n\n%s\n\n' "$f" "$status" "$crit")$'\n\n'
 done < <(pr_plans)
+tf=$(fresh_test_fixes HEAD "$from" | sed 's/.*/- `&`/')
+[ -n "$tf" ] && summary+=$(printf '### Locked tests the owner approved to fix (criteria unchanged)\n%s\n' "$tf")$'\n\n'
 if [ -n "$summary" ]; then
   printf '%s\n' "$summary"
   [ -n "${GITHUB_STEP_SUMMARY:-}" ] && printf '## Summary for the owner\n\n%s\n' "$summary" >> "$GITHUB_STEP_SUMMARY"
