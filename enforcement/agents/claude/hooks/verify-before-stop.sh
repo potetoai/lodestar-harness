@@ -185,9 +185,11 @@ finish() {
 [ -f Makefile ] || finish
 # Right after a valid Tests-First commit, with nothing changed since, its
 # tests fail by design until the builder step: do not run verify or hold.
-# Any edit (the builder starting) makes the stop check verify again.
+# Any edit to a tracked or staged file (the builder starting) makes the stop
+# check verify again. Untracked files do not count: a project may keep
+# folders it never commits (local skills, device notes) beside the code.
 if [ -n "${c:-}" ] && [ "$c" = "$(git rev-parse HEAD 2>/dev/null)" ] &&
-   [ -z "$(git status --porcelain 2>/dev/null)" ]; then
+   [ -z "$(git status --porcelain --untracked-files=no 2>/dev/null)" ]; then
   echo "Lodestar: HEAD is the Tests-First commit and nothing changed since; its tests are expected to fail before the builder step." >&2
   finish
 fi

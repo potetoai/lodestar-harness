@@ -1225,6 +1225,8 @@ crit "Review the diff of .ai/plans/active/c.md"; t "critic hook ignores other su
 crit "You are the tester. The criteria were reviewed (agents/critic.md); plan .ai/plans/active/c.md"
 t "critic hook lets a tester brief that cites critic.md through" [ $? = 0 ]
 crit "You are the critic (agents/critic.md). Plan: .ai/plans/active/other.md"; t "critic hook allows a brief naming no active plan" [ $? = 0 ]
+crit "You are the critic. Plan: .ai/plans/active/other.md. Material: .ai/plans/active/c.md"
+t "critic hook counts only the first plan path (the plan under review)" [ $? = 0 ]
 crit "You are the critic. Plan: D:/AI/Lodestar-harness/plans/active/c.md"; t "critic hook ignores a plan outside .ai/" [ $? = 0 ]
 LODESTAR_SKIP_HOOKS=1 crit "$brief"; t "LODESTAR_SKIP_HOOKS disables the critic hook" [ $? = 0 ]
 out=$(CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"duyệt critic"}')
@@ -1287,9 +1289,11 @@ stopl; t "stop hook: the new approved round becomes the lock baseline" [ $? = 0 
 # nothing changed is allowed; any edit makes verify run again.
 printf 'verify:\n\t@exit 1\n' > Makefile; echo Makefile >> .git/info/exclude
 stopl; t "stop hook allows red verify at a clean Tests-First HEAD" [ $? = 0 ]
-echo 'x = 1' > app.py
+mkdir -p notes; echo n > notes/device.md
+stopl; t "stop hook ignores untracked files at a Tests-First HEAD" [ $? = 0 ]
+echo 'x = 1' > app.py; g add app.py
 stopl; t "stop hook verifies again once the builder edits a file" [ $? = 2 ]
-rm app.py Makefile; rm -f "$(git rev-parse --absolute-git-dir)"/lodestar-verify-*
+g rm -qf --cached app.py; rm app.py notes/device.md Makefile; rm -f "$(git rev-parse --absolute-git-dir)"/lodestar-verify-*
 g rm -q .ai/plans/active/t.md; g commit -qm "done"
 echo 'def test_a(): pass' > tests/test_a.py
 stopl; t "stop hook releases the lock when the task is completed" [ $? = 0 ]
