@@ -200,6 +200,22 @@ if ! err=$(make -n verify 2>&1 >/dev/null); then
   echo "Run 'bash .claude/hooks/doctor.sh' to see why, fix it, then finish." >&2
   exit 2
 fi
+# changed_files: this project's files that differ from where the branch left
+# the default branch, or are not committed, and still exist, space-separated
+# and relative to the project (names with spaces split into words). Notes
+# (.ai/, docs/, *.md) are left out: no test covers them, and a project may
+# keep large untracked note folders beside the code.
+changed_files() {
+  local main base
+  main=$(git symbolic-ref --short -q refs/remotes/origin/HEAD 2>/dev/null) || main=origin/main
+  base=$(git merge-base HEAD "$main" 2>/dev/null) || base=HEAD
+  { git -c core.quotePath=false diff --relative --name-only "$base" -- 2>/dev/null
+    git -c core.quotePath=false ls-files --others --exclude-standard 2>/dev/null; } |
+    sort -u | while IFS= read -r f; do
+      case $f in .ai/*|docs/*|*.md) continue ;; esac
+      [ -f "$f" ] && printf '%s ' "$f"
+    done
+}
 # Which check: verify-quick when the project has it and CI runs; the full
 # verify without git (no changed-file list), or while CI is marked off.
 target=verify
@@ -207,6 +223,13 @@ if [ -n "$ci_off" ] && [ -f "$ci_off" ]; then
   echo "Lodestar: CI is marked as unable to run ($(head -n1 "$ci_off")); this stop runs the full 'make verify'. When CI runs again: bash .claude/hooks/verify-before-stop.sh --ci-on" >&2
 elif [ -n "$held" ] && make -n verify-quick >/dev/null 2>&1; then
   target=verify-quick
+  # The recipe pastes the list into one shell line (twice in test-related); a
+  # long list breaks it on Windows. That many changed files: run the full verify.
+  changed=$(changed_files)
+  if [ ${#changed} -gt 4000 ]; then
+    echo "Lodestar: ${#changed} bytes of changed file names, too long for 'make verify-quick'; this stop runs the full 'make verify'." >&2
+    target=verify
+  fi
 fi
 # skip_passed FILE: true when FILE holds a pass for the files as they are now
 # (or only notes changed since).
@@ -226,19 +249,8 @@ if [ -n "$held" ] && [ -f "$released" ] && [ "$(cat "$released")" = "$(state "$t
   echo "Lodestar: 'make $target' failed on these same files and the stop was let go; not run again until a file changes." >&2
   exit 0
 fi
-# changed_files: this project's files that differ from where the branch left
-# the default branch, or are not committed, and still exist, space-separated
-# and relative to the project (names with spaces split into words).
-changed_files() {
-  local main base
-  main=$(git symbolic-ref --short -q refs/remotes/origin/HEAD 2>/dev/null) || main=origin/main
-  base=$(git merge-base HEAD "$main" 2>/dev/null) || base=HEAD
-  { git -c core.quotePath=false diff --relative --name-only "$base" -- 2>/dev/null
-    git -c core.quotePath=false ls-files --others --exclude-standard 2>/dev/null; } |
-    sort -u | while IFS= read -r f; do [ -f "$f" ] && printf '%s ' "$f"; done
-}
 if [ $target = verify-quick ]; then
-  out=$(make --no-print-directory verify-quick CHANGED="$(changed_files)" 2>&1)
+  out=$(make --no-print-directory verify-quick CHANGED="$changed" 2>&1)
 else
   out=$(make --no-print-directory verify 2>&1)
 fi || {
