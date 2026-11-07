@@ -103,7 +103,9 @@ Release cadence (owner decision 2026-10-19): batch template changes and
 raise `VERSION` at most once every 7-14 days, so each project upgrades
 rarely. Merged changes wait on main until the next batch. Release at once
 only for a fault that blocks work in a project (a hook blocking correct
-work, a false approval, a broken install) or a security fix.
+work, a false approval, a broken install) or a security fix. Projects read
+`rules/` and `agents/` live from this repo, so a change whose rule text
+needs new hooks is released at once, with that change.
 
 Raise `VERSION`, then in each project:
 
