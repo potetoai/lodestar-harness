@@ -969,6 +969,12 @@ guard tests/test_lock.py; t "test fix: the approved test opens" [ $? = 0 ]
 guard tests/test_next.py; t "test fix: another locked test stays locked" [ $? = 2 ]
 guard .ai/test-lock; t "test fix: the lock file stays locked" [ $? = 2 ]
 CLAUDE_PROJECT_DIR=$p bash -c '. .claude/hooks/lodestar-lib.sh && test_fix_window tests/test_lock.py' ; t "test fix: the stop hook's window check sees the approval" [ $? = 0 ]
+n2=$(wc -l < .ai/approvals.log); printf 'tests/test_lock.py\nTests/Test_Lock.py\n' >> .ai/test-lock
+out=$(recfix "duyệt sửa test tests/test_lock.py")
+t "test fix: a path locked twice (relocked in a later round) still records one approval" bash -c 'tail -n1 .ai/approvals.log | grep -qE " test-fix tests/test_lock.py$" && [ "$(wc -l < .ai/approvals.log)" -eq $(($1 + 1)) ]' _ "$n2"
+echo other/test_lock.py >> .ai/test-lock; recfix "duyệt sửa test test_lock" >/dev/null
+t "test fix: a name two different locked files share still records nothing" [ "$(wc -l < .ai/approvals.log)" -eq $((n2 + 1)) ]
+sedi "$((n2 + 1)),\$d" .ai/approvals.log; g checkout -q -- .ai/test-lock
 g add .ai/approvals.log; g commit -qm "owner approved a test fix"; g branch -q fix-approved
 echo 'def test_lock(): assert 2 == 2' > tests/test_lock.py; g commit -qam "fix test outside a round"
 check; t "PR test fix: the fix outside a Tests-First round fails" [ $? = 1 ]

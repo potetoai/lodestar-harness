@@ -91,7 +91,8 @@ fi
 fixre='^(duyệt|duyet|approve|approved)[[:space:]]+((sửa|sua|fix)[[:space:]]+([0-9]+[[:space:]]+)?tests?|tests?[[:space:]]+fix(es)?)([^[:alnum:]_-]|$)'
 line1=${start%%$'\n'*}
 if grep -qE "$fixre" <<<"$line1" && [ -s .ai/test-lock ] && lock_active; then
-  mapfile -t lockp < <(lock_paths < .ai/test-lock)
+  # A path listed twice (a later round locks it again) is one test.
+  mapfile -t lockp < <(lock_paths < .ai/test-lock | awk '!seen[tolower($0)]++')
   now=$(date '+%Y-%m-%d %H:%M') bad=() n=0
   read -ra toks <<<"$(sed -E "s/$fixre//" <<<"$line1" | tr ",;\`\"'" '     ')"
   for tok in "${toks[@]}"; do
