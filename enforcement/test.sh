@@ -281,10 +281,12 @@ echo a > "$k/a.txt"; echo d > "$k/gone.txt"; git -C "$k" add -A; git -C "$k" -c 
 git -C "$k" update-ref refs/remotes/origin/main HEAD; git -C "$k" symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main
 git -C "$k" switch -qc feat/x; echo b > "$k/b.txt"; git -C "$k" add b.txt; git -C "$k" -c user.name=t -c user.email=t@t commit -qm b
 echo a2 > "$k/a.txt"; echo n > "$k/new file.txt"; rm "$k/gone.txt"
+mkdir -p "$k/docs" "$k/.ai"; echo m > "$k/notes.md"; echo m > "$k/docs/d.txt"; echo m > "$k/.ai/h.txt"
 kstop() { RUNS=$tmp/quick.runs QFAIL=$tmp/quick.fail CLAUDE_PROJECT_DIR=$k bash "$here/agents/claude/hooks/verify-before-stop.sh" 2>&1 >/dev/null <<<'{"stop_hook_active":false}'; }
 kruns() { cat "$tmp/quick.runs" 2>/dev/null; }
 kstop >/dev/null; t "stop hook runs verify-quick, not verify, when the project has it" bash -c '[ "$(grep -c . <<<"$1")" = 1 ] && grep -q "^quick " <<<"$1"' _ "$(kruns)"
 t "stop hook: verify-quick gets the branch's commits, edits and new files, not deleted ones" bash -c 'for f in a.txt b.txt new file.txt; do grep -qw -- "$f" <<<"$1" || exit 1; done; ! grep -q gone <<<"$1"' _ "$(kruns)"
+t "stop hook: verify-quick gets no notes (.ai/, docs/, *.md)" bash -c '! grep -qE "notes.md|d.txt|h.txt" <<<"$1"' _ "$(kruns)"
 kstop >/dev/null; t "stop hook: a quick pass is remembered" [ "$(kruns | wc -l | tr -d ' ')" = 1 ]
 touch "$tmp/quick.fail"; echo a3 > "$k/a.txt"; out=$(kstop); rc=$?; rm -f "$tmp/quick.fail"
 t "stop hook holds a failing verify-quick and names it" bash -c '[ $1 = 2 ] && grep -q "make verify-quick'"'"' fails" <<<"$2"' _ "$rc" "$out"
@@ -294,6 +296,9 @@ t "--ci-off writes the mark in the git folder" grep -q "no minutes" "$k/.git/lod
 n=$(kruns | wc -l); out=$(kstop); t "while CI is off, a quick pass does not skip the full verify" bash -c '[ "$(tail -n1 <<<"$1")" = full ] && grep -q "unable to run" <<<"$2"' _ "$(kruns)" "$out"
 CLAUDE_PROJECT_DIR=$k bash "$here/agents/claude/hooks/verify-before-stop.sh" --ci-on 2>/dev/null </dev/null
 n=$(kruns | wc -l); kstop >/dev/null; t "--ci-on: back to quick, and a full pass covers it" bash -c '[ ! -f "$1" ] && [ "$(wc -l < "$2")" = "$3" ]' _ "$k/.git/lodestar-ci-off" "$tmp/quick.runs" "$n"
+mkdir -p "$k/many"; for i in $(seq 1 120); do echo x > "$k/many/a-long-untracked-file-name-number-$i.ts"; done
+n=$(kruns | wc -l); out=$(kstop); t "stop hook: a changed-file list too long for one line runs the full verify" bash -c '[ "$(tail -n1 <<<"$1")" = full ] && grep -q "too long" <<<"$2"' _ "$(kruns)" "$out"
+rm -r "$k/many"
 w=$tmp/quick-wt; git -C "$k" worktree add -q "$w" -b feat/wt; CLAUDE_PROJECT_DIR=$w bash "$here/agents/claude/hooks/verify-before-stop.sh" --ci-off 2>/dev/null </dev/null
 t "--ci-off in a worktree marks the shared git folder" test -f "$k/.git/lodestar-ci-off"; rm -f "$k/.git/lodestar-ci-off"
 # The stack Makefiles' related tests: Python picks the changed tests and the
