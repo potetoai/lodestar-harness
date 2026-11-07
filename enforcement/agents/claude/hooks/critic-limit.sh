@@ -4,7 +4,9 @@
 # agents/critic.md, "Re-run after a criteria change"). A critic dispatch
 # whose brief names a plan by its .ai/plans/active/ path that already has as many
 # runs as critic_limit allows is blocked: the open findings go to the owner.
-# A brief that names no active plan is let through.
+# Only the first such path counts (the plan under review); other plans the
+# brief cites as material are not runs. A brief that names no active plan
+# is let through.
 [ "$LODESTAR_SKIP_HOOKS" = "1" ] && exit 0
 cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
 
@@ -18,10 +20,12 @@ brief=${brief,,}
   grep -qE 'you are (the |a )?(lodestar )?critic([^[:alnum:]-]|$)' <<<"$brief" || exit 0
 . .claude/hooks/lodestar-lib.sh 2>/dev/null && declare -F critic_limit >/dev/null || exit 0
 
+# The first .ai/plans/active/ path in the brief: the plan under review.
+first=$(grep -oE '\.ai/plans/active/[^/[:space:]]+\.md' <<<"$brief" | head -n1)
 out=""
 for p in .ai/plans/active/*.md; do
   [ -f "$p" ] || continue
-  n=$(basename "$p"); grep -qF -- ".ai/plans/active/${n,,}" <<<"$brief" || continue
+  n=$(basename "$p"); [ ".ai/plans/active/${n,,}" = "$first" ] || continue
   runs=$(critic_runs < "$p"); limit=$(critic_limit "$p")
   short=${n%.md}; short=${short,,}; short=${short#[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-}
   [ "$runs" -ge "$limit" ] && out+="  $p: $runs runs, limit $limit; the owner types (\"duyệt critic\" when owner_language is vi): approve critic $short"$'\n'
