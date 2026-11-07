@@ -226,8 +226,9 @@ elif [ -n "$held" ] && make -n verify-quick >/dev/null 2>&1; then
   # The recipe pastes the list into one shell line (twice in test-related); a
   # long list breaks it on Windows. That many changed files: run the full verify.
   changed=$(changed_files)
-  if [ ${#changed} -gt 4000 ]; then
-    echo "Lodestar: ${#changed} bytes of changed file names, too long for 'make verify-quick'; this stop runs the full 'make verify'." >&2
+  bytes=$(printf %s "$changed" | wc -c | tr -d " ")
+  if [ "$bytes" -gt 4000 ]; then
+    echo "Lodestar: $bytes bytes of changed file names, too long for 'make verify-quick'; this stop runs the full 'make verify'." >&2
     target=verify
   fi
 fi
