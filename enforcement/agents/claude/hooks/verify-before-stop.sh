@@ -80,6 +80,7 @@ case $(git symbolic-ref --short -q HEAD 2>/dev/null) in proto/*) exit 0 ;; esac
 input=$(cat)
 [ "$(jq -j '.stop_hook_active // false' <<<"$input")" = "true" ] && exit 0
 
+locked=()
 # Tests locked by the last VALID Tests-First commit (it carries an owner-
 # approved plan) stay unchanged while the task is active (a plan in
 # .ai/plans/active/), even if .ai/test-lock is removed. Reads git history, so
@@ -204,7 +205,11 @@ fi
 # the default branch, or are not committed, and still exist, space-separated
 # and relative to the project (names with spaces split into words). Notes
 # (.ai/, docs/, *.md) are left out: no test covers them, and a project may
-# keep large untracked note folders beside the code.
+# keep large untracked note folders beside the code. Locked tests-first tests
+# are left out too: they fail by design until the builder step is done, and
+# they were linted before the lock. Their tests still run when the code they
+# cover changes (verify-quick picks the tests of changed files); CI runs all.
+is_locked() { local l; for l in "${locked[@]}"; do [ "$1" = "$l" ] && return 0; done; return 1; }
 changed_files() {
   local main base
   main=$(git symbolic-ref --short -q refs/remotes/origin/HEAD 2>/dev/null) || main=origin/main
@@ -213,6 +218,7 @@ changed_files() {
     git -c core.quotePath=false ls-files --others --exclude-standard 2>/dev/null; } |
     sort -u | while IFS= read -r f; do
       case $f in .ai/*|docs/*|*.md) continue ;; esac
+      is_locked "$f" && continue
       [ -f "$f" ] && printf '%s ' "$f"
     done
 }
@@ -268,6 +274,12 @@ fi || {
   fi
   echo "Not done yet: 'make $target' fails. Fix the problems below, then finish:" >&2
   echo "$out" | tail -n 60 >&2
+  # Tests-first: unfinished builder work fails the locked tests by design.
+  if [ ${#locked[@]} -gt 0 ]; then
+    echo "If only locked Tests-First tests fail because the builder step is unfinished (for example you" >&2
+    echo "stop for a context handoff), do not weaken them: write .ai/handoff.md and stop again; the same" >&2
+    echo "failure with no code change is let go." >&2
+  fi
   exit 2
 }
 if [ -n "$held" ]; then

@@ -33,7 +33,9 @@ such as CI.
 Stop hook runs at every stop, so it runs `verify-quick` with `CHANGED` set to
 the project's files changed on the branch or not committed (space-separated,
 relative to the project): a full `verify` at every stop cost App01 and
-ProjectS 12 and 22 hours of waiting, for failures CI catches on the PR. A
+ProjectS 12 and 22 hours of waiting, for failures CI catches on the PR.
+`CHANGED` leaves out tests locked by an active Tests-First round: they fail
+by design until the builder is done. A
 project without `verify-quick` gets the full `verify` (doctor A10c warns).
 While CI cannot run (GitHub did not start the jobs: no Actions minutes, a
 spending limit or billing), every stop runs the full `verify` again: the
@@ -49,7 +51,9 @@ nor the failure changed since the last hold, the stop ends (for example while
 the agent waits for a tests-first tester). After that, stops on the same
 files do not run `verify` again (the agent waiting for the owner's approval
 or answering questions), even if the failure would now differ; a file change
-runs it and can hold again. CI stays the gate.
+runs it and can hold again. CI stays the gate. Under a Tests-First lock
+the hold message says how to stop mid-build: write `.ai/handoff.md`, stop
+again.
 
 A pass is remembered the same way: when the files did not change since
 `verify` last passed (the agent only answered a question), the Stop hook does
