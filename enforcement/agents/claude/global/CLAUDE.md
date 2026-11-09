@@ -44,6 +44,13 @@ finding needs.
 
 Answer questions directly. Any change to code still goes through the Router.
 
+## Replies to the owner
+
+Keep replies to the owner short: the first line is the outcome (done or not,
+what the owner must do), then at most about 8 lines. No lists of changed
+files, commands run or steps taken unless asked; point to the PR or plan by
+number instead of repeating it. The owner asks when they want more.
+
 ## Plugins
 
 The Router leads. Installed process or skill plugins are tools the Router may
