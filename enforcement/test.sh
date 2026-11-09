@@ -1468,8 +1468,8 @@ for c in "bash .claude/hooks/merge-pr.sh 7" "bash .claude/hooks/merge-pr.sh 7 --
          "git branch -d proto/try" "git stash push -q a.txt && git switch -c fix/b"; do
   gp "$c"; t "guard allows: $c" [ $? = 0 ]
 done
-# Text in a quoted heredoc fed to cat, tee or git commit is not run (ProjectS
-# session 74); a heredoc a shell or interpreter runs, unquoted, or piped on is.
+# Text in a quoted heredoc fed to cat, tee or git commit is not run (seen in a
+# consuming project); a heredoc a shell or interpreter runs, unquoted, or piped on is.
 body=$'Merge: gh pr merge 5 --merge\ngit commit --no-verify\nEOF'
 for c in $'cat > .ai/handoff.md <<\'EOF\'\n'"$body" $'git commit -q -m "$(cat <<\'EOF\'\nfix: x\n\n'"$body"$'\n)"' \
          $'git commit -F - <<"EOF"\n'"$body" $'tee -a log.md >/dev/null <<-\'EOF\'\n'"$body"; do
@@ -1714,7 +1714,7 @@ echo "2026-10-16 10:00 merge-pr 8 aaaaaaa" > "$m/.ai/approvals.log"
 mp 7 "$auth7"; t "merge-pr refuses when the approval is for another PR" [ $? = 1 ]
 printf '2026-10-16 10:00 merge-pr 7 aaaaaaa\r\n' > "$m/.ai/approvals.log"
 mp 7 "$auth7"; t "merge-pr merges a sensitive PR the owner approved at its head" [ $? = 0 ]
-# App01 PR #147: --delete-branch while the hook's approval lines are not
+# Seen in a consuming project: --delete-branch while the hook's approval lines are not
 # committed. The lines go with the switch to main; if the switch still fails,
 # the PR is reported merged and the log is left as it was.
 w=$tmp/gw; mkdir -p "$w/.ai"; git -C "$w" init -q -b main; git -C "$w" config core.autocrlf false; gc() { git -C "$w" -c user.name=t -c user.email=t@t commit -qam "$1"; }
@@ -1727,7 +1727,7 @@ mpw() { rm -f "$tmp/merged" "$tmp/checked"; out=$(cd "$w" && FAKE_LOCAL=1 FAKE_D
 echo z > "$w/f.txt"; cp "$w/.ai/approvals.log" "$tmp/log0"; mpw
 t "merge-pr -d with a dirty f.txt: merged, says what to finish, log kept" bash -c '[ $1 = 0 ] && grep -q "merged on GitHub" <<<"$2" && grep -q "git switch main" <<<"$2" && cmp -s "$3" "$4" && [ "$(git -C "$5" branch --show-current)" = fix/m ]' _ "$rc" "$out" "$tmp/log0" "$w/.ai/approvals.log" "$w"
 git -C "$w" checkout -q -- f.txt; mpw
-t "merge-pr -d carries uncommitted approval lines to main (App01 #147)" bash -c '[ $1 = 0 ] && [ "$(git -C "$2" branch --show-current)" = main ] && ! git -C "$2" show-ref -q refs/heads/fix/m && [ "$(cat "$2/.ai/approvals.log")" = "A
+t "merge-pr -d carries uncommitted approval lines to main" bash -c '[ $1 = 0 ] && [ "$(git -C "$2" branch --show-current)" = main ] && ! git -C "$2" show-ref -q refs/heads/fix/m && [ "$(cat "$2/.ai/approvals.log")" = "A
 2026-11-05 10:00 merge-pr 7 aaaaaaa" ]' _ "$rc" "$w"
 rm -rf "$w"; mkdir -p "$w"; git -C "$w" init -q -b main; git -C "$w" config core.autocrlf false; echo x > "$w/f.txt"; git -C "$w" add -A; gc base
 git -C "$w" checkout -q -b fix/m; mkdir "$w/.ai"; echo "B" > "$w/.ai/approvals.log"; git -C "$w" add -A; gc pr

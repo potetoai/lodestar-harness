@@ -56,6 +56,8 @@ Code alone, or Orca when present).
   `merge-pr.sh` do not check this line.
 - Keep one blank line between blocks; no padding. Shorten docs only by
   removing blank lines or moving text, never by rewording rules without review.
+- Public repo: never name the owner's consuming projects in files, commits
+  or PR text; write "a consuming project".
 - Shell scripts keep LF line endings (`.gitattributes` enforces it).
 - Update the active plan's progress and decision logs when a phase moves.
   A progress row is one short line with the PR number; details stay in the PR.

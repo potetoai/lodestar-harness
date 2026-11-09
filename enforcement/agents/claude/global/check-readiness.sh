@@ -70,7 +70,7 @@ if [ ! -f .claude/hooks/doctor.sh ]; then
   exit 0
 fi
 # Doctor takes seconds on a big tree, and every owner message waited for it
-# (App01: 4.5 s each, some runs hit the 30 s hook timeout). The per-prompt
+# (a consuming project: 4.5 s each, some runs hit the 30 s hook timeout). The per-prompt
 # gate is for a project that is not ready, so once doctor passed in this
 # session at this commit, skip it until the next commit or session.
 mark="$(git rev-parse --git-dir)/lodestar-ready"

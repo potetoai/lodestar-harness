@@ -32,8 +32,8 @@ such as CI.
 `verify` stays fast; slow tests go in `verify-full`, which CI enforces. The
 Stop hook runs at every stop, so it runs `verify-quick` with `CHANGED` set to
 the project's files changed on the branch or not committed (space-separated,
-relative to the project): a full `verify` at every stop cost App01 and
-ProjectS 12 and 22 hours of waiting, for failures CI catches on the PR.
+relative to the project): a full `verify` at every stop cost two consuming
+projects 12 and 22 hours of waiting, for failures CI catches on the PR.
 `CHANGED` leaves out tests locked by an active Tests-First round: they fail
 by design until the builder is done. A
 project without `verify-quick` gets the full `verify` (doctor A10c warns).
