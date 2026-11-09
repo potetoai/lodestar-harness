@@ -166,7 +166,8 @@ locked_ok=1
 for c in $(git log --reverse --format=%H --grep='^Tests-First:' "$from..HEAD"); do
   if ! valid_tests_first "$c"; then
     fail "Commit $(git log -1 --format='%h %s' "$c") is marked Tests-First but has no owner-approved plan change."
-    echo "   A Tests-First commit must include the plan whose criteria the owner approved (.ai/approvals.log)."
+    echo "   A Tests-First commit must include the plan whose criteria the owner approved (.ai/approvals.log):"
+    echo "   add the plan file to this same commit, not a later one (rules/testing.md, \"Tests-first mode\")."
     locked_ok=0; continue
   fi
   lock=$(git show "$c:.ai/test-lock" 2>/dev/null | lock_paths)
