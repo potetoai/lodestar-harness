@@ -1308,6 +1308,29 @@ g rm -qf --cached app.py; rm app.py notes/device.md Makefile; rm -f "$(git rev-p
 g rm -q .ai/plans/active/t.md; g commit -qm "done"
 echo 'def test_a(): pass' > tests/test_a.py
 stopl; t "stop hook releases the lock when the task is completed" [ $? = 0 ]
+# Locked tests fail by design until the builder is done: the quick check
+# leaves them out of CHANGED, so a stop mid-build (a context handoff) is not
+# held for them; a failure names the handoff way out.
+p=$tmp/quicklock; mkdir -p "$p/tests" "$p/.claude/hooks"; cd "$p"
+cp "$here/agents/claude/hooks/lodestar-lib.sh" .claude/hooks/
+g init -q -b main; echo x > base.txt; g add -A; g commit -qm base
+g update-ref refs/remotes/origin/main HEAD; g symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main
+g switch -qc feat/q; echo 'def test_a(): assert False' > tests/test_a.py
+mkplan q "a works"; approve; echo tests/test_a.py > .ai/test-lock
+g add -A; g commit -qm "tests" -m "Tests-First: q"
+printf 'verify:
+	@exit 1
+verify-quick:
+	@echo "quick $(CHANGED)" > "$$RUNS"; case " $(CHANGED) " in *" tests/test_a.py "*) exit 1;; esac; [ ! -f "$$QFAIL" ]
+' > Makefile; echo Makefile >> .git/info/exclude
+echo 'x = 1' > app.py; g add app.py
+qstop() { RUNS=$tmp/ql.runs QFAIL=$tmp/ql.fail CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/verify-before-stop.sh" 2>&1 >/dev/null <<<'{"stop_hook_active":false}'; }
+out=$(qstop); rc=$?
+t "stop hook: verify-quick leaves locked tests out while the lock is active" bash -c '[ $1 = 0 ] && grep -qw app.py "$2" && ! grep -q test_a "$2"' _ "$rc" "$tmp/ql.runs"
+touch "$tmp/ql.fail"; echo 'x = 2' > app.py; g add app.py; out=$(qstop); rc=$?
+t "stop hook: a failure under a lock names the handoff way out" bash -c '[ $1 = 2 ] && grep -q "write .ai/handoff.md and stop again" <<<"$2"' _ "$rc" "$out"
+qstop >/dev/null; t "stop hook: the same failure with no change is let go" [ $? = 0 ]
+rm -f "$tmp/ql.fail"; cd "$here"
 # A completed task's round is no baseline: a new lock being written must not
 # flag tests a later merged change touched.
 p=$tmp/oldlock; mkdir -p "$p/tests" "$p/.claude/hooks"; cd "$p"
