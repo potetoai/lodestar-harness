@@ -27,18 +27,23 @@ still apply.
 4. **State one hypothesis.** One sentence: "X fails because Y." Name the
    observation that would prove it wrong.
 5. **Test the hypothesis, not a fix.** Add a log line, an assertion or a
-   failing test that confirms or rejects Y. Change nothing else yet.
+   failing test that confirms or rejects Y. Change nothing else yet. Wrap each
+   temporary log line in `#region debug log` / `#endregion` comments so step 7
+   can find and remove them all.
 6. **Fix the cause.** Write the failing test first, then the smallest change
    that makes it pass. Fix where the wrong value is produced, not where it is
    noticed.
 7. **Confirm.** Run the reproduction, the new test and the full suite
-   (`make verify`).
+   (`make verify`). Then search for the debug log markers and delete those
+   blocks.
 
 ---
 
 ## Stop rules
 
 - No fix before step 5 has confirmed a cause.
+- A fix failed: revert it before testing the next hypothesis, so failed
+  changes do not pile up.
 - Two fixes have failed: stop fixing. Write down the assumption they shared and
   apply `rules/principles.md` §1 (Attack the Premise).
 - Three hypotheses rejected, or the cause lies outside the repo (tool,
