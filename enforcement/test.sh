@@ -1698,7 +1698,7 @@ t "merge-pr -d carries uncommitted approval lines to main (App01 #147)" bash -c 
 rm -rf "$w"; mkdir -p "$w"; git -C "$w" init -q -b main; git -C "$w" config core.autocrlf false; echo x > "$w/f.txt"; git -C "$w" add -A; gc base
 git -C "$w" checkout -q -b fix/m; mkdir "$w/.ai"; echo "B" > "$w/.ai/approvals.log"; git -C "$w" add -A; gc pr
 git -C "$w" update-ref refs/remotes/origin/fix/m HEAD; echo "2026-11-05 10:00 merge-pr 7 aaaaaaa" >> "$w/.ai/approvals.log"; mpw
-t "merge-pr -d puts the uncommitted approval lines back when main has no .ai/" bash -c '[ $1 = 0 ] && [ "$(git -C "$2" branch --show-current)" = main ] && [ "$(cat "$2/.ai/approvals.log")" = "2026-11-05 10:00 merge-pr 7 aaaaaaa" ]' _ "$rc" "$w"
+t "merge-pr -d puts the uncommitted approval lines back when main has no .ai/, no stderr noise" bash -c '[ $1 = 0 ] && ! grep -q "No such file" <<<"$3" && [ "$(git -C "$2" branch --show-current)" = main ] && [ "$(cat "$2/.ai/approvals.log")" = "2026-11-05 10:00 merge-pr 7 aaaaaaa" ]' _ "$rc" "$w" "$out"
 t "merge-pr pins the approved head" grep -q -- "--match-head-commit aaaaaaa" "$tmp/merged"
 FAKE_NEWHEAD=ccccccc mp 7 "$auth7"; t "merge-pr does not merge an approved PR that got a new push during CI" [ $? = 1 ]
 rm -rf "$m/.ai"
