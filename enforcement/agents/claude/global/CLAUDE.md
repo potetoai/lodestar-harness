@@ -25,8 +25,9 @@ source: edits there apply to every project).
 5. One big task per session: a long session fills the context window and the
    agent gets worse. When a big task ends (PR merged, plan closed), or the
    session holds several finished tasks or was auto-compacted, overwrite
-   `.ai/handoff.md` (English, short: state, open items, next step, do-not-do;
-   history stays in plans and git; the file is gitignored), then tell the
+   `.ai/handoff.md` (English, short: state, open items, next step, do-not-do,
+   and the `Lodestar route:` line of work in progress; history stays in
+   plans and git; the file is gitignored), then tell the
    owner: type `/clear` (it works from the phone too), then type "continue".
    A new session is told to read that file first. A hook also reminds you
    after `merge-pr.sh` merges a PR, and once the context passes 200k

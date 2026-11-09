@@ -1482,6 +1482,17 @@ git -C "$r" symbolic-ref -d refs/remotes/origin/HEAD
 git -C "$r" symbolic-ref HEAD refs/heads/proto/try
 pp "HEAD $s refs/heads/fix/a $z"; t "pre-push blocks any push while a prototype is checked out" [ $? = 1 ]
 git -C "$r" symbolic-ref HEAD refs/heads/fix/a
+# The PR checks run before the push (ci-checks.sh against origin/main, no PR
+# text): a Tests-First commit without its plan is stopped on the machine.
+git -C "$r" update-ref refs/remotes/origin/main "$s"
+git -C "$r" -c user.name=t -c user.email=t@t commit -q --allow-empty -m $'x\n\nTests-First: x'; s2=$(git -C "$r" rev-parse HEAD)
+out=$(cd "$r" && PR_NUMBER=1 LODESTAR_PR_BODY= bash "$here/agents/claude/hooks/pre-push.sh" origin url 2>&1 <<<"refs/heads/fix/a $s2 refs/heads/fix/a $z"); rc=$?
+t "pre-push runs the PR checks: a Tests-First commit without its plan is blocked" bash -c '[ $1 = 1 ] && grep -q "marked Tests-First" <<<"$2" && grep -q "same commit" <<<"$2" && grep -q "no force-push" <<<"$2"' _ "$rc" "$out"
+t "pre-push PR checks skip the PR text (no route-line failure)" bash -c '! grep -q "route line" <<<"$1"' _ "$out"
+pp "refs/heads/fix/b $s refs/heads/fix/b $z"; t "pre-push skips the PR checks for a ref that is not the checked-out commit" [ $? = 0 ]
+git -C "$r" update-ref -d refs/remotes/origin/main
+pp "refs/heads/fix/a $s2 refs/heads/fix/a $z"; t "pre-push skips the PR checks with no origin/main to compare with" [ $? = 0 ]
+git -C "$r" reset -q --hard "$s"
 # End to end: bootstrap installs git's hook; a real push to main fails, to a
 # feature branch works; a prototype worktree is covered; doctor A4d checks it.
 b=$tmp/pp-remote.git; git init -q --bare "$b"
