@@ -190,7 +190,7 @@ lg=$top/.ai/approvals.log; saved=
 carry_back() {
   [ -n "$saved" ] || return 0
   local add
-  add=$(grep -vxFf <(tr -d '\r' < "$lg" 2>/dev/null) <<<"$extra" | grep .)
+  add=$(grep -vxFf <(tr -d '\r' 2>/dev/null < "$lg") <<<"$extra" | grep .)  # 2> first: the log may be missing
   if mkdir -p "${lg%/*}" && touch "$lg" && { [ ! -s "$lg" ] || [ -z "$(tail -c1 "$lg")" ] || echo >> "$lg"; } &&
     { [ -z "$add" ] || printf '%s\n' "$add" >> "$lg"; }
   then rm -f "$saved"
