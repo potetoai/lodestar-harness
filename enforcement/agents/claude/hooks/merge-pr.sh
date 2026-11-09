@@ -184,7 +184,7 @@ read -r _ _ now _ <<<"$(view)"
 [ "$now" = "$oid" ] || die "PR #$n got a new push while CI ran ($oid -> ${now:-unreadable}); not merged." "Run this again${hit:+; the owner must approve the new head}."
 # --delete-branch makes gh switch this folder to the base branch after the
 # merge; git refuses while .ai/approvals.log has the approval lines the hook
-# added (App01 PR #147). Set the log aside, then append its uncommitted
+# added (seen in a consuming project). Set the log aside, then append its uncommitted
 # lines that the (new) branch's copy lacks; on a failure the copy stays.
 lg=$top/.ai/approvals.log; saved=
 carry_back() {
