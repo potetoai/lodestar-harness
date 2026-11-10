@@ -25,7 +25,7 @@ from=$(git merge-base "$base" HEAD) || { echo "ci-checks: cannot find merge base
 # that deleted it (a merged plan is deleted in its final commit).
 plan_ref() {
   local c
-  [ -f "$1" ] && { echo HEAD; return 0; }
+  git cat-file -e "HEAD:$1" 2>/dev/null && { echo HEAD; return 0; }
   c=$(git log -1 --format=%H --diff-filter=D "$from..HEAD" -- "$1") && [ -n "$c" ] && echo "$c^"
 }
 # Plans this PR touched: changed at HEAD, or deleted on the way (a plan
@@ -51,8 +51,9 @@ SUPPRESS='(#[[:space:]]*noqa|#[[:space:]]*type:[[:space:]]*ignore|#[[:space:]]*p
 changed=$(git -c core.quotepath=off diff --name-only "$from" HEAD)
 
 # 1. Sensitive paths need tests. The patterns are the merge base's list plus
-#    this PR's, so a PR cannot drop a pattern to skip its check.
-patterns=$({ git show "$from:.ai/project.md" 2>/dev/null; echo .; cat .ai/project.md 2>/dev/null; } |
+#    this PR's, so a PR cannot drop a pattern to skip its check. Both are read
+#    from commits, so an uncommitted edit (pre-push.sh) gives what CI gives.
+patterns=$({ git show "$from:.ai/project.md" 2>/dev/null; echo .; git show HEAD:.ai/project.md 2>/dev/null; } |
   sed -n '/^sensitive_paths:/,/^[^[:space:]-]/p' | sed -n 's/^[[:space:]]*-[[:space:]]*//p' | tr -d "\"'\r" | sort -u)
 sensitive() {
   local f=$1 pat

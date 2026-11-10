@@ -646,6 +646,12 @@ mkplan() { local n=$1; shift; mkdir -p .ai/plans/active
 # approve: the owner types "duyệt" (runs the real approval hook).
 approve() { CLAUDE_PROJECT_DIR=$PWD bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"Duyệt nguyên bản."}' >/dev/null; }
 newbranch() { g checkout -q main; g checkout -q -B "$1"; }
+# The patterns come from commits: an uncommitted edit to the list (as on a
+# machine before a push) changes nothing; CI never sees it.
+newbranch b0; echo 'y = 2' > app/ui.py; g commit -qam "change ui"
+printf '  - app/ui.py\n' >> .ai/project.md
+check; t "PR: an uncommitted sensitive_paths edit is not read" [ $? = 0 ]
+g checkout -q -- .ai/project.md
 newbranch b1; echo 'x = 2' > app/money.py; g commit -qam "change money"
 check; t "PR: sensitive change without test fails" [ $? = 1 ]
 g commit -q --allow-empty -m "note" -m "No-Test-Reason: typo only"
@@ -1524,6 +1530,17 @@ git -C "$r" remote add origin "$b"; git -C "$r" add -A; git -C "$r" -c user.name
 t "bootstrap installs git's pre-push hook" grep -q 'pre-push\.sh' "$r/.git/hooks/pre-push"
 git -C "$r" push -q origin HEAD:main 2>/dev/null; t "a real git push to main is blocked" [ $? != 0 ]
 git -C "$r" push -q origin fix/a 2>/dev/null; t "a real git push of a feature branch works" [ $? = 0 ]
+# An old local origin/main must not count commits already on main: the hook
+# fetches it first. A push to the remote's URL is checked like one by name.
+gr() { git -C "$r" -c user.name=t -c user.email=t@t "$@"; }
+gr checkout -q -b fix/stale; gr push -q --no-verify origin HEAD:main; m1=$(gr rev-parse HEAD)
+gr commit -q --allow-empty -m $'merged\n\nTests-First: x'; gr push -q --no-verify origin HEAD:main; m2=$(gr rev-parse HEAD)
+gr update-ref refs/remotes/origin/main "$m1"; gr commit -q --allow-empty -m next; m3=$(gr rev-parse HEAD)
+gr push -q origin fix/stale 2>/dev/null; t "pre-push fetches main first: an old local copy does not block" [ $? = 0 ]
+t "pre-push left origin/main fetched" [ "$(gr rev-parse origin/main)" = "$m2" ]
+gr commit -q --allow-empty -m $'bad\n\nTests-First: x'
+gr push -q "$b" HEAD:fix/url 2>/dev/null; t "pre-push checks a push to the remote's URL" [ $? != 0 ]
+gr reset -q --hard "$m3"; gr checkout -q fix/a
 w=$tmp/pp-proto; git -C "$r" worktree add -q "$w" -b proto/wt
 git -C "$w" push -q origin HEAD:fix/c 2>/dev/null; t "a real push from a prototype worktree is blocked" [ $? != 0 ]
 git -C "$r" worktree remove --force "$w"; git -C "$r" branch -q -D proto/wt
