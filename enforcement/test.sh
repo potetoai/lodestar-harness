@@ -1511,7 +1511,7 @@ for c in "gh pr create --title x --body-file ok.md" "gh pr edit 5 --title y" "gh
          $'cat > new.md <<\'EOF\'\n'"$okt"$'\nEOF\ngh pr create --body-file new.md' "gh pr create --body-file missing.md" \
          'git commit -m "docs: mention gh pr create --body in text"' 'gh pr create --body "$(cat /tmp/x.md)"' \
          'gh pr create --body-file - < f.md' "gh pr create --body \"$okt\" --draft --base main" \
-         $'gh pr create -F - <<\'EOF\'\n'"$okt"$'\nEOF' $'cat > h.md <<\'EOF\'\ngh pr create --fill\nEOF'; do
+         $'gh pr create -F - <<\'EOF\'\n'"$okt"$'\nEOF' $'gh pr create -F - <<-EOF\n\tLodestar route: BUILD_REVIEW risk=low\n\tLodestar review: pass, r, '"$qc"$'\n\tEOF' $'cat > h.md <<\'EOF\'\ngh pr create --fill\nEOF'; do
   gq "$c"; t "guard allows PR text: ${c%%$'\n'*}" [ $? = 0 ]
 done
 out=$(cd "$q" && bash "$here/agents/claude/hooks/guard-install.sh" 2>&1 <<<'{"tool_input":{"command":"gh pr create --body \"**Lodestar route: BUILD_REVIEW risk=low**\""}}')

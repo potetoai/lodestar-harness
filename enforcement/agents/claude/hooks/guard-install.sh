@@ -109,10 +109,12 @@ fi
 pr_re='(^|[;&|({`]|\$\(|[[:space:]](then|do|else))[[:space:]]*([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*([^[:space:];|&]*/)?gh(\.exe)?([[:space:]]+-[^[:space:]]+([[:space:]]+[^-[:space:]][^[:space:]]*)?)*[[:space:]]+pr[[:space:]]+(create|edit)([[:space:];]|$)'
 # heredoc_text TEXT: the lines of the first heredoc in TEXT, or status 1.
 heredoc_text() {
-  local re="<<-?[[:space:]]*[\"']?([A-Za-z_][A-Za-z0-9_]*)[\"']?" t
+  local re="<<(-?)[[:space:]]*[\"']?([A-Za-z_][A-Za-z0-9_]*)[\"']?" t
   [[ $1 =~ $re ]] || return 1
   t=${1#*"${BASH_REMATCH[0]}"}; t=${t#*$'\n'}
-  awk -v d="${BASH_REMATCH[1]}" '{ l = $0; sub(/^\t+/, "", l) } l == d { f = 1; exit } { print } END { exit !f }' <<<"$t"
+  # <<- drops the leading tabs of every line, as bash does.
+  awk -v dash="${BASH_REMATCH[1]}" -v d="${BASH_REMATCH[2]}" '
+    dash != "" { sub(/^\t+/, "") } $0 == d { f = 1; exit } { print } END { exit !f }' <<<"$t"
 }
 # pr_text_problem: why the PR text would fail, or nothing.
 pr_text_problem() {
