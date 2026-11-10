@@ -285,3 +285,68 @@ path_matches() {
     *) [[ $1 == "$2" || $1 == "$2"/* ]] ;;
   esac
 }
+
+# PR text rules (router/ROUTER.md), one copy for ci-checks.sh, merge-pr.sh
+# and the guard that checks `gh pr create` and `gh pr edit` (guard-install.sh).
+# route_line BODY: "WORKFLOW risk" of the last 'Lodestar route:' line, or
+# nothing when that line is missing or malformed.
+route_line() {
+  local l
+  l=$(tr -d '\r' <<<"$1" | grep -E '^Lodestar route: ' | tail -n1)
+  [[ $l =~ ^Lodestar\ route:\ (SIMPLE|BUILD_REVIEW|INDEPENDENT_COMPARE|COMPLEX|PROTOTYPE|ONBOARDING|MAINTENANCE)\ risk=(low|medium|high|critical)(\ escalated-from=[A-Z_]+)?[[:space:]]*$ ]] &&
+    echo "${BASH_REMATCH[1]} ${BASH_REMATCH[2]}"
+}
+
+# review_problem BODY COMMITS: why the last 'Lodestar review:' line does not
+# count, or nothing; "none" when there is no line. It counts when it starts
+# with a pass verdict and names a commit of this PR (a hex id of 7 to 64,
+# matched as a prefix). COMMITS "?" (unknown) skips the commit match.
+review_problem() {
+  local line v tok c
+  line=$(tr -d '\r' <<<"$1" | grep -E '^Lodestar review: ' | tail -n1)
+  [ -n "$line" ] || { echo none; return; }
+  v=$(tr '[:upper:]' '[:lower:]' <<<"${line#Lodestar review: }")
+  [[ $v =~ ^(approve|approved|pass|passed)([^a-z]|$) ]] ||
+    { echo "The 'Lodestar review:' line must start with the verdict 'approve' or 'pass' (the review passed, after its findings were fixed). A review with open findings is not a pass: fix them and review again."; return; }
+  [ "$2" = "?" ] && return
+  for tok in $(tr -c '0-9a-z' '\n' <<<"$v" | grep -xE '[0-9a-f]{7,64}'); do
+    for c in $2; do [[ $c == "$tok"* ]] && return; done
+  done
+  echo "The 'Lodestar review:' line names no commit of this PR. Name the commit the reviewer read (git rev-parse --short HEAD at review time), e.g. 'Lodestar review: pass, reviewer subagent, 1a2b3c4'. After a rebase or amend the old id is gone: review the new head."
+}
+
+# route_problem BODY COMMITS CHANGED: why the PR text fails the route rules,
+# or nothing when it passes. COMMITS: the PR's commit ids; CHANGED: its
+# changed files, one per line. COMMITS "?" (unknown) skips the commit match
+# and the file count.
+route_problem() {
+  local rl wf risk n rp why
+  rl=$(route_line "$1")
+  if [ -z "$rl" ]; then
+    rl=$(tr -d '\r' <<<"$1" | grep -m1 'Lodestar route:')
+    [ -n "$rl" ] && echo "The PR text has no valid route line: '$rl' must be exactly 'Lodestar route: <WORKFLOW> risk=<level>', plain text on its own line, nothing after the level (router/ROUTER.md)." ||
+      echo "The PR text has no route line. Add one line, plain text: 'Lodestar route: <WORKFLOW> risk=<level>' (router/ROUTER.md)."
+    return
+  fi
+  wf=${rl% *}; risk=${rl#* }
+  rp=$(review_problem "$1" "$2")
+  why=$rp; [ "$rp" = none ] && why="Add a line: 'Lodestar review: <verdict>, <who>, <commit>'."
+  # Bookkeeping under .ai/ (approvals, plans) is not part of the change; for
+  # MAINTENANCE and ONBOARDING neither are the files Lodestar manages.
+  case $wf in
+    MAINTENANCE|ONBOARDING) n=$(grep -cvE '^(\.ai/|\.claude/|\.codex/|\.github/|$)' <<<"$3") ;;
+    *) n=$(grep -cvE '^(\.ai/|$)' <<<"$3") ;;
+  esac
+  [ "$2" = "?" ] && n=0
+  case $wf in
+    SIMPLE|PROTOTYPE|MAINTENANCE|ONBOARDING)
+      if [[ $wf == SIMPLE || $wf == PROTOTYPE ]] && [[ $risk == high || $risk == critical ]]; then
+        echo "$wf with risk=$risk: high risk needs at least BUILD_REVIEW (router/ROUTER.md, rule 16)."
+      elif [ "$n" -ge 3 ] && [ $wf = SIMPLE ]; then
+        echo "SIMPLE, but $n files changed (outside .ai/): 3 or more need at least BUILD_REVIEW with a review (router/ROUTER.md, SIMPLE). A 'Lodestar review:' line does not make SIMPLE pass; change the route line."
+      elif [ "$n" -ge 3 ] && [ -n "$rp" ]; then
+        echo "$wf, but $n files changed (outside .ai/ and, for MAINTENANCE and ONBOARDING, Lodestar's own files): 3 or more need a review. $why"
+      fi ;;
+    *) [ -z "$rp" ] || echo "$wf needs an independent review (workflows/build-review.md). Fix its findings. $why" ;;
+  esac
+}

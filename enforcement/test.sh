@@ -1486,6 +1486,36 @@ for c in $'bash <<\'EOF\'\n'"$body" $'python - <<\'EOF\'\n'"$body" $'cat > x.md 
          $'cat > x.md <<\'EOF\'\n'"$body"$'\ngh pr merge 6'; do
   gp "$c"; t "guard blocks run heredoc: ${c%%$'\n'*}" [ $? = 2 ]
 done
+# Guard: the text of gh pr create / edit passes the route rules before the PR
+# is sent (route_problem; section 7 tests the rules). Seen in consuming
+# projects: no route line, text after risk=, no review line, red CI each time.
+q=$tmp/gpr; mkdir -p "$q"
+(cd "$q" && git init -q -b main && git -c user.name=t -c user.email=t@t commit -q --allow-empty -m init &&
+  git update-ref refs/remotes/origin/main HEAD && git checkout -q -b fix/a && echo a > a.py && echo b > b.py && echo c > c.py &&
+  git add -A && git -c user.name=t -c user.email=t@t commit -q -m three)
+qc=$(git -C "$q" rev-parse --short HEAD); qm=$(git -C "$q" rev-parse --short main)
+gq() { (cd "$q" && bash "$here/agents/claude/hooks/guard-install.sh" 2>/dev/null <<<"$(jq -n --arg c "$1" '{tool_input:{command:$c}}')"); }
+okt="Lodestar route: BUILD_REVIEW risk=low"$'\n'"Lodestar review: pass, reviewer, $qc"$'\n\nText'
+printf '%s\n' "$okt" > "$q/ok.md"; printf 'Summary only\n' > "$q/bad.md"
+for c in "gh pr create --title x -F bad.md" "gh pr create --title x --fill" "gh pr edit 5 --body-file bad.md" \
+         $'gh pr create --title x --body "Lodestar route: BUILD_REVIEW risk=high, tests first\nLodestar review: pass, r, '"$qc"'"' \
+         'gh pr create --body "Lodestar route: SIMPLE risk=low"' "GH_TOKEN=1 gh pr create --title x \\"$'\n'"  --body-file bad.md" \
+         $'git push && gh pr create --body "$(cat <<\'EOF\'\nno line\nEOF\n)"' \
+         $'cat > new.md <<\'EOF\'\nLodestar route: BUILD_REVIEW risk=low\nEOF\ngh pr create --body-file new.md' \
+         "gh pr create --body \"Lodestar route: BUILD_REVIEW risk=low"$'\n'"Lodestar review: pass, r, $qm\""; do
+  gq "$c"; t "guard blocks PR text: ${c%%$'\n'*}" [ $? = 2 ]
+done
+for c in "gh pr create --title x --body-file ok.md" "gh pr edit 5 --title y" "gh pr create --web" "gh -R o/r pr create --fill" \
+         $'gh pr create --title "x" --body "$(cat <<\'EOF\'\n'"$okt"$'\nEOF\n)"' \
+         $'git commit -m "$(cat <<\'EOF\'\nfix\nEOF\n)" && gh pr create --body-file ok.md' \
+         $'cat > new.md <<\'EOF\'\n'"$okt"$'\nEOF\ngh pr create --body-file new.md' "gh pr create --body-file missing.md" \
+         'git commit -m "docs: mention gh pr create --body in text"' 'gh pr create --body "$(cat /tmp/x.md)"' \
+         'gh pr create --body-file - < f.md' "gh pr create --body \"$okt\" --draft --base main" \
+         $'gh pr create -F - <<\'EOF\'\n'"$okt"$'\nEOF' $'gh pr create -F - <<-EOF\n\tLodestar route: BUILD_REVIEW risk=low\n\tLodestar review: pass, r, '"$qc"$'\n\tEOF' $'cat > h.md <<\'EOF\'\ngh pr create --fill\nEOF'; do
+  gq "$c"; t "guard allows PR text: ${c%%$'\n'*}" [ $? = 0 ]
+done
+out=$(cd "$q" && bash "$here/agents/claude/hooks/guard-install.sh" 2>&1 <<<'{"tool_input":{"command":"gh pr create --body \"**Lodestar route: BUILD_REVIEW risk=low**\""}}')
+t "guard names the malformed route line" grep -q "no valid route line: '\*\*Lodestar route" <<<"$out"
 LODESTAR_SKIP_HOOKS=1 bash "$here/agents/claude/hooks/guard-install.sh" 2>/dev/null <<<'{"tool_input":{"command":"pip install ruff"}}'
 t "LODESTAR_SKIP_HOOKS disables the install guard" [ $? = 0 ]
 
