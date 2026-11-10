@@ -190,7 +190,9 @@ owner's content.
   owner correct it.
 - **B5 Sensitive paths.** Fill `sensitive_paths:` in `.ai/project.md` from
   the answer to question 4 (path B: also from the code that writes or deletes
-  data). An empty list needs a written reason.
+  data). An empty list needs a written reason. Ask whether the owner wants
+  `owner_only_paths` (optional, template note under `sensitive_paths`); leave
+  it out unless they say yes.
 - **B6/B7 Invariants.** Draft `.ai/invariants.md` rows from questions 3–4
   and **get the owner's approval**. Each high-risk invariant is enforced by a
   lint rule or a test, or gets a `tech-debt.md` entry with a due date.

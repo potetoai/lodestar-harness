@@ -237,3 +237,51 @@ valid_tests_first() {
   done < <(git diff-tree --root --no-commit-id --name-only -r "$c")
   return 1
 }
+
+# owner_only_parse: read the owner_only_paths key of a .ai/project.md (on
+# stdin). First line "<state>\t<count>\t<why>": state absent (no key at
+# column 0), ok (valid: `[]`, or the bare key with items) or bad (with why);
+# count is the item lines seen. Then the valid items, lower case, without
+# quotes, ./ or comments. Fences do not hide a key (merge-pr.sh reads lists
+# the same way). The list ends at the first other line at column 0.
+owner_only_parse() {
+  tr -d '\r' | awk '
+    function trim(s) { sub(/^[ \t]+/, "", s); sub(/[ \t]+$/, "", s); return s }
+    function no(w) { if (why == "") why = w }
+    /^owner_only_paths:/ {
+      keys++; if (keys > 1) no("the key appears twice")
+      v = substr($0, 18); sub(/[ \t]+#.*/, "", v); v = trim(v)
+      if (v == "[]") { inl = 1; empty = 1; gap = 0 }
+      else if (v == "") { inl = 1; empty = 0; gap = 0 }
+      else { inl = 0; no("the key line holds \"" v "\", not [] or a list") }
+      next }
+    inl && /^[ \t]*-/ {
+      n++; if (empty) no("items follow []"); if (gap) no("a blank or column-0 comment line splits the list")
+      it = $0; sub(/^[ \t]*-/, "", it); it = trim(it)
+      if (it ~ /^#/) it = ""; sub(/[ \t]+#.*/, "", it); gsub(/["\047]/, "", it); it = trim(it); sub(/^\.\//, "", it)
+      if (it == "") no("item " n " is empty")
+      else if (it ~ /^[[\/]/) no("item " n " starts with [ or /")
+      else if (index(it, "\\")) no("item " n " holds a backslash")
+      else items = items tolower(it) "\n"
+      next }
+    inl && /^[ \t]*$/ { gap = 1; next }
+    inl && /^#/ { gap = 1; next }
+    inl && /^[ \t]+#/ { next }
+    inl && /^[ \t]/ { no("line " NR " in the list is not an item"); next }
+    inl { inl = 0 }
+    END {
+      if (!keys) { print "absent\t0\t"; exit }
+      if (why == "" && !empty && n == 0) no("the key has no items")
+      printf "%s\t%d\t%s\n%s", (why == "" ? "ok" : "bad"), n, why, items }'
+}
+
+# path_matches PATH PATTERN (both lower case): as sensitive_paths in
+# merge-pr.sh. A pattern ending in / covers that folder; one with a glob
+# matches the whole path; any other covers the file or the folder of that name.
+path_matches() {
+  case $2 in
+    */) [[ $1 == "$2"* ]] ;;
+    *[*?[]*) [[ $1 == $2 ]] ;;
+    *) [[ $1 == "$2" || $1 == "$2"/* ]] ;;
+  esac
+}

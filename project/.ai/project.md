@@ -278,6 +278,15 @@ sensitive_paths:
   - [path/or/glob]
 ```
 
+Optional: `owner_only_paths`. Without it, every PR that changes
+`sensitive_paths` waits for the owner's "duyệt merge PR <n>". With it, only
+the paths it lists (plus safety files and locked tests) wait for the owner;
+other sensitive code merges after an owner-approved plan, tests, a review of
+the PR's head and green CI (`rules/enforcement.md`, "Owner-only merge"). List
+what cannot be undone: money, passwords, real data. To turn it on, the owner
+approves a PR that adds the key at the start of a line, for example
+`owner_only_paths: []` or the key followed by `  - path/or/glob` items.
+
 ### External Services
 
 [External services and constraints]

@@ -94,7 +94,9 @@ Stop early when nothing is worth a PR.
    Check that `sensitive_paths` in `.ai/project.md` still covers the code for
    login, permissions, secrets, money and data deletes: the agent merges its
    own PRs, and only those paths make a merge wait for the owner
-   (`rules/git.md`, merge policy). Propose missing paths to the owner.
+   (`rules/git.md`, merge policy). Propose missing paths to the owner. With
+   `owner_only_paths` declared, check it still lists what cannot be undone
+   (money, passwords, real data); doctor warns about an item that matches no file.
 7. **Close.** Write today's date to `.ai/last-maintenance` in the last PR. Report
    to the owner: PRs opened, debt paid, baseline size before and after,
    rules added, what is left.

@@ -250,7 +250,11 @@ wait for a human instead:
   (`rules/enforcement.md`, "Owner-only merge"; adding new tests to the lock
   and editing `.claude/docs/` are not owner-only). The hook knows only those
   file lists: a security change elsewhere still needs the worker to stop and
-  ask,
+  ask. A project that declares `owner_only_paths` lets ordinary
+  `sensitive_paths` code merge without the owner, only through `merge-pr.sh`
+  when every condition in `rules/enforcement.md` ("Owner-only merge") holds;
+  that is the only way a security-sensitive change merges without the owner,
+  and the cases in `rules/security.md` section 5 still wait for the owner,
 - the operation is destructive (deletes data, writes a real database, rewrites
   history),
 - the change weakens a safety check: removes or relaxes a hook, a CI step, a
