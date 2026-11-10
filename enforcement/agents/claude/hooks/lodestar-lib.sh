@@ -323,7 +323,7 @@ route_problem() {
   local rl wf risk n rp why
   rl=$(route_line "$1")
   if [ -z "$rl" ]; then
-    rl=$(tr -d '' <<<"$1" | grep -m1 'Lodestar route:')
+    rl=$(tr -d '\r' <<<"$1" | grep -m1 'Lodestar route:')
     [ -n "$rl" ] && echo "The PR text has no valid route line: '$rl' must be exactly 'Lodestar route: <WORKFLOW> risk=<level>', plain text on its own line, nothing after the level (router/ROUTER.md)." ||
       echo "The PR text has no route line. Add one line, plain text: 'Lodestar route: <WORKFLOW> risk=<level>' (router/ROUTER.md)."
     return

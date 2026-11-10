@@ -1499,7 +1499,8 @@ okt="Lodestar route: BUILD_REVIEW risk=low"$'\n'"Lodestar review: pass, reviewer
 printf '%s\n' "$okt" > "$q/ok.md"; printf 'Summary only\n' > "$q/bad.md"
 for c in "gh pr create --title x -F bad.md" "gh pr create --title x --fill" "gh pr edit 5 --body-file bad.md" \
          $'gh pr create --title x --body "Lodestar route: BUILD_REVIEW risk=high, tests first\nLodestar review: pass, r, '"$qc"'"' \
-         'gh pr create --body "Lodestar route: SIMPLE risk=low"' \
+         'gh pr create --body "Lodestar route: SIMPLE risk=low"' "GH_TOKEN=1 gh pr create --title x \\"$'\n'"  --body-file bad.md" \
+         $'git push && gh pr create --body "$(cat <<\'EOF\'\nno line\nEOF\n)"' \
          $'cat > new.md <<\'EOF\'\nLodestar route: BUILD_REVIEW risk=low\nEOF\ngh pr create --body-file new.md' \
          "gh pr create --body \"Lodestar route: BUILD_REVIEW risk=low"$'\n'"Lodestar review: pass, r, $qm\""; do
   gq "$c"; t "guard blocks PR text: ${c%%$'\n'*}" [ $? = 2 ]
@@ -1507,7 +1508,10 @@ done
 for c in "gh pr create --title x --body-file ok.md" "gh pr edit 5 --title y" "gh pr create --web" "gh -R o/r pr create --fill" \
          $'gh pr create --title "x" --body "$(cat <<\'EOF\'\n'"$okt"$'\nEOF\n)"' \
          $'git commit -m "$(cat <<\'EOF\'\nfix\nEOF\n)" && gh pr create --body-file ok.md' \
-         $'cat > new.md <<\'EOF\'\n'"$okt"$'\nEOF\ngh pr create --body-file new.md' "gh pr create --body-file missing.md"; do
+         $'cat > new.md <<\'EOF\'\n'"$okt"$'\nEOF\ngh pr create --body-file new.md' "gh pr create --body-file missing.md" \
+         'git commit -m "docs: mention gh pr create --body in text"' 'gh pr create --body "$(cat /tmp/x.md)"' \
+         'gh pr create --body-file - < f.md' "gh pr create --body \"$okt\" --draft --base main" \
+         $'gh pr create -F - <<\'EOF\'\n'"$okt"$'\nEOF' $'cat > h.md <<\'EOF\'\ngh pr create --fill\nEOF'; do
   gq "$c"; t "guard allows PR text: ${c%%$'\n'*}" [ $? = 0 ]
 done
 out=$(cd "$q" && bash "$here/agents/claude/hooks/guard-install.sh" 2>&1 <<<'{"tool_input":{"command":"gh pr create --body \"**Lodestar route: BUILD_REVIEW risk=low**\""}}')

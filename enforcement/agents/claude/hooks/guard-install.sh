@@ -18,7 +18,7 @@
 input=$(cat)
 cmd=$(jq -r '.tool_input.command // empty' <<<"$input" | tr -d '\r')
 [ -n "$cmd" ] || exit 0
-raw=$cmd
+raw=${cmd//$'\\\n'/ }  # a backslash-newline continues the line
 # Text, not commands: the body of a quoted heredoc fed to cat or tee
 # (cat <<'EOF' > file, git commit -m "$(cat <<'EOF' ...)") or to
 # git commit -F - is never run, so the checks below skip it; a handoff or a
@@ -102,38 +102,57 @@ fi
 
 # PR text: checked with the rules CI uses (route_problem in lodestar-lib.sh),
 # so a missing or malformed route or review line is fixed before the PR is
-# sent, not after a red CI run. Text the guard cannot read (a file not there,
-# stdin) and PRs of another repo (-R) are left to CI.
+# sent, not after a red CI run. Only a gh command at a command position
+# counts (not one named in a commit message). Text the guard cannot read (a
+# file not there, stdin, $(...) or a variable) and PRs of another repo (-R)
+# are left to CI.
+pr_re='(^|[;&|({`]|\$\(|[[:space:]](then|do|else))[[:space:]]*([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*([^[:space:];|&]*/)?gh(\.exe)?([[:space:]]+-[^[:space:]]+([[:space:]]+[^-[:space:]][^[:space:]]*)?)*[[:space:]]+pr[[:space:]]+(create|edit)([[:space:];]|$)'
+# heredoc_text TEXT: the lines of the first heredoc in TEXT, or status 1.
+heredoc_text() {
+  local re="<<-?[[:space:]]*[\"']?([A-Za-z_][A-Za-z0-9_]*)[\"']?" t
+  [[ $1 =~ $re ]] || return 1
+  t=${1#*"${BASH_REMATCH[0]}"}; t=${t#*$'\n'}
+  awk -v d="${BASH_REMATCH[1]}" '{ l = $0; sub(/^\t+/, "", l) } l == d { f = 1; exit } { print } END { exit !f }' <<<"$t"
+}
 # pr_text_problem: why the PR text would fail, or nothing.
 pr_text_problem() {
-  local one sub rest re f body base head from n out oid commits="?" changed=""
-  one=$(tr '\n' ' ' <<<"$raw")
-  re='(^|[^[:alnum:]_-])gh(\.exe)?[[:space:]]+([^;|&]*[[:space:]])?pr[[:space:]]+(create|edit)([[:space:]].*)?$'
-  [[ $one =~ $re ]] || return 0
-  sub=${BASH_REMATCH[4]}; rest=${BASH_REMATCH[5]}
-  [[ $rest =~ (^|[[:space:]])(-R|--repo)([=[:space:]]) ]] && return 0
+  local one m pre seg l1 sub re f v body base head from n out oid commits="?" changed=""
+  one=${raw//$'\n'/;}
+  [[ $one =~ $pr_re ]] || return 0
+  m=${BASH_REMATCH[0]}; pre=${one%%"$m"*}; seg=${raw:$((${#pre} + ${#m}))}; l1=${seg%%$'\n'*}
+  [[ $m =~ (create|edit)[[:space:]\;]*$ ]]; sub=${BASH_REMATCH[1]}
+  re='(^|[[:space:]])(-R|--repo)([=[:space:]])'; [[ $m =~ $re || $l1 =~ $re ]] && return 0
   re="(^|[[:space:]])(--body-file|-F)(=|[[:space:]]+)(\"[^\"]*\"|'[^']*'|[^[:space:];|&]+)"
-  if [[ $rest =~ $re ]] && f=${BASH_REMATCH[4]} && f=${f//[\"\']/} && [ "$f" != - ]; then
+  if [[ $l1 =~ $re ]]; then
+    f=${BASH_REMATCH[4]//[\"\']/}
+    if [ "$f" = - ]; then body=$(heredoc_text "$seg") || return 0
     # A file this command writes (cat > f <<EOF ... && gh pr create -F f)
     # is not there yet: its text is in the command.
-    if grep -qE "(>|tee([[:space:]]+-a)?)[[:space:]]*[\"']?${f//./\.}[\"']?([[:space:]]|$)" <<<"$raw"; then body=$raw
+    elif grep -qE "(>|tee([[:space:]]+-a)?)[[:space:]]*[\"']?${f//./\.}[\"']?([[:space:]]|$)" <<<"$raw"; then body=$raw
     elif [ -r "$f" ]; then body=$(cat "$f")
     else return 0; fi
-  elif [[ $rest =~ (^|[[:space:]])(--body|-b)([=[:space:]]) || $rest =~ (^|[[:space:]])(--body-file|-F)[=[:space:]]+- ]]; then
-    # Inline text or a heredoc: the lines of the command as written.
-    body=$(sed -E "s/^.*(--body|[[:space:]]-b)(=|[[:space:]]+)(\\$\()?[\"']?//; s/[\"')[:space:]]+\$//" <<<"$raw")
-  elif [ "$sub" = create ] && ! [[ $rest =~ (^|[[:space:]])(--web|-w)([[:space:]]|$) ]]; then
+  elif re='(^|[[:space:]])(--body|-b)(=|[[:space:]]+)' && [[ $l1 =~ $re ]]; then
+    v=${seg#*"${BASH_REMATCH[0]}"}
+    case $v in
+      "'"*) v=${v:1}; [[ $v == *"'"* ]] || return 0; body=${v%%"'"*} ;;
+      '"$(cat <<'*) body=$(heredoc_text "$v") || return 0 ;;
+      '"'*) v=${v:1}; [[ $v == *'"'* ]] || return 0; body=${v%%'"'*}
+            [[ $body == *'\' || $body == *'$'* || $body == *'`'* ]] && return 0 ;;
+      '$'*) return 0 ;;
+      *) body=${v%%[[:space:];|&]*} ;;
+    esac
+  elif [ "$sub" = create ] && ! [[ $l1 =~ (^|[[:space:]])(--web|-w)([[:space:]]|$) ]]; then
     echo "gh pr create has no PR text, and CI needs its route line. Write the text to a file and pass --body-file <file>."; return
   else
     return 0
   fi
   if [ "$sub" = create ]; then
-    head=HEAD; re='(^|[[:space:]])(--head|-H)[=[:space:]]'; [[ $rest =~ $re ]] && head=
+    head=HEAD; re='(^|[[:space:]])(--head|-H)[=[:space:]]'; [[ $l1 =~ $re ]] && head=
     re='(^|[[:space:]])(--base|-B)(=|[[:space:]]+)([^[:space:];|&]+)'
-    if [[ $rest =~ $re ]]; then base=origin/${BASH_REMATCH[4]//[\"\']/}
+    if [[ $l1 =~ $re ]]; then base=origin/${BASH_REMATCH[4]//[\"\']/}
     else base=$(git symbolic-ref -q --short refs/remotes/origin/HEAD 2>/dev/null) || base=origin/main; fi
   else
-    re='^[[:space:]]*([^-[:space:]][^[:space:]]*)'; n=; [[ $rest =~ $re ]] && n=${BASH_REMATCH[1]//[\"\']/}
+    re='^[[:space:]]*([^-[:space:]][^[:space:];|&]*)'; n=; [[ $l1 =~ $re ]] && n=${BASH_REMATCH[1]//[\"\']/}
     out=$(gh pr view $n --json headRefOid,baseRefName -q '.headRefOid + " " + .baseRefName' 2>/dev/null | tr -d '\r')
     oid=${out%% *}; base=origin/${out#* }; head=
     [ -n "$oid" ] && git cat-file -e "$oid^{commit}" 2>/dev/null && head=$oid
@@ -143,7 +162,8 @@ pr_text_problem() {
   fi
   route_problem "$body" "$commits" "$changed"
 }
-if [ -z "$why" ] && grep -qE '(^|[^[:alnum:]_-])gh(\.exe)?[[:space:]]+([^;|&]*[[:space:]])?pr[[:space:]]+(create|edit)([[:space:]]|$)' <<<"$(tr '\n' ' ' <<<"$raw")" &&
+# The cheap test first, on the command without heredoc text fed to cat or git.
+if [ -z "$why" ] && [[ ${cmd//$'\n'/;} =~ $pr_re ]] &&
    . "$(dirname "$0")/lodestar-lib.sh" 2>/dev/null && declare -F route_problem >/dev/null; then
   p=$(pr_text_problem)
   if [ -n "$p" ]; then
