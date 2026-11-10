@@ -13,10 +13,18 @@
 #   so a bad commit (a Tests-First commit without its plan...) is fixed with
 #   a new commit, not a force-push. The PR text is not read here: CI checks
 #   the route and review lines. Run only for the checked-out commit, against
-#   <remote>/<default branch> as the local copy has it.
+#   <remote>/<default branch>, fetched first so an old local copy does not
+#   count commits already on main (offline: the local copy as it is).
+# Pushed to a URL, not a remote name: the remote with that URL, else origin.
 # Applies to everyone who pushes from this checkout. The owner can still
 # push by hand with --no-verify; guard-install.sh blocks that flag for agents.
 remote=${1:-origin}
+if ! git remote | grep -qxF -- "$remote"; then
+  url=$remote; remote=origin
+  for r in $(git remote); do
+    [ "$(git remote get-url "$r" 2>/dev/null)" = "$url" ] || [ "$(git remote get-url --push "$r" 2>/dev/null)" = "$url" ] && { remote=$r; break; }
+  done
+fi
 default=$(git symbolic-ref --short -q "refs/remotes/$remote/HEAD" 2>/dev/null); default=${default#"$remote"/}
 prot=" main master ${default,,} "
 branch=$(git symbolic-ref --short -q HEAD 2>/dev/null)
@@ -38,7 +46,9 @@ ci=$(dirname "$0")/ci-checks.sh
 if [ -z "$why" ] && [ -n "$check" ] && [ -f "$ci" ]; then
   base=""
   for b in "$default" main master; do
-    [ -n "$b" ] && git rev-parse -q --verify "refs/remotes/$remote/$b" >/dev/null && { base=$remote/$b; break; }
+    [ -n "$b" ] && git rev-parse -q --verify "refs/remotes/$remote/$b" >/dev/null || continue
+    GIT_TERMINAL_PROMPT=0 git fetch -q --no-tags "$remote" "$b" </dev/null >/dev/null 2>&1
+    base=$remote/$b; break
   done
   if [ -n "$base" ]; then
     out=$(env -u PR_NUMBER -u LODESTAR_PR_BODY -u GITHUB_STEP_SUMMARY -u LODESTAR_TEST_MUTATION -u PR_AUTHOR \
