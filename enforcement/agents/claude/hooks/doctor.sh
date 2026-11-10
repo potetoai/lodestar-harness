@@ -231,7 +231,8 @@ check D1  "maintenance done in the last 14 days (workflows/maintenance.md)" warn
 check D2  "no repeated mistake without a machine rule (.ai/feedback-log.md)" warn no_repeated_mistakes
 # B5b: an owner_only_paths item that matches no tracked file protects nothing
 # (a typo); warn only, never fail. The key is optional (rules/enforcement.md).
-if [ -f .ai/project.md ] && grep -q '^owner_only_paths:' .ai/project.md && . "$lib" 2>/dev/null; then
+# Not in quiet mode (session start): it scans every tracked file.
+if [ $quiet = 0 ] && [ -f .ai/project.md ] && grep -q '^owner_only_paths:' .ai/project.md && . "$lib" 2>/dev/null; then
   tracked=$(git ls-files 2>/dev/null | tr '[:upper:]' '[:lower:]')
   IFS=$'	' read -r st _ why <<<"$(owner_only_parse < .ai/project.md | head -n1)"
   [ "$st" = ok ] || warn B5b "owner_only_paths is malformed, so it is off: $why"

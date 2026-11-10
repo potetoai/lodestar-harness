@@ -129,6 +129,7 @@ stopping an agent from loosening its own checks. Those keep the approval.
 | Date | Step | PR |
 |---|---|---|
 | 2026-11-09 | Criteria written | |
+| 2026-11-10 | Tests (e0dfced), merge-pr.sh, doctor B5b, docs (656a22b) | |
 
 ## Decision log
 

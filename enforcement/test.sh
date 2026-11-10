@@ -1627,10 +1627,11 @@ case "$*" in
 Lodestar review: pass, reviewer, aaaaaaa}")
     nf=$(printf '%b\n' "$FAKE_GH" | tail -n +2 | grep -c .)
     j=$(jq -cn --arg a "${FAKE_AUTHOR:-me}" --arg c "${FAKE_COMMITS-aaaaaaa0000000000000000000000000000000000}" --arg b "$body" \
-      --arg ntr "${FAKE_NTR-}" --argjson nf "$((nf + ${FAKE_FILES_EXTRA:-0}))" \
+      --arg ntr "${FAKE_NTR-}" --arg ntrs "${FAKE_NTR_SUBJ-}" --argjson nf "$((nf + ${FAKE_FILES_EXTRA:-0}))" \
       '{author: {login: $a}, body: $b, changedFiles: $nf,
         commits: ($c | split(" ") | map(select(length > 0)) | map(. as $o |
-          {oid: $o, messageHeadline: "c", messageBody: (if ($ntr | contains($o)) then "No-Test-Reason: x" else "" end)}))}')
+          {oid: $o, messageHeadline: (if ($ntrs | contains($o)) then "No-Test-Reason: x" else "c" end),
+           messageBody: (if ($ntr | contains($o)) then "No-Test-Reason: x" else "" end)}))}')
     if [ -n "$q" ]; then printf '%s\n' "$j" | jq -r "$q" | tr -d '\r'; else printf '%s\n' "$j"; fi ;;
   *) set -- $first
     [ -n "$FAKE_NEWHEAD" ] && [ -f "$FAKE_DIR/checked" ] && set -- "$1" "$2" "$FAKE_NEWHEAD" "$4" "$5" "$6" "$7"
@@ -1827,6 +1828,7 @@ for a in app/dependabot 'renovate[bot]'; do
   FAKE_AUTHOR=$a oo; ot $? 1 "C3 a PR by $a is refused and says so" 'bot'
 done
 FAKE_NTR=$c0 oo; ot $? 1 "C3 No-Test-Reason on a commit touching a sensitive file is refused" 'No-Test-Reason'
+FAKE_NTR_SUBJ=$c0 oo; ot $? 1 "C3 No-Test-Reason as the commit's subject line is refused too" 'No-Test-Reason'
 FAKE_COMMITS="$c1 $c0" FAKE_NTR=$c1 FAKE_CFILES="$c1=README.md" oo; ot $? 0 "C2 No-Test-Reason on a commit that touches no sensitive file is allowed"
 FAKE_COMMITS="$c1 $c0" FAKE_NTR=$c1 FAKE_CFILES="$c1=docs/x.md,src/auth/a.py" oo; ot $? 1 "C3 No-Test-Reason on an earlier commit touching a sensitive file is refused" 'No-Test-Reason'
 oo "$oh1\nsrc/auth/login.py\nadded|tests/test_login.py"; ot $? 1 "C3 a PR adding no plan is refused and says so" 'plan'

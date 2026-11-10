@@ -113,13 +113,14 @@ files=$(jq -r '.[] |
   (.previous_filename // empty | "removed\t" + .)' <<<"$raw" 2>/dev/null | tr -d '\r')
 [ -n "$files" ] || die "gh gave no files for PR #$n." "$cant"
 
+gherr=$(mktemp) || die "cannot make a temp file."; trap 'rm -f "$gherr"' EXIT
 # ghf PATH REF: the file at REF on GitHub into $got; status 1 when it does not
 # exist there (HTTP 404). Any other read error stops the merge.
 ghf() {
   local enc p
   enc=$(jq -rn --arg r "$2" '$r | @uri'); p=$(jq -rn --arg p "$1" '$p | split("/") | map(@uri) | join("/")')
-  if got=$(gh api "repos/{owner}/{repo}/contents/$p?ref=$enc" -H "Accept: application/vnd.github.raw" 2>&1); then return 0; fi
-  grep -q 'HTTP 404' <<<"$got" && { got=; return 1; }
+  if got=$(gh api "repos/{owner}/{repo}/contents/$p?ref=$enc" -H "Accept: application/vnd.github.raw" 2>"$gherr"); then return 0; fi
+  got=; grep -q 'HTTP 404' "$gherr" && return 1
   die "gh could not read $1 at $2; not merged." "$cant"
 }
 # Patterns, lower case, without ./ and comments.
@@ -213,7 +214,7 @@ no_owner_problems() {
   [ -n "$ok" ] || probs+=("the review line does not name the PR's head ${oid:0:7}; review the head again after every push")
   [ "$cross" != true ] || probs+=("the PR comes from a fork")
   [ -z "$bot" ] || probs+=("the PR was opened by a bot ($who)")
-  pr=$(gh pr view "$n" --json changedFiles,commits -q '"\(.changedFiles)", (.commits[]? | .oid + " " + (if ((.messageBody // "") | split("\n") | any(test("^No-Test-Reason:"))) then "1" else "0" end))' 2>/dev/null) ||
+  pr=$(gh pr view "$n" --json changedFiles,commits -q '"\(.changedFiles)", (.commits[]? | .oid + " " + (if ((.messageHeadline // "") + "\n" + (.messageBody // "") | split("\n") | any(test("^No-Test-Reason:"))) then "1" else "0" end))' 2>/dev/null) ||
     die "gh could not read the commits of PR #$n." "$cant"
   pr=$(tr -d '\r' <<<"$pr")
   [ "$(head -n1 <<<"$pr")" -lt 3000 ] 2>/dev/null || probs+=("the PR changes $(head -n1 <<<"$pr") files (3000 or more, past what GitHub lists)")
@@ -312,10 +313,13 @@ Tell the owner both results; only the owner merges it, by hand on GitHub."
 # A push while CI ran: the checks above were for another head.
 read -r _ _ now _ <<<"$(view)"
 [ "$now" = "$oid" ] || die "PR #$n got a new push while CI ran ($oid -> ${now:-unreadable}); not merged." "Run this again${hit:+; the owner must approve the new head}."
-# The target tip's lists again: a PR merged while CI ran may have changed them.
-ghf .ai/project.md "$bname"
-[ "$(owner_only_parse <<<"$got")" = "$otip" ] && [ "$(sens_of <<<"$got")" = "$(sens_of <<<"$ptip")" ] ||
-  die "owner_only_paths or sensitive_paths changed on $bname while CI ran; not merged." "Run this again."
+# Merging without the owner: the target tip's lists again, since a PR merged
+# while CI ran may have changed them.
+if [ -n "$noowner" ]; then
+  ghf .ai/project.md "$bname"
+  [ "$(owner_only_parse <<<"$got")" = "$otip" ] && [ "$(sens_of <<<"$got")" = "$(sens_of <<<"$ptip")" ] ||
+    die "owner_only_paths or sensitive_paths changed on $bname while CI ran; not merged." "Run this again."
+fi
 # --delete-branch makes gh switch this folder to the base branch after the
 # merge; git refuses while .ai/approvals.log has the approval lines the hook
 # added (seen in a consuming project). Set the log aside, then append its uncommitted
@@ -335,7 +339,7 @@ carry_back() {
 if [ -n "$del" ] && [ -f "$lg" ] && [ -n "$(git -C "$top" status --porcelain -- .ai/approvals.log 2>/dev/null)" ]; then
   saved=$(mktemp) && cp "$lg" "$saved" || die "cannot copy .ai/approvals.log aside; not merged."
   extra=$(tr -d '\r' < "$lg" | grep -vxFf <(git -C "$top" show HEAD:.ai/approvals.log 2>/dev/null | tr -d '\r'))
-  trap carry_back EXIT
+  trap 'carry_back; rm -f "$gherr"' EXIT
   if git -C "$top" ls-files --error-unmatch .ai/approvals.log >/dev/null 2>&1; then git -C "$top" checkout -q HEAD -- .ai/approvals.log; else rm -f "$lg"; fi
 fi
 if ! gh pr merge "$n" "$method" $del --match-head-commit "$oid"; then
@@ -345,7 +349,7 @@ if ! gh pr merge "$n" "$method" $del --match-head-commit "$oid"; then
   printf 'merge-pr: PR #%s is merged on GitHub, but gh could not finish here (see above).\n%s\n' "$n" \
     "Finish by hand: commit or stash other changes, git switch $bname, git pull, git branch -D $h${del:+, git push origin --delete $h}." >&2
 fi
-carry_back
+carry_back; rm -f "$gherr"
 gd=$(cd "$(git rev-parse --git-dir)" 2>/dev/null && pwd) && echo "PR $n merged" > "$gd/lodestar-task-done"
 echo "merge-pr: PR #$n merged at $oid."
 # A merge without the owner leaves a trace the owner can read on GitHub.
