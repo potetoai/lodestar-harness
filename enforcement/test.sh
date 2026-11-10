@@ -1572,23 +1572,67 @@ case "$*" in
     [ -n "$has" ] || { echo "gh: Not Found (HTTP 404)" >&2; exit 1; }
     [ "$v" = ERR ] && { echo "gh: Server Error (HTTP 502)" >&2; exit 1; }
     printf '%b\n' "$v" ;;
+  *contents/.ai/project.md*|*contents/.ai/approvals.log*|*contents/.ai/plans/*)
+    # Owner-only paths. $FAKE_PROJ_TIP/_BASE/_HEAD (after CI: _TIP2 if set),
+    # $FAKE_ALOG_TIP/_BASE/_HEAD, $FAKE_PLAN (at the head only). Unset: 404.
+    args="$*"; ref=${args##*ref=}; ref=${ref%% *}; set -- $first
+    case $args in *project.md*) k=FAKE_PROJ ;; *approvals.log*) k=FAKE_ALOG ;; *) k=FAKE_PLAN ;; esac
+    if [ "$k" = FAKE_PLAN ]; then [ "$ref" = "$3" ] && name=FAKE_PLAN || name=FAKE_NONE
+    elif [ "$ref" = "$5" ]; then name=${k}_TIP
+      [ "$k" = FAKE_PROJ ] && [ -f "$FAKE_DIR/checked" ] && [ -n "${FAKE_PROJ_TIP2+x}" ] && name=FAKE_PROJ_TIP2
+    elif [ "$ref" = "$6" ]; then name=${k}_BASE
+    elif [ "$ref" = "$3" ]; then name=${k}_HEAD
+    else name=FAKE_NONE; fi
+    eval "has=\${$name+x} v=\${$name-}"
+    [ -n "$has" ] || { echo "gh: Not Found (HTTP 404)" >&2; exit 1; }
+    [ "$v" = ERR ] && { echo "gh: Server Error (HTTP 502)" >&2; exit 1; }
+    printf '%b\n' "$v" ;;
   *check-runs/*/annotations*) printf '%s\n' "$FAKE_ANNOT" ;;
   *commits/*/check-runs*) [ -n "$FAKE_ANNOT" ] && echo 99 ;;
+  *pulls/*/commits*)
+    q=; while [ $# -gt 0 ]; do case $1 in -q|--jq) q=$2; shift ;; esac; shift; done
+    j=$(jq -cn --arg c "${FAKE_COMMITS-aaaaaaa0000000000000000000000000000000000}" --arg ntr "${FAKE_NTR-}" \
+      '$c | split(" ") | map(select(length > 0)) | map(. as $o | {sha: $o, commit: {message: ("c\n\n" + (if ($ntr | contains($o)) then "No-Test-Reason: x" else "" end))}})')
+    if [ -n "$q" ]; then printf '%s\n' "$j" | jq -r "$q" | tr -d '\r'; else printf '%s\n' "$j"; fi ;;
+  *repos/*/commits/*)
+    # One commit: its message and files; $FAKE_CFILES "<id>=a,b;<id>=c", else the PR's files.
+    args="$*"; sha=${args#*commits/}; sha=${sha%%[ ?]*}
+    q=; while [ $# -gt 0 ]; do case $1 in -q|--jq) q=$2; shift ;; esac; shift; done
+    cf=$(printf '%s' "${FAKE_CFILES-}" | tr ';' '\n' | sed -n "s/^$sha=//p")
+    if [ -n "$cf" ]; then fl=$(printf '%s' "$cf" | tr ',' '\n')
+    else fl=$(printf '%b\n' "$FAKE_GH" | tail -n +2 | awk -F'|' '{ print (NF > 1 ? $2 : $1) }'); fi
+    j=$(printf '%s\n' "$fl" | jq -Rs --arg s "$sha" --arg ntr "${FAKE_NTR-}" \
+      '{sha: $s, commit: {message: ("c\n\n" + (if ($ntr | contains($s)) then "No-Test-Reason: x" else "" end))},
+        files: (split("\n") | map(select(length > 0) | gsub("\r"; "") | {filename: .}))}')
+    if [ -n "$q" ]; then printf '%s\n' "$j" | jq -r "$q" | tr -d '\r'; else printf '%s\n' "$j"; fi ;;
   api*) printf '%b\n' "$FAKE_GH" | tail -n +2 | jq -cR 'select(length > 0) | split("|") |
       if length == 1 then {filename: .[0], status: "modified"} else
         {filename: .[1]} + (if .[0] == "-" then {} else {status: .[0]} end)
         + (if (.[2] // "") != "" then {patch: (.[2] | gsub(";"; "\n"))} else {} end)
-        + (if (.[3] // "") != "" then {previous_filename: .[3]} else {} end) end | [.]' ;;
+        + (if (.[3] // "") != "" then {previous_filename: .[3]} else {} end) end | [.]'
+    [ -z "$FAKE_FILES_EXTRA" ] || jq -cn --argjson n "$FAKE_FILES_EXTRA" '[range($n) | {filename: "gen/f\(.).txt", status: "modified"}]' ;;
+  "pr comment"*) [ "$FAKE_COMMENT" = ERR ] && exit 1
+    { echo "$*"; [ -f "$FAKE_DIR/merged" ] && echo AFTER-MERGE; } > "$FAKE_DIR/comment" ;;
   "pr checks"*) : > "$FAKE_DIR/checked"
     [ "$FAKE_CHECKS" = none ] && { echo "no checks reported on the 'x' branch"; exit 1; }
     echo "verify pass"; exit "${FAKE_CHECKS:-0}" ;;
   "pr merge"*) echo "$*" > "$FAKE_DIR/merged"
     case "$*" in *--delete-branch*) [ -n "$FAKE_LOCAL" ] || exit 0
       b=$(git branch --show-current); git switch -q main || exit 1; git branch -q -D "$b" ;; esac ;;
-  *"--json author,body"*) printf '%b
-' "${FAKE_AUTHOR:-me} ${FAKE_COMMITS-aaaaaaa0000000000000000000000000000000000}
-${FAKE_BODY-Lodestar route: BUILD_REVIEW risk=low
-Lodestar review: pass, reviewer, aaaaaaa}" ;;
+  "pr view"*--json*author*|"pr view"*--json*commits*|"pr view"*--json*changedFiles*)
+    # Real JSON through the caller's -q, so a new query works; $FAKE_NTR: ids
+    # of the commits that carry a No-Test-Reason trailer.
+    q=; while [ $# -gt 0 ]; do case $1 in -q|--jq) q=$2; shift ;; esac; shift; done
+    body=$(printf '%b' "${FAKE_BODY-Lodestar route: BUILD_REVIEW risk=low
+Lodestar review: pass, reviewer, aaaaaaa}")
+    nf=$(printf '%b\n' "$FAKE_GH" | tail -n +2 | grep -c .)
+    j=$(jq -cn --arg a "${FAKE_AUTHOR:-me}" --arg c "${FAKE_COMMITS-aaaaaaa0000000000000000000000000000000000}" --arg b "$body" \
+      --arg ntr "${FAKE_NTR-}" --arg ntrs "${FAKE_NTR_SUBJ-}" --argjson nf "$((nf + ${FAKE_FILES_EXTRA:-0}))" \
+      '{author: {login: $a}, body: $b, changedFiles: $nf,
+        commits: ($c | split(" ") | map(select(length > 0)) | map(. as $o |
+          {oid: $o, messageHeadline: (if ($ntrs | contains($o)) then "No-Test-Reason: x" else "c" end),
+           messageBody: (if ($ntr | contains($o)) then "No-Test-Reason: x" else "" end)}))}')
+    if [ -n "$q" ]; then printf '%s\n' "$j" | jq -r "$q" | tr -d '\r'; else printf '%s\n' "$j"; fi ;;
   *) set -- $first
     [ -n "$FAKE_NEWHEAD" ] && [ -f "$FAKE_DIR/checked" ] && set -- "$1" "$2" "$FAKE_NEWHEAD" "$4" "$5" "$6" "$7"
     [ -n "$FAKE_LOCAL" ] && [ -f "$FAKE_DIR/merged" ] && set -- "$1" "$2" "$3" "$4" "$5" "$6" MERGED
@@ -1735,6 +1779,245 @@ git -C "$w" update-ref refs/remotes/origin/fix/m HEAD; echo "2026-11-05 10:00 me
 t "merge-pr -d puts the uncommitted approval lines back when main has no .ai/, no stderr noise" bash -c '[ $1 = 0 ] && ! grep -q "No such file" <<<"$3" && [ "$(git -C "$2" branch --show-current)" = main ] && [ "$(cat "$2/.ai/approvals.log")" = "2026-11-05 10:00 merge-pr 7 aaaaaaa" ]' _ "$rc" "$w" "$out"
 t "merge-pr pins the approved head" grep -q -- "--match-head-commit aaaaaaa" "$tmp/merged"
 FAKE_NEWHEAD=ccccccc mp 7 "$auth7"; t "merge-pr does not merge an approved PR that got a new push during CI" [ $? = 1 ]
+# Owner-only paths (plans/active/owner-only-paths.md). A project that declares
+# owner_only_paths in .ai/project.md on GitHub lets ordinary sensitive code
+# merge without the owner, only for a PR that meets every condition. $oq is such
+# a PR; each test below varies one condition. oo keeps the output in $tmp/oo.out.
+oo() { rm -f "$tmp/merged" "$tmp/checked" "$tmp/comment"
+  (cd "$m" && FAKE_DIR=$tmp FAKE_GH=${1-$oq} LODESTAR_CHECKS_RETRY=0 PATH="$tmp/ghpr:$PATH" CLAUDE_PROJECT_DIR=$m \
+    bash "$here/agents/claude/hooks/merge-pr.sh" 7 >"$tmp/oo.out" 2>&1); local rc=$?
+  [ $rc = 0 ] && [ -f "$tmp/merged" ] && return 0; [ $rc = 1 ] && [ ! -f "$tmp/merged" ] && return 1; return 9; }
+# ot RC WANT NAME [REGEX]: the result was WANT and the output matches REGEX.
+ot() { t "owner-only: $3" bash -c '[ "$1" = "$2" ] && { [ -z "$3" ] || grep -Eiq -- "$3" "$4"; }' _ "$1" "$2" "${4:-}" "$tmp/oo.out"; }
+pj() { printf 'name: x\nsensitive_paths:\n  - src/auth/\n  - "*.sql"\n%s\nowner_language: vi\n' "$1"; }
+olist='owner_only_paths:
+  - src/billing/
+  - app/pay  # money'
+export FAKE_PROJ_TIP=$(pj "$olist") FAKE_PROJ_BASE=$(pj "$olist")
+oplan=$(printf '# p\n\n## Acceptance criteria\n\n- login works\n\n## Progress\n')
+oh=$(. "$here/agents/claude/hooks/lodestar-lib.sh"; criteria_hash <<<"$oplan")
+export FAKE_PLAN=$oplan
+export FAKE_BODY='Lodestar route: BUILD_REVIEW risk=high\nLodestar review: pass, reviewer, aaaaaaa'
+oh1='7 fix/m aaaaaaa false main 0000000'
+oq="$oh1\nsrc/auth/login.py\nadded|.ai/plans/active/t.md\nadded|tests/test_login.py"
+oapp="2026-11-09 10:00 plan .ai/plans/active/t.md $oh"
+locallog() { printf '%s\n' "$oapp" > "$m/.ai/approvals.log"; }
+localproj() { printf 'name: x\nsensitive_paths:\n  - src/auth/\n  - localonly/\nowner_language: vi\n' > "$m/.ai/project.md"; }
+locallog; localproj
+c0=aaaaaaa0000000000000000000000000000000000; c1=bbbbbbb0000000000000000000000000000000000
+
+# Criterion 1: no key, exactly as today.
+(unset FAKE_PROJ_TIP FAKE_PROJ_BASE; oo); ot $? 1 "C1 a project with no key on GitHub: a qualifying sensitive PR is refused" 'merge PR 7'
+pjn=$(pj ''); FAKE_PROJ_TIP=$pjn FAKE_PROJ_BASE=$pjn oo; ot $? 1 "C1 a project.md without the key: a qualifying sensitive PR is refused" 'merge PR 7'
+# Criterion 2: the conditions, all met, then one missing at a time (criterion 3).
+oo; ot $? 0 "C2 a qualifying PR merges without the owner"
+t "owner-only: C2 the merge is pinned to the head" grep -q -- "--match-head-commit aaaaaaa" "$tmp/merged"
+for r in 'BUILD_REVIEW risk=critical' 'INDEPENDENT_COMPARE risk=high' 'COMPLEX risk=critical'; do
+  FAKE_BODY="Lodestar route: $r\nLodestar review: pass, reviewer, aaaaaaa" oo; ot $? 0 "C2 route $r qualifies"
+done
+for r in 'SIMPLE risk=high' 'MAINTENANCE risk=high' 'PROTOTYPE risk=critical'; do
+  FAKE_BODY="Lodestar route: $r\nLodestar review: pass, reviewer, aaaaaaa" oo; ot $? 1 "C3 route $r is refused and says so" 'route|workflow'
+done
+for r in low medium; do
+  FAKE_BODY="Lodestar route: BUILD_REVIEW risk=$r\nLodestar review: pass, reviewer, aaaaaaa" oo; ot $? 1 "C3 risk=$r is refused and says so" 'risk'
+done
+FAKE_COMMITS="$c0 $c1" FAKE_BODY='Lodestar route: BUILD_REVIEW risk=high\nLodestar review: pass, reviewer, bbbbbbb' oo; ot $? 1 "C3 a review of an older commit of the PR is refused" 'head'
+FAKE_COMMITS="$c1 $c0" FAKE_BODY='Lodestar route: COMPLEX risk=high\nLodestar review: pass, reviewer, aaaaaaa' oo; ot $? 0 "C2 a review naming the head among several commits qualifies"
+oo "7 fix/m aaaaaaa true main 0000000\nsrc/auth/login.py\nadded|.ai/plans/active/t.md\nadded|tests/test_login.py"; ot $? 1 "C3 a fork PR is refused and says so" 'fork'
+for a in app/dependabot 'renovate[bot]'; do
+  FAKE_AUTHOR=$a oo; ot $? 1 "C3 a PR by $a is refused and says so" 'bot'
+done
+FAKE_NTR=$c0 oo; ot $? 1 "C3 No-Test-Reason on a commit touching a sensitive file is refused" 'No-Test-Reason'
+FAKE_NTR_SUBJ=$c0 oo; ot $? 1 "C3 No-Test-Reason as the commit's subject line is refused too" 'No-Test-Reason'
+FAKE_COMMITS="$c1 $c0" FAKE_NTR=$c1 FAKE_CFILES="$c1=README.md" oo; ot $? 0 "C2 No-Test-Reason on a commit that touches no sensitive file is allowed"
+FAKE_COMMITS="$c1 $c0" FAKE_NTR=$c1 FAKE_CFILES="$c1=docs/x.md,src/auth/a.py" oo; ot $? 1 "C3 No-Test-Reason on an earlier commit touching a sensitive file is refused" 'No-Test-Reason'
+oo "$oh1\nsrc/auth/login.py\nadded|tests/test_login.py"; ot $? 1 "C3 a PR adding no plan is refused and says so" 'plan'
+oo "$oh1\nsrc/auth/login.py\nmodified|.ai/plans/active/t.md\nadded|tests/test_login.py"; ot $? 1 "C3 a plan only modified (a later PR of the plan) is refused" 'plan'
+FAKE_PLAN='# p, no criteria' oo; ot $? 1 "C3 an added plan with no criteria is refused" 'plan'
+: > "$m/.ai/approvals.log"
+oo; ot $? 1 "C3 a plan whose hash is not in the local log is refused" 'plan'
+FAKE_ALOG_HEAD=$oapp oo; ot $? 1 "C2 the PR's own copy of the approvals log does not count" 'plan'
+locallog
+FAKE_ALOG_TIP=$oapp oo; ot $? 1 "C3 a hash already in the log at the target tip is refused (old plan copied)" 'plan'
+FAKE_ALOG_BASE=$oapp oo; ot $? 1 "C3 a hash already in the log at the PR's base is refused" 'plan'
+oo "$oh1\nsrc/auth/login.py\nadded|.ai/plans/active/t.md"; ot $? 1 "C3 a PR changing no test file is refused and says so" 'test file|no test|without.*test|any test'
+FAKE_COMMITS="$(printf 'f%039d ' $(seq 1 99))$c0" oo; ot $? 1 "C3 100 commits is refused and says so" 'commit'
+FAKE_COMMITS="$(printf 'f%039d ' $(seq 1 98))$c0" oo; ot $? 0 "C2 99 commits qualifies"
+FAKE_FILES_EXTRA=2997 oo; ot $? 1 "C3 3000 files is refused and says so" 'files'
+FAKE_FILES_EXTRA=2996 oo; ot $? 0 "C2 2999 files qualifies"
+FAKE_CHECKS=1 oo; ot $? 1 "C3 a red CI is refused" 'CI'
+t "owner-only: C12 no comment when nothing merged" test ! -f "$tmp/comment"
+printf '%s\n2026-11-09 10:00 merge-pr 7 aaaaaaa\n' "$oapp" > "$m/.ai/approvals.log"
+oo "7 fix/m aaaaaaa true main 0000000\nsrc/auth/login.py\nadded|.ai/plans/active/t.md\nadded|tests/test_login.py"; ot $? 0 "C3 a failed condition merges with the owner's approval at the head"
+printf '%s\n2026-11-09 10:00 merge-pr 7 bbbbbbb\n' "$oapp" > "$m/.ai/approvals.log"
+oo "7 fix/m aaaaaaa true main 0000000\nsrc/auth/login.py\nadded|.ai/plans/active/t.md\nadded|tests/test_login.py"; ot $? 1 "C3 an approval for another head does not count" 'fork'
+locallog
+# Criteria 4, 5: every file, the strictest wins, whatever the order.
+export FAKE_LOCK_TIP='tests/test_locked.py'
+for x in src/billing/card.py app/pay/x.py .github/workflows/ci.yml .claude/settings.json tests/test_locked.py; do
+  oo "$oh1\n$x\nsrc/auth/login.py\nadded|.ai/plans/active/t.md\nadded|tests/test_login.py"; ot $? 1 "C4 $x first in the PR is refused" 'merge PR 7'
+  oo "$oh1\nsrc/auth/login.py\nadded|.ai/plans/active/t.md\nadded|tests/test_login.py\n$x"; ot $? 1 "C4 $x last in the PR is refused" 'merge PR 7'
+done
+for x in 'renamed|docs/card.py||src/billing/card.py' 'renamed|docs/ci.yml||.github/workflows/ci.yml' 'renamed|tests/moved.py||tests/test_locked.py'; do
+  oo "$oq\n$x"; ot $? 1 "C5 a rename away from a listed path is refused: ${x##*|}" 'merge PR 7'
+done
+unset FAKE_LOCK_TIP
+oo "$oh1\nrenamed|docs/login.py||src/auth/login.py\nadded|tests/test_login.py"; ot $? 1 "C5 a rename away from a sensitive path still needs the conditions" 'plan'
+both='owner_only_paths:
+  - src/auth/secret/'
+FAKE_PROJ_TIP=$(pj "$both") FAKE_PROJ_BASE=$(pj "$both") oo "$oh1\nsrc/auth/secret/k.py\nadded|.ai/plans/active/t.md\nadded|tests/test_login.py"; ot $? 1 "C4 a file on both lists counts as owner-only" 'owner_only_paths'
+printf '%s\n2026-11-09 10:00 merge-pr 7 aaaaaaa\n' "$oapp" > "$m/.ai/approvals.log"
+oo "$oh1\nsrc/billing/card.py"; ot $? 0 "C4 an owner-only file merges with the owner's approval at the head"
+locallog
+# Criterion 6: read from GitHub, at the tip and at the base.
+(unset FAKE_PROJ_BASE; oo); ot $? 1 "C6 key at the tip only: not opted in" 'opt'
+(unset FAKE_PROJ_TIP; oo); ot $? 1 "C6 key at the base only: not opted in" 'opt'
+FAKE_PROJ_BASE=$(pj 'owner_only_paths: []') oo "$oh1\nsrc/billing/card.py\nsrc/auth/login.py\nadded|.ai/plans/active/t.md\nadded|tests/test_login.py"; ot $? 1 "C6 an owner-only path in the tip's copy only still counts" 'owner_only_paths'
+FAKE_PROJ_TIP=$(pj 'owner_only_paths: []') oo "$oh1\nsrc/billing/card.py\nsrc/auth/login.py\nadded|.ai/plans/active/t.md\nadded|tests/test_login.py"; ot $? 1 "C6 an owner-only path in the base's copy only still counts" 'owner_only_paths'
+oo "$oh1\nsrc/ghonly/a.py\nsrc/auth/login.py\nadded|.ai/plans/active/t.md\nadded|tests/test_login.py"; ot $? 0 "C6 a path on no list is not sensitive"
+FAKE_PROJ_TIP=$(pj "$olist
+sensitive_extra: x") oo; ot $? 0 "C9 another key after the list is ignored"
+ghs=$(printf 'name: x\nsensitive_paths:\n  - src/ghonly/\n%s\nowner_language: vi\n' "$olist")
+FAKE_PROJ_TIP=$ghs FAKE_PROJ_BASE=$ghs oo "$oh1\nsrc/ghonly/a.py"; ot $? 1 "C6 sensitive_paths on GitHub count though the local file lacks them" 'plan'
+printf 'name: x\nowner_only_paths: []\nsensitive_paths:\n  - src/auth/\n' > "$m/.ai/project.md"
+(unset FAKE_PROJ_TIP FAKE_PROJ_BASE; oo); ot $? 1 "C6 the local file does not opt in" 'merge PR 7'
+printf 'name: x\nsensitive_paths:\n  - src/auth/\n' > "$m/.ai/project.md"
+oo "$oh1\nsrc/billing/card.py\nsrc/auth/login.py\nadded|.ai/plans/active/t.md\nadded|tests/test_login.py"; ot $? 1 "C6 the local file does not remove an owner-only path" 'owner_only_paths'
+oo; ot $? 0 "C6 a local file without the key does not stop an opted-in project"
+localproj
+(unset FAKE_PROJ_TIP FAKE_PROJ_BASE; FAKE_PROJ_HEAD=$(pj "$olist") oo); ot $? 1 "C6 the PR's own copy does not opt in" 'merge PR 7'
+FAKE_PROJ_HEAD=$(pj 'owner_only_paths: []') oo "$oh1\nsrc/billing/card.py\nsrc/auth/login.py\nadded|.ai/plans/active/t.md\nadded|tests/test_login.py"; ot $? 1 "C6 the PR's own copy does not remove an owner-only path" 'owner_only_paths'
+for v in "$(pj "$olist
+  - src/auth/")" "$(pj '')"; do
+  FAKE_PROJ_TIP2=$v oo; ot $? 1 "C6 the tip's list changing during CI stops the merge" 'run.*again'
+done
+FAKE_PROJ_TIP2=ERR oo; ot $? 1 "C6 the tip unreadable after CI stops the merge"
+# Criterion 7: a path listed only in the local file.
+oo "$oh1\nlocalonly/a.py"; ot $? 1 "C7 a local-only sensitive path is not free of checks" 'plan'
+oo "$oh1\nlocalonly/a.py\nadded|.ai/plans/active/t.md\nadded|tests/test_login.py"; ot $? 0 "C7 a local-only sensitive path merges when it qualifies"
+# Criterion 8: GitHub cannot be read.
+for v in FAKE_PROJ_TIP FAKE_PROJ_BASE FAKE_ALOG_TIP FAKE_ALOG_BASE FAKE_PLAN; do
+  export "$v=ERR"; oo; ot $? 1 "C8 $v unreadable: nothing is merged"
+  case $v in FAKE_PROJ_TIP|FAKE_PROJ_BASE) export "$v=$(pj "$olist")" ;; FAKE_PLAN) export FAKE_PLAN=$oplan ;; *) unset "$v" ;; esac
+done
+FAKE_PROJ_TIP=ERR oo "$oh1\nREADME.md"; ot $? 1 "C8 project.md unreadable: an ordinary PR is not merged either"
+(unset FAKE_PROJ_TIP FAKE_PROJ_BASE; oo "$oh1\nREADME.md"); ot $? 0 "C8 no project.md on GitHub: an ordinary PR merges"
+oo; ot $? 0 "C8 no approvals log on GitHub (404) still qualifies"
+# Criterion 9: parsing. Same text in both copies unless named.
+oparse() { FAKE_PROJ_TIP=$1 FAKE_PROJ_BASE=$1 oo; }
+for v in 'owner_only_paths: []' 'owner_only_paths: []  # none yet' 'owner_only_paths: []\r' "$olist" 'owner_only_paths:\r
+  - src/billing/\r' '```yaml
+owner_only_paths: []
+```'; do
+  oparse "$(pj "$v")"; ot $? 0 "C9 valid: $(head -n1 <<<"$v" | cut -c1-40)"
+done
+oparse "$(pj "$olist
+")"; ot $? 0 "C9 a blank line after the last item is valid"
+oparse 'sensitive_paths:
+  - src/auth/
+owner_only_paths:
+  - src/billing/'; ot $? 0 "C9 an item on the file's last line is valid"
+nn=0
+for v in 'owner_only_paths:' 'owner_only_paths: none' 'owner_only_paths: [a]' 'owner_only_paths: true' \
+  'owner_only_paths: []
+owner_only_paths: []' "$olist
+owner_only_paths: []" 'owner_only_paths:
+  - [path/or/glob]' 'owner_only_paths:
+  - /abs/path' 'owner_only_paths:
+  - a\\b' 'owner_only_paths:
+  - # todo' 'owner_only_paths:
+  - ""' 'owner_only_paths:
+  - src/a/
+# note
+  - src/b/' 'owner_only_paths:
+  - src/a/
+
+  - src/b/'; do
+  nn=$((nn + 1)); oparse "$(pj "$v")"; ot $? 1 "C9 not opted in ($nn): $(tr '\n' ' ' <<<"$v" | cut -c1-40)" 'opt'
+done
+oparse "$(pj '  owner_only_paths: []')"; ot $? 1 "C9 an indented key does not count" 'merge PR 7'
+FAKE_PROJ_BASE=$(pj 'owner_only_paths: none') oo; ot $? 1 "C9 a malformed base copy: not opted in, names the base" 'base'
+FAKE_PROJ_TIP=$(pj 'owner_only_paths: none') oo; ot $? 1 "C9 a malformed tip copy: not opted in, names the tip" 'tip|target'
+FAKE_PROJ_TIP=$(pj 'owner_only_paths:
+  - a/
+  - b/
+  - c/
+  - [bad]') FAKE_PROJ_BASE=$(pj 'owner_only_paths:
+  - a/
+  - b/') oo
+rc=$?; ot $rc 1 "C9 the refusal gives the item count of the base copy" '\b2\b'; ot $rc 1 "C9 the refusal gives the item count of the tip copy" '\b[34]\b'
+matching='owner_only_paths:
+  - ./Src/Billing  # money
+  - "*.KEY"
+  - '"'"'lib/secret'"'"''
+for f in src/billing/a.py SRC/BILLING/b.py src/billing db/prod.key lib/secret/x.py; do
+  FAKE_PROJ_TIP=$(pj "$matching") FAKE_PROJ_BASE=$(pj "$matching") oo "$oq\n$f"; ot $? 1 "C9 an item matches $f" 'owner_only_paths'
+done
+for f in src/billing2/a.py lib/secretive.py; do
+  FAKE_PROJ_TIP=$(pj "$matching") FAKE_PROJ_BASE=$(pj "$matching") oo "$oq\n$f"; ot $? 0 "C9 an item does not match $f"
+done
+# Criterion 10: changing the key is itself owner-only and is explained.
+okey='owner_only_paths:
+  - src/billing/
+  - src/old/'
+nkey='owner_only_paths:
+  - src/billing/
+  - src/new/'
+FAKE_PROJ_TIP=$(pj "$okey") FAKE_PROJ_BASE=$(pj "$okey") FAKE_PROJ_HEAD=$(pj "$nkey") oo "$oh1\nmodified|.ai/project.md|@@ -1 +1 @@;-  - src/old/;+  - src/new/"
+rc=$?; ot $rc 1 "C10 changing the key: the refusal says it changes what merges without the owner" 'without'
+ot $rc 1 "C10 changing the key: the refusal lists the path added" 'src/new'; ot $rc 1 "C10 changing the key: the refusal lists the path removed" 'src/old'
+(unset FAKE_PROJ_TIP FAKE_PROJ_BASE; FAKE_PROJ_HEAD=$(pj "$nkey") oo "$oh1\nadded|.ai/project.md|@@ -0,0 +1 @@;+owner_only_paths:;+  - src/new/"); rc=$?
+ot $rc 1 "C10 adding the key: the refusal says so and lists the paths" 'without'; ot $rc 1 "C10 adding the key: names the added path" 'src/new'
+FAKE_PROJ_TIP=$(pj "$okey") FAKE_PROJ_BASE=$(pj "$okey") FAKE_PROJ_HEAD=$(pj '') oo "$oh1\nmodified|.ai/project.md|@@ -1 +1 @@;-owner_only_paths:;-  - src/old/"; rc=$?
+ot $rc 1 "C10 removing the key: names the removed path" 'src/old'
+printf '%s\n2026-11-09 10:00 merge-pr 7 aaaaaaa\n' "$oapp" > "$m/.ai/approvals.log"
+FAKE_PROJ_TIP=$(pj "$okey") FAKE_PROJ_BASE=$(pj "$okey") FAKE_PROJ_HEAD=$(pj "$nkey") oo "$oh1\nmodified|.ai/project.md|@@ -1 +1 @@;-  - src/old/;+  - src/new/"; ot $? 0 "C10 the owner's approval at the head merges a change to the key"
+locallog
+# Criterion 11: the shipped template never opts in.
+t "owner-only: C11 the template has no line matching ^owner_only_paths:" bash -c '! grep -qE "^owner_only_paths:" "$1"' _ "$here/../project/.ai/project.md"
+# Criterion 13: CI's and the locked-test rules are tested above in this file;
+# security_review and section 5 are docs, so check they are still there.
+t "owner-only: C13 security_review and section 5 are still in the rules" bash -c 'grep -q security_review "$1/router/ROUTER.md" && grep -q "^# 5. Human Approval" "$1/rules/security.md"' _ "$here/.."
+# Criterion 12: refusals name the list and the words to type; a merge without
+# the owner is reported, and posted as a PR comment.
+export FAKE_LOCK_TIP='tests/test_locked.py'
+oo "$oq\nsrc/billing/card.py"; rc=$?
+ot $rc 1 "C12 owner-only refusal names owner_only_paths" 'owner_only_paths'; ot $rc 1 "C12 owner-only refusal says what the owner types" 'merge PR 7'
+oo "7 fix/m aaaaaaa false main 0000000\nsrc/auth/login.py"; rc=$?; ot $rc 1 "C12 sensitive refusal names sensitive_paths" 'sensitive_paths'; ot $rc 1 "C12 sensitive refusal says what the owner types" 'merge PR 7'
+oo "$oq\n.github/workflows/ci.yml"; rc=$?; ot $rc 1 "C12 a safety-file refusal says safety" 'safety'
+t "owner-only: C12 a safety-file refusal does not blame a list it did not hit" bash -c '! grep -q owner_only_paths "$1"' _ "$tmp/oo.out"
+oo "$oq\ntests/test_locked.py"; rc=$?; ot $rc 1 "C12 a locked-test refusal says locked" 'lock'
+t "owner-only: C12 a locked-test refusal does not call it a safety file" bash -c '! grep -qi "safety file" "$1"' _ "$tmp/oo.out"
+unset FAKE_LOCK_TIP
+cnt3='owner_only_paths:
+  - a/
+  - b/
+  - c/'
+cnt2='owner_only_paths:
+  - a/
+  - b/'
+ooline() { grep -F 'src/auth/login.py' "$1" | grep -F 'db/init.sql' | grep -Eiq 'reviewer' && grep -F 'src/auth/login.py' "$1" | grep -Eq '\b3\b' && grep -F 'src/auth/login.py' "$1" | grep -Eq '\b2\b'; }
+FAKE_PROJ_TIP=$(pj "$cnt3") FAKE_PROJ_BASE=$(pj "$cnt2") oo "$oh1\nsrc/auth/login.py\ndb/init.sql\nadded|.ai/plans/active/t.md\nadded|tests/test_login.py"
+ot $? 0 "C12 a merge without the owner: merged"
+t "owner-only: C12 the merge line names all such files, the review and both counts" ooline "$tmp/oo.out"
+t "owner-only: C12 the same line is posted as a PR comment" bash -c '[ -f "$1" ] && grep -q "pr comment 7" "$1"' _ "$tmp/comment"
+t "owner-only: C12 the comment names all such files, the review and both counts" ooline "$tmp/comment"
+t "owner-only: C12 the comment is posted after the merge" grep -q AFTER-MERGE "$tmp/comment"
+FAKE_COMMENT=ERR oo; rc=$?; ot $rc 0 "C12 a failed comment leaves the merge standing and says so" 'comment'
+oo "$oh1\nREADME.md"; ot $? 0 "C12 an ordinary PR in an opted-in project needs no conditions"
+t "owner-only: C12 an ordinary PR posts no comment" test ! -f "$tmp/comment"
+# Criterion 15: doctor warns about an item matching no tracked file.
+od=$tmp/oodoc; cp -r "$tmp/py" "$od"
+bash "$od/.claude/hooks/doctor.sh" "$od" > "$tmp/od0.out" 2>&1; rc0=$?
+printf 'owner_only_paths:\n  - typo/nowhere/\n' >> "$od/.ai/project.md"
+out=$(bash "$od/.claude/hooks/doctor.sh" "$od" 2>&1); rc=$?
+t "owner-only: C15 doctor warns about an item matching no tracked file" bash -c 'grep -q "⚠️" <<<"$1" && grep -F "⚠️" <<<"$1" | grep -q "typo/nowhere"' _ "$out"
+t "owner-only: C15 the warning never fails doctor" [ "$rc" = "$rc0" ]
+touch "$od/kept.py"; git -C "$od" add kept.py
+sedi 's#typo/nowhere/#kept.py#' "$od/.ai/project.md"
+out=$(bash "$od/.claude/hooks/doctor.sh" "$od" 2>&1)
+t "owner-only: C15 doctor does not warn about an item that matches a tracked file" bash -c '! grep -F "⚠️" <<<"$1" | grep -q "kept.py"' _ "$out"
+unset FAKE_PROJ_TIP FAKE_PROJ_BASE FAKE_PLAN FAKE_BODY
 rm -rf "$m/.ai"
 
 # 12. Link checker (scripts/check-links.sh) catches a broken reference.

@@ -11,6 +11,7 @@ for a in "$@"; do
     *) dir=$a ;;
   esac
 done
+case $0 in */*) lib=${0%/*} ;; *) lib=. ;; esac; lib=$(cd "$lib" 2>/dev/null && pwd)/lodestar-lib.sh  # builtins: the wrong-bash check below may lack dirname
 cd "$dir" || { echo "doctor: cannot open $dir" >&2; exit 1; }
 
 # A wrong bash makes healthy items fail. On Windows plain `bash` can be the
@@ -228,6 +229,20 @@ check A12 "stack tools installed (.venv / node_modules), else run make setup" wa
 check A12b "root .nvmrc / .python-version pins the Node / Python version CI uses (else run bootstrap.sh --upgrade, or write the major version you run)" fail toolchain_pinned
 check D1  "maintenance done in the last 14 days (workflows/maintenance.md)" warn maintenance_recent
 check D2  "no repeated mistake without a machine rule (.ai/feedback-log.md)" warn no_repeated_mistakes
+# B5b: an owner_only_paths item that matches no tracked file protects nothing
+# (a typo); warn only, never fail. The key is optional (rules/enforcement.md).
+# Not in quiet mode (session start): it scans every tracked file.
+if [ $quiet = 0 ] && [ -f .ai/project.md ] && grep -q '^owner_only_paths:' .ai/project.md && . "$lib" 2>/dev/null; then
+  tracked=$(git ls-files 2>/dev/null | tr '[:upper:]' '[:lower:]')
+  IFS=$'	' read -r st _ why <<<"$(owner_only_parse < .ai/project.md | head -n1)"
+  [ "$st" = ok ] || warn B5b "owner_only_paths is malformed, so it is off: $why"
+  while IFS= read -r pat; do
+    [ -n "$pat" ] || continue
+    found=
+    while IFS= read -r f; do path_matches "$f" "$pat" && { found=1; break; }; done <<<"$tracked"
+    [ -n "$found" ] || warn B5b "owner_only_paths item '$pat' matches no tracked file (a typo protects nothing)"
+  done < <(owner_only_parse < .ai/project.md | tail -n +2)
+fi
 # A4c starts Codex and C1 calls the GitHub API: skip both in quiet mode
 # (session-start hook) to stay fast.
 if [ $quiet = 0 ]; then
