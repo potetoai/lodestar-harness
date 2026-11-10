@@ -1779,7 +1779,7 @@ git -C "$w" update-ref refs/remotes/origin/fix/m HEAD; echo "2026-11-05 10:00 me
 t "merge-pr -d puts the uncommitted approval lines back when main has no .ai/, no stderr noise" bash -c '[ $1 = 0 ] && ! grep -q "No such file" <<<"$3" && [ "$(git -C "$2" branch --show-current)" = main ] && [ "$(cat "$2/.ai/approvals.log")" = "2026-11-05 10:00 merge-pr 7 aaaaaaa" ]' _ "$rc" "$w" "$out"
 t "merge-pr pins the approved head" grep -q -- "--match-head-commit aaaaaaa" "$tmp/merged"
 FAKE_NEWHEAD=ccccccc mp 7 "$auth7"; t "merge-pr does not merge an approved PR that got a new push during CI" [ $? = 1 ]
-# Owner-only paths (plans/active/owner-only-paths.md). A project that declares
+# Owner-only paths (plans/completed/owner-only-paths.md). A project that declares
 # owner_only_paths in .ai/project.md on GitHub lets ordinary sensitive code
 # merge without the owner, only for a PR that meets every condition. $oq is such
 # a PR; each test below varies one condition. oo keeps the output in $tmp/oo.out.
