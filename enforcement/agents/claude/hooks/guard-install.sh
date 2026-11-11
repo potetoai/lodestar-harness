@@ -124,6 +124,17 @@ pr_text_problem() {
   m=${BASH_REMATCH[0]}; pre=${one%%"$m"*}; seg=${raw:$((${#pre} + ${#m}))}; l1=${seg%%$'\n'*}
   [[ $m =~ (create|edit)[[:space:]\;]*$ ]]; sub=${BASH_REMATCH[1]}
   re='(^|[[:space:]])(-R|--repo)([=[:space:]])'; [[ $m =~ $re || $l1 =~ $re ]] && return 0
+  # gh runs where an earlier cd or pushd went (cd ../other-worktree && gh pr
+  # create): read the text file and count the changes there, not in the
+  # session's folder. A folder the guard cannot follow is left to CI.
+  local s t
+  while IFS= read -r s; do
+    s=${s#"${s%%[![:space:]({]*}"}
+    [[ $s =~ ^(cd|pushd)[[:space:]]+(.*[^[:space:]]) ]] || continue
+    t=${BASH_REMATCH[2]}; [[ $t == *['$`*']* ]] && return 0
+    [[ $t == \~* ]] && t=$HOME${t:1}
+    t=${t//[\"\']/}; cd -- "$t" 2>/dev/null || return 0
+  done < <(sed -E 's/[;&|]+/\n/g' <<<"$pre")
   re="(^|[[:space:]])(--body-file|-F)(=|[[:space:]]+)(\"[^\"]*\"|'[^']*'|[^[:space:];|&]+)"
   if [[ $l1 =~ $re ]]; then
     f=${BASH_REMATCH[4]//[\"\']/}
@@ -162,7 +173,14 @@ pr_text_problem() {
   if [ -n "$head" ] && from=$(git merge-base "$base" "$head" 2>/dev/null); then
     commits=$(git rev-list "$from..$head"); changed=$(git -c core.quotepath=off diff --name-only "$from" "$head")
   fi
-  route_problem "$body" "$commits" "$changed"
+  out=$(route_problem "$body" "$commits" "$changed")
+  [ -n "$out" ] || return 0
+  # Name what was measured, so a wrong folder or branch shows at once.
+  if [ "$head" = HEAD ]; then
+    t=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+    out+=" (Measured: branch ${t:-?} in $(pwd), against $base.)"
+  fi
+  echo "$out"
 }
 # The cheap test first, on the command without heredoc text fed to cat or git.
 if [ -z "$why" ] && [[ ${cmd//$'\n'/;} =~ $pr_re ]] &&
