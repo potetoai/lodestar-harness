@@ -126,15 +126,20 @@ pr_text_problem() {
   re='(^|[[:space:]])(-R|--repo)([=[:space:]])'; [[ $m =~ $re || $l1 =~ $re ]] && return 0
   # gh runs where an earlier cd or pushd went (cd ../other-worktree && gh pr
   # create): read the text file and count the changes there, not in the
-  # session's folder. A folder the guard cannot follow is left to CI.
-  local s t
+  # session's folder. A folder the guard cannot follow is left to CI. Read
+  # from $cmd (no heredoc text), without quoted text holding a separator (a
+  # commit message) or a closed ( ) group, whose cd does not reach gh.
+  local s t c=${cmd//$'\n'/;}
+  [[ $c =~ $pr_re ]] && c=${c%%"${BASH_REMATCH[0]}"*}
+  c=$(sed -E "s/\"[^\"]*[;&|][^\"]*\"//g; s/'[^']*[;&|][^']*'//g" <<<"$c")
+  re='\([^()]*\)'; while [[ $c =~ $re ]]; do c=${c/"${BASH_REMATCH[0]}"/}; done
   while IFS= read -r s; do
     s=${s#"${s%%[![:space:]({]*}"}
     [[ $s =~ ^(cd|pushd)[[:space:]]+(.*[^[:space:]]) ]] || continue
     t=${BASH_REMATCH[2]}; [[ $t == *['$`*']* ]] && return 0
     [[ $t == \~* ]] && t=$HOME${t:1}
     t=${t//[\"\']/}; cd -- "$t" 2>/dev/null || return 0
-  done < <(sed -E 's/[;&|]+/\n/g' <<<"$pre")
+  done < <(sed -E 's/[;&|]+/\n/g' <<<"$c")
   re="(^|[[:space:]])(--body-file|-F)(=|[[:space:]]+)(\"[^\"]*\"|'[^']*'|[^[:space:];|&]+)"
   if [[ $l1 =~ $re ]]; then
     f=${BASH_REMATCH[4]//[\"\']/}

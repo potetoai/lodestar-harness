@@ -1543,6 +1543,10 @@ simple='gh pr create --body "Lodestar route: SIMPLE risk=low"'
 for c in "cd ../gpr-w && $simple" "cd \"$tmp/gpr-w\"; $simple" "(cd ../gpr-w && $simple)" "cd ../no-such-dir && $simple"; do
   gq "$c"; t "guard counts changes where cd went: $c" [ $? = 0 ]
 done
+for c in "(cd ../gpr-w && ls) && $simple" "git commit -m \"x; cd ../gpr-w\" && $simple" \
+         $'git commit -m "$(cat <<\'EOF\'\nx\ncd ../gpr-w\nEOF\n)" && '"$simple"; do
+  gq "$c"; t "guard ignores a cd that does not reach gh: ${c%%$'\n'*}" [ $? = 2 ]
+done
 out=$(cd "$tmp/gpr-w" && bash "$here/agents/claude/hooks/guard-install.sh" 2>&1 <<<"$(jq -n --arg c "cd ../gpr && $simple" '{tool_input:{command:$c}}')")
 t "guard blocks after cd and names the measured branch" grep -q "Measured: branch fix/a in .*gpr," <<<"$out"
 out=$(cd "$q" && bash "$here/agents/claude/hooks/guard-install.sh" 2>&1 <<<'{"tool_input":{"command":"gh pr create --body \"**Lodestar route: BUILD_REVIEW risk=low**\""}}')
