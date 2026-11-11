@@ -80,7 +80,6 @@ case $(git symbolic-ref --short -q HEAD 2>/dev/null) in proto/*) exit 0 ;; esac
 input=$(cat)
 [ "$(jq -j '.stop_hook_active // false' <<<"$input")" = "true" ] && exit 0
 
-locked=()
 # Tests locked by the last VALID Tests-First commit (it carries an owner-
 # approved plan) stay unchanged while the task is active (a plan in
 # .ai/plans/active/), even if .ai/test-lock is removed. Reads git history, so
@@ -88,22 +87,20 @@ locked=()
 # cannot reset the lock. During a relock window (owner approved changed
 # criteria) the tester may rewrite them; a test the owner approved to fix
 # ("duyệt sửa test <path>") may change until the next round.
-if ls .ai/plans/active/*.md >/dev/null 2>&1 && [ -f .claude/hooks/lodestar-lib.sh ] &&
-   . .claude/hooks/lodestar-lib.sh && lock_active && ! relock_window && c=$(active_tests_first); then
-  mapfile -t locked < <(git show "$c:.ai/test-lock" 2>/dev/null | lock_paths)
-  if [ ${#locked[@]} -gt 0 ]; then
-    touched=$(git diff --name-only "$c" -- "${locked[@]}" 2>/dev/null |
-      while IFS= read -r t; do test_fix_window "$t" || echo "$t"; done)
-    if [ -n "$touched" ]; then
-      echo "Not done yet: tests locked by commit $(git log -1 --format='%h %s' "$c") were changed:" >&2
-      echo "$touched" >&2
-      echo "Undo those changes (git checkout $c -- <file>). If a test or criterion is wrong, ask the" >&2
-      echo "owner to approve changed criteria (they reply \"approve\", or \"duyệt\"); then the tester commits a new" >&2
-      echo "Tests-First round that includes the updated plan. A wrong test under right criteria: ask the" >&2
-      echo "owner to type \"duyệt sửa test <path>\" (\"approve test fix <path>\"), and commit the fix in a new round." >&2
-      exit 2
-    fi
-  fi
+locked=() c=''
+if [ -f .claude/hooks/lodestar-lib.sh ] && . .claude/hooks/lodestar-lib.sh; then
+  locked_tests_changed; rc=$?
+  c=$lock_base locked=("${lock_list[@]}")
+  [ -n "$c" ] && relock_window && c='' locked=()
+fi
+if [ "${rc:-1}" = 0 ]; then
+  echo "Not done yet: tests locked by commit $(git log -1 --format='%h %s' "$lock_base") were changed:" >&2
+  echo "$lock_touched" >&2
+  echo "Undo those changes (git checkout $lock_base -- <file>). If a test or criterion is wrong, ask the" >&2
+  echo "owner to approve changed criteria (they reply \"approve\", or \"duyệt\"); then the tester commits a new" >&2
+  echo "Tests-First round that includes the updated plan. A wrong test under right criteria: ask the" >&2
+  echo "owner to type \"duyệt sửa test <path>\" (\"approve test fix <path>\"), and commit the fix in a new round." >&2
+  exit 2
 fi
 
 # Commits that exist only on this machine are lost with it, and finished work

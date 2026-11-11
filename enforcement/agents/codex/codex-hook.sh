@@ -7,8 +7,8 @@
 # - guards (protect-tests, sensitive-gate, guard-install) block, with a repair;
 # - verify-before-stop blocks; only Codex's repeated Stop (stop_hook_active)
 #   may end, as in Claude;
-# - lint-file reports to the agent; feedback-check and approval-record report
-#   unavailable and let the work go on.
+# - lint-file and locked-tests report to the agent; feedback-check and
+#   approval-record report unavailable and let the work go on.
 # Codex differences handled here:
 # - no project-dir variable: the project is the git root. A CLAUDE_PROJECT_DIR
 #   inherited from a parent Claude session may name another folder.
@@ -22,7 +22,7 @@ hook=$1
 case $hook in
   protect-tests|sensitive-gate|guard-install) kind=guard ;;
   verify-before-stop) kind=stop ;;
-  lint-file) kind=post ;;
+  lint-file|locked-tests) kind=post ;;
   feedback-check|approval-record) kind=advisory ;;
   *) echo "Blocked: unknown Lodestar hook '$hook' in .codex/hooks.json. Repair: rerun enforcement/bootstrap.sh --upgrade in this project." >&2; exit 2 ;;
 esac

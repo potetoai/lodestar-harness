@@ -103,7 +103,7 @@ s=$p/.claude/settings.json
 t "merge keeps permissions" jq -e '.permissions.allow == ["Bash(ls)"]' "$s"
 t "merge keeps existing Stop hook" jq -e '[.hooks.Stop[].hooks[].command] | index("echo mine") != null' "$s"
 t "merge adds verify hook" jq -e '[.hooks.Stop[].hooks[].command] | any(test("verify-before-stop"))' "$s"
-t "merge adds lint hook" jq -e '.hooks.PostToolUse | length == 1' "$s"
+t "merge adds lint and locked-tests hooks" jq -e '.hooks.PostToolUse | length == 2' "$s"
 bash "$here/bootstrap.sh" "$p" --stack node-ts >/dev/null
 t "second merge adds no duplicates" jq -e '.hooks.Stop | length == 3' "$s"
 
@@ -1291,6 +1291,14 @@ stopl; t "stop hook passes when locked tests are untouched" [ $? = 0 ]
 echo 'def test_a(): pass' > tests/test_a.py
 stopl; t "stop hook blocks an edit to a locked test after unlock (no CI)" [ $? = 2 ]
 stopl; t "stop hook blocks a locked-test edit on every stop" [ $? = 2 ]
+# A shell command (a Python script, sed) changing a locked test is reported
+# right after it runs, not only at the stop.
+afterbash() { CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/locked-tests.sh" 2>&1 >/dev/null <<<'{"tool_name":"Bash","tool_input":{"command":"python x.py"}}'; }
+out=$(afterbash); t "after Bash: a changed locked test is reported" [ $? = 2 ]
+t "after Bash: the report names the test and the undo" grep -q "tests/test_a.py" <<<"$out"
+git checkout -q HEAD -- tests/test_a.py
+afterbash >/dev/null; t "after Bash: untouched locked tests pass" [ $? = 0 ]
+echo 'def test_a(): pass' > tests/test_a.py
 g commit -qam "weaken" -m "Tests-First: sneaky"
 stopl; t "stop hook: a fake Tests-First trailer does not reset the lock" [ $? = 2 ]
 g reset -q --hard HEAD~1
@@ -1300,6 +1308,7 @@ rm .ai/plans/active/copy.md
 mkplan t "a works" "b allowed"; approve
 echo 'def test_a(): assert 1' > tests/test_a.py
 stopl; t "stop hook: relock window after owner approves changed criteria" [ $? = 0 ]
+afterbash >/dev/null; t "after Bash: relock window lets the tester rewrite locked tests" [ $? = 0 ]
 g add -A; g commit -qm "new round" -m "Tests-First: t v2"
 stopl; t "stop hook: the new approved round becomes the lock baseline" [ $? = 0 ]
 # Right after the Tests-First commit its tests are red by design: a stop with

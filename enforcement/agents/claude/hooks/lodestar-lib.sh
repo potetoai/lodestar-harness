@@ -121,6 +121,26 @@ lock_active() {
   active_tests_first >/dev/null
 }
 
+# Locked tests changed since the round that locked them, whatever tool
+# changed them (Edit, a Bash or Python script...). Sets lock_base (that
+# round, empty when no lock is in force), lock_list (its locked paths, an
+# array) and lock_touched (the changed ones, one per line); fails when none
+# changed. A relock window and owner-approved test fixes pass. The approval
+# windows are read only when a test changed: the hook after each shell
+# command stays cheap.
+locked_tests_changed() {
+  local t
+  lock_base='' lock_list=() lock_touched=''
+  ls .ai/plans/active/*.md >/dev/null 2>&1 && lock_base=$(active_tests_first) || return 1
+  mapfile -t lock_list < <(git show "$lock_base:.ai/test-lock" 2>/dev/null | lock_paths)
+  [ ${#lock_list[@]} -gt 0 ] || return 1
+  lock_touched=$(git diff --name-only "$lock_base" -- "${lock_list[@]}" 2>/dev/null)
+  [ -n "$lock_touched" ] || return 1
+  relock_window && { lock_base='' lock_list=() lock_touched=''; return 1; }
+  lock_touched=$(while IFS= read -r t; do test_fix_window "$t" || echo "$t"; done <<<"$lock_touched")
+  [ -n "$lock_touched" ]
+}
+
 # Files changed on this branch: uncommitted (untracked included) and committed
 # since the merge base with origin/HEAD, else main, else master. Fails when
 # no base is found.

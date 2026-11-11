@@ -69,11 +69,12 @@ registered() {
 }
 has_hooks() {
   local h f=.claude/settings.json
-  for h in lodestar-lib lint-file verify-before-stop protect-tests sensitive-gate guard-install approval-record critic-limit feedback-check ci-checks merge-pr pre-push; do [ -f ".claude/hooks/$h.sh" ] || return 1; done
+  for h in lodestar-lib lint-file verify-before-stop protect-tests locked-tests sensitive-gate guard-install approval-record critic-limit feedback-check ci-checks merge-pr pre-push; do [ -f ".claude/hooks/$h.sh" ] || return 1; done
   registered $f PreToolUse 'Edit|Write|MultiEdit|NotebookEdit' 'protect-tests\.sh' 'sensitive-gate\.sh' &&
     registered $f PreToolUse 'Bash|PowerShell' 'guard-install\.sh' &&
     registered $f PreToolUse 'Agent|Task' 'critic-limit\.sh' &&
     registered $f PostToolUse 'Edit|Write|MultiEdit' 'lint-file\.sh' &&
+    registered $f PostToolUse 'Bash|PowerShell' 'locked-tests\.sh' &&
     registered $f Stop '' 'verify-before-stop\.sh' 'feedback-check\.sh' &&
     registered $f UserPromptSubmit '' 'approval-record\.sh'
 }
@@ -86,13 +87,14 @@ git_pre_push() {
   [ -f "$pp" ] && grep -q 'pre-push\.sh' "$pp"
 }
 # Codex reads .codex/hooks.json and runs the same hooks through codex-hook.sh.
-codex_checks='protect-tests sensitive-gate guard-install lint-file verify-before-stop feedback-check approval-record'
+codex_checks='protect-tests sensitive-gate guard-install lint-file locked-tests verify-before-stop feedback-check approval-record'
 has_codex_hooks() {
   local h f=.codex/hooks.json
   for h in codex-hook.sh codex-patch.jq reminder-lib.sh codex-owner.jq; do [ -f ".claude/hooks/$h" ] || return 1; done
   registered $f PreToolUse apply_patch 'codex-hook\.sh protect-tests' 'codex-hook\.sh sensitive-gate' &&
     registered $f PreToolUse Bash 'codex-hook\.sh guard-install' &&
     registered $f PostToolUse apply_patch 'codex-hook\.sh lint-file' &&
+    registered $f PostToolUse Bash 'codex-hook\.sh locked-tests' &&
     registered $f Stop '' 'codex-hook\.sh verify-before-stop' 'codex-hook\.sh feedback-check' &&
     registered $f UserPromptSubmit '' 'codex-hook\.sh approval-record'
 }
