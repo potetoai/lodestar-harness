@@ -30,7 +30,7 @@ source: edits there apply to every project).
    plans and git; the file is gitignored). Start it with
    `Where: <worktree path>, branch <b>, runtime <claude|codex>` and mark a
    note that holds for one runtime only (e.g. "codex only"): another
-   worktree's session sees this file at its start. Then tell the
+   worktree's session is told about this file at its start. Then tell the
    owner: type `/clear` (it works from the phone too), then type "continue".
    A new session is told to read that file first. A hook also reminds you
    after `merge-pr.sh` merges a PR, and once the context passes 200k

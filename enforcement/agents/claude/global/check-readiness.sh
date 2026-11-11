@@ -42,7 +42,7 @@ if [ "$mode" != --prompt ]; then
     fi
     for f in "$w"/.ai/plans/active/*.md; do
       [ -f "$f" ] || continue
-      cmp -s "$f" ".ai/plans/active/${f##*/}" || has+=(".ai/plans/active/${f##*/}")
+      cmp -s "$f" "$me/.ai/plans/active/${f##*/}" || has+=(".ai/plans/active/${f##*/}")
     done
     [ ${#has[@]} -gt 0 ] || continue
     echo "Lodestar: other worktree $w (branch $b) has ${has[*]}: check it before starting the same task."
