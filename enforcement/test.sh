@@ -1534,6 +1534,21 @@ for c in "gh pr create --title x --body-file ok.md" "gh pr edit 5 --title y" "gh
          $'gh pr create -F - <<\'EOF\'\n'"$okt"$'\nEOF' $'gh pr create -F - <<-EOF\n\tLodestar route: BUILD_REVIEW risk=low\n\tLodestar review: pass, r, '"$qc"$'\n\tEOF' $'cat > h.md <<\'EOF\'\ngh pr create --fill\nEOF'; do
   gq "$c"; t "guard allows PR text: ${c%%$'\n'*}" [ $? = 0 ]
 done
+# gh runs where a leading cd went: changes are counted in that folder (seen in
+# a consuming project: cd ../other-worktree && gh pr create, blocked by the
+# session folder's 29 files).
+git -C "$q" worktree add -q -b docs/w "$tmp/gpr-w" main && mkdir -p "$tmp/gpr-w/.ai" && echo n > "$tmp/gpr-w/.ai/n.md" &&
+  git -C "$tmp/gpr-w" add -A && git -C "$tmp/gpr-w" -c user.name=t -c user.email=t@t commit -q -m one
+simple='gh pr create --body "Lodestar route: SIMPLE risk=low"'
+for c in "cd ../gpr-w && $simple" "cd \"$tmp/gpr-w\"; $simple" "(cd ../gpr-w && $simple)" "cd ../no-such-dir && $simple"; do
+  gq "$c"; t "guard counts changes where cd went: $c" [ $? = 0 ]
+done
+for c in "(cd ../gpr-w && ls) && $simple" "git commit -m \"x; cd ../gpr-w\" && $simple" \
+         $'git commit -m "$(cat <<\'EOF\'\nx\ncd ../gpr-w\nEOF\n)" && '"$simple"; do
+  gq "$c"; t "guard ignores a cd that does not reach gh: ${c%%$'\n'*}" [ $? = 2 ]
+done
+out=$(cd "$tmp/gpr-w" && bash "$here/agents/claude/hooks/guard-install.sh" 2>&1 <<<"$(jq -n --arg c "cd ../gpr && $simple" '{tool_input:{command:$c}}')")
+t "guard blocks after cd and names the measured branch" grep -q "Measured: branch fix/a in .*gpr," <<<"$out"
 out=$(cd "$q" && bash "$here/agents/claude/hooks/guard-install.sh" 2>&1 <<<'{"tool_input":{"command":"gh pr create --body \"**Lodestar route: BUILD_REVIEW risk=low**\""}}')
 t "guard names the malformed route line" grep -q "no valid route line: '\*\*Lodestar route" <<<"$out"
 LODESTAR_SKIP_HOOKS=1 bash "$here/agents/claude/hooks/guard-install.sh" 2>/dev/null <<<'{"tool_input":{"command":"pip install ruff"}}'
