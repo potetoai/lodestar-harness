@@ -226,14 +226,14 @@ files became yours when it created them.
    (`{"hooks": {}}` or `{}`).
 
    ```bash
-   drop_hooks .claude/settings.json '\.claude/hooks/(protect-tests|sensitive-gate|critic-limit|guard-install|lint-file|verify-before-stop|feedback-check|approval-record)\.sh'
+   drop_hooks .claude/settings.json '\.claude/hooks/(protect-tests|locked-tests|sensitive-gate|critic-limit|guard-install|lint-file|verify-before-stop|feedback-check|approval-record)\.sh'
    [ -f .codex/hooks.json ] && drop_hooks .codex/hooks.json '\.claude/hooks/codex-hook\.sh'
    ```
 
 2. `[managed]` hook scripts and CI:
 
    ```bash
-   cd .claude/hooks && rm -f lodestar-lib.sh lint-file.sh verify-before-stop.sh protect-tests.sh sensitive-gate.sh guard-install.sh approval-record.sh critic-limit.sh feedback-check.sh ci-checks.sh doctor.sh merge-pr.sh pre-push.sh reminder-lib.sh codex-owner.jq codex-hook.sh codex-patch.jq && cd ../..
+   cd .claude/hooks && rm -f lodestar-lib.sh lint-file.sh verify-before-stop.sh protect-tests.sh locked-tests.sh sensitive-gate.sh guard-install.sh approval-record.sh critic-limit.sh feedback-check.sh ci-checks.sh doctor.sh merge-pr.sh pre-push.sh reminder-lib.sh codex-owner.jq codex-hook.sh codex-patch.jq && cd ../..
    git rm .github/workflows/ci.yml   # or keep it as your own CI
    ```
 
