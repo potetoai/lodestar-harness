@@ -431,6 +431,18 @@ t "stale-plan age can be set" bash -c '! grep -q "plans in .ai/plans/active/" <<
 git -C "$tmp/py" rm -q .ai/plans/active/old.md .ai/plans/active/new.md; rm "$tmp/py/.ai/plans/active/draft.md"; pc "$(date +%FT%T)"
 out=$(CLAUDE_PROJECT_DIR=$tmp/py bash "$g" --prompt </dev/null)
 t "per-prompt gate does not repeat the handoff" bash -c '! grep -q handoff <<<"$1"' _ "$out"
+# Another worktree of the same repo with a handoff or its own active plan.
+git -C "$tmp/py" -c user.name=t -c user.email=t@t commit -q --allow-empty --no-verify -m wt
+git -C "$tmp/py" worktree add -q -b side "$tmp/pyside" 2>/dev/null
+mkdir -p "$tmp/pyside/.ai/plans/active" "$tmp/py/.ai/plans/active"
+echo "next: k2" > "$tmp/pyside/.ai/handoff.md"; echo '# k2' > "$tmp/pyside/.ai/plans/active/k2.md"
+echo '# same' > "$tmp/pyside/.ai/plans/active/same.md"; cp "$tmp/pyside/.ai/plans/active/same.md" "$tmp/py/.ai/plans/active/"
+out=$(remind "$tmp/py")
+t "global hook names another worktree's handoff and active plan" bash -c 'grep -q "other worktree .*pyside (branch side) has .ai/handoff.md.*active/k2.md: check it" <<<"$1"' _ "$out"
+t "global hook skips an active plan both worktrees hold unchanged" bash -c '! grep -q "same.md" <<<"$1"' _ "$out"
+out=$(CLAUDE_PROJECT_DIR=$tmp/py bash "$g" --prompt </dev/null)
+t "per-prompt gate does not repeat other worktrees" bash -c '! grep -q "other worktree" <<<"$1"' _ "$out"
+git -C "$tmp/py" worktree remove --force "$tmp/pyside"; rm "$tmp/py/.ai/plans/active/same.md"
 out=$(bash "$here/bootstrap.sh" "$tmp/py" --stack python)
 t "bootstrap does not warn about the ignored handoff" bash -c '! grep -q WARNING <<<"$1"' _ "$out"
 p=$tmp/nonl; mkdir -p "$p"; git -C "$p" init -q; printf 'dist' > "$p/.gitignore"

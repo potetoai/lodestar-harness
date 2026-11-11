@@ -254,3 +254,8 @@ Every rule:
   plan to `completed`, it tells the agent once per PR or plan to write the
   handoff and offer the owner `/clear`. Only a command counts, not quoted text;
   subagents are left out.
+- At session start the global readiness hook (`check-readiness.sh`) names
+  each other worktree of the repo that has `.ai/handoff.md` or an active plan
+  this worktree does not hold unchanged, one line each, so two sessions (or
+  runtimes) do not start the same task unaware. The handoff starts with a
+  `Where:` line (worktree, branch, runtime).
