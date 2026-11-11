@@ -27,7 +27,10 @@ source: edits there apply to every project).
    session holds several finished tasks or was auto-compacted, overwrite
    `.ai/handoff.md` (English, short: state, open items, next step, do-not-do,
    and the `Lodestar route:` line of work in progress; history stays in
-   plans and git; the file is gitignored), then tell the
+   plans and git; the file is gitignored). Start it with
+   `Where: <worktree path>, branch <b>, runtime <claude|codex>` and mark a
+   note that holds for one runtime only (e.g. "codex only"): another
+   worktree's session is told about this file at its start. Then tell the
    owner: type `/clear` (it works from the phone too), then type "continue".
    A new session is told to read that file first. A hook also reminds you
    after `merge-pr.sh` merges a PR, and once the context passes 200k

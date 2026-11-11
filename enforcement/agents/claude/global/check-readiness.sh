@@ -22,6 +22,32 @@ if [ "$mode" != --prompt ] && [ -f .ai/handoff.md ]; then
   echo "Lodestar: read .ai/handoff.md first; the last session wrote where it stopped."
   echo "When the owner says \"continue\", continue from its next step."
 fi
+# Other worktrees of this repo (another session, an orchestrator's worktree
+# for another runtime) may hold a handoff or an active plan for the same task.
+# One line each; an active plan this worktree holds unchanged is not news.
+if [ "$mode" != --prompt ]; then
+  me=$(git rev-parse --show-toplevel 2>/dev/null)
+  git worktree list --porcelain 2>/dev/null | tr -d '\r' | awk '
+    /^worktree / { w = substr($0, 10); b = "detached" }
+    /^branch / { b = substr($0, 8); sub(/^refs\/heads\//, "", b) }
+    /^$/ { if (w != "") print w "\t" b; w = "" }
+    END { if (w != "") print w "\t" b }' |
+  while IFS=$'\t' read -r w b; do
+    [ "${w,,}" = "${me,,}" ] && continue
+    [ -d "$w/.ai" ] || continue
+    has=()
+    if [ -f "$w/.ai/handoff.md" ]; then
+      d=$(date -r "$w/.ai/handoff.md" +%F 2>/dev/null) && d=" ($d)"   # macOS date -r takes no file: no date
+      has+=(".ai/handoff.md${d}")
+    fi
+    for f in "$w"/.ai/plans/active/*.md; do
+      [ -f "$f" ] || continue
+      cmp -s "$f" "$me/.ai/plans/active/${f##*/}" || has+=(".ai/plans/active/${f##*/}")
+    done
+    [ ${#has[@]} -gt 0 ] || continue
+    echo "Lodestar: other worktree $w (branch $b) has ${has[*]}: check it before starting the same task."
+  done
+fi
 # Lodestar bug inbox (rules/enforcement.md section 8), on this machine only:
 # each project session adds its path to projects.txt; the lodestar-harness
 # session lists `reported` lodestar- rows of their feedback logs that are not
