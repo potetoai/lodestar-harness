@@ -51,7 +51,10 @@ nor the failure changed since the last hold, the stop ends (for example while
 the agent waits for a tests-first tester). After that, stops on the same
 files do not run `verify` again (the agent waiting for the owner's approval
 or answering questions), even if the failure would now differ; a file change
-runs it and can hold again. CI stays the gate. Under a Tests-First lock
+runs it and can hold again. Notes (`.ai/`, `docs/` at the project root,
+`*.md`) changed since count as the same files, so a failure the branch cannot
+fix (another branch's install in the folder, a broken tool) does not hold
+again at each plan edit. CI stays the gate. Under a Tests-First lock
 the hold message says how to stop mid-build: write `.ai/handoff.md`, stop
 again.
 
@@ -104,7 +107,7 @@ checked by the onboarding report and review.
 
 | # | Item | Level |
 |---|---|---|
-| T1–T3 | `make`, `jq` installed; project is a git repository | Required |
+| T1–T3 | `make`, `jq` installed; project is a git repository (a `jq` found but denied by a sandbox stops doctor with exit 2 before any check: not a project failure) | Required |
 | A1 | `AGENTS.md`: short map, no `[placeholder]` lines | Required |
 | A1b | No `CLAUDE.md` with its own text (Claude then skips `AGENTS.md`); only the line `@AGENTS.md` is allowed | Required |
 | A2 | `.ai/project.md` filled in, no `[placeholder]` lines | Required |

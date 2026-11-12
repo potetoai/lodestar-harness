@@ -317,6 +317,8 @@ Rebase may rewrite commit history.
 
 For isolated agent branches, rebase may be used when the workflow explicitly requires it.
 
+A branch already pushed is brought up to date by merging the default branch into it (`git fetch origin && git merge origin/main`: a new commit, a plain push), never by a rebase, which needs a force-push and so the owner's approval (section 24). A handoff or plan says "update from main", not "rebase on main".
+
 Prefer the least disruptive approach.
 
 ---
