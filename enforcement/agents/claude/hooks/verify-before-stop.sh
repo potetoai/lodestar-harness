@@ -28,8 +28,11 @@ esac
 # Hold once per state. When the files and the failure (digits ignored, so
 # timings do not count) are the same as at the last hold, nothing was done
 # since: let the stop end instead of sending the agent back again (for
-# example while it waits for a tests-first tester). Any change holds again.
-# Without git there is no memory and every failed stop holds. CI is the gate.
+# example while it waits for a tests-first tester). Notes (see docs_only)
+# changed since count as the same files: a failure the agent cannot fix from
+# this branch (another branch's install, a broken tool) does not hold it again
+# at every plan edit. Any other change holds again. Without git there is no
+# memory and every failed stop holds. CI is the gate.
 held=$(git rev-parse --absolute-git-dir 2>/dev/null) && held=$held/lodestar-verify-held
 state() { # the working files (tracked and untracked, not ignored) as a tree, the failure
   # A copy of the index, so the real one is untouched. A commit does not change
@@ -249,8 +252,17 @@ if [ -n "$held" ]; then
   skip_passed "$passed" && finish
   [ $target = verify-quick ] && skip_passed "$quick" && finish
 fi
-if [ -n "$held" ] && [ -f "$released" ] && [ "$(cat "$released")" = "$(state "$target" | git hash-object --stdin)" ]; then
-  echo "Lodestar: 'make $target' failed on these same files and the stop was let go; not run again until a file changes." >&2
+# same_files FILE ID: FILE holds a tree and ID (two lines); the ID matches and
+# the tree is the one now, or only notes changed since.
+same_files() {
+  local was id
+  [ -f "$1" ] || return 1
+  { read -r was; read -r id; } < "$1"
+  [ "$id" = "$2" ] && { [ "$was" = "$tree" ] || docs_only "$was" "$tree"; }
+}
+[ -n "$held" ] && tree=$(state "" | head -n1)
+if [ -n "$held" ] && same_files "$released" "$target"; then
+  echo "Lodestar: 'make $target' failed on these same files (notes aside) and the stop was let go; not run again until a code file changes." >&2
   exit 0
 fi
 if [ $target = verify-quick ]; then
@@ -261,13 +273,18 @@ fi || {
   [ $target = verify ] && rm -f "${passed:-/nonexistent}"
   rm -f "${quick:-/nonexistent}"
   if [ -n "$held" ]; then
-    now=$(state "$target $out" | git hash-object --stdin)
-    if [ -n "$now" ] && [ "$(cat "$held" 2>/dev/null)" = "$now" ]; then
-      echo "Lodestar: 'make $target' still fails, nothing changed since the last hold; stop allowed." >&2
-      state "$target" | git hash-object --stdin > "$released"
+    tree=$(state "" | head -n1)  # again: verify may have formatted files
+    fid=$(tr -d '0-9' <<<"$target $out" | git hash-object --stdin)
+    if same_files "$held" "$fid"; then
+      echo "Lodestar: 'make $target' still fails, nothing but notes changed since the last hold; stop allowed." >&2
+      printf '%s
+%s
+' "$tree" "$target" > "$released"
       exit 0
     fi
-    echo "$now" > "$held"; rm -f "$released"
+    printf '%s
+%s
+' "$tree" "$fid" > "$held"; rm -f "$released"
   fi
   echo "Not done yet: 'make $target' fails. Fix the problems below, then finish:" >&2
   echo "$out" | tail -n 60 >&2

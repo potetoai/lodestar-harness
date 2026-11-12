@@ -32,6 +32,14 @@ if grep -qi microsoft /proc/version 2>/dev/null && [[ $(pwd) == /mnt/[a-z]/* ]];
     command -v "$tool" >/dev/null 2>&1 || wrong_bash "this is WSL in a Windows folder, without $tool"
   done
 fi
+# A sandbox (for example Codex's) may find jq on PATH but deny running it, so
+# every jq check would fail on a healthy project. Say so instead.
+if command -v jq >/dev/null 2>&1 && ! jq -n 1 >/dev/null 2>&1; then
+  echo "doctor: jq is at $(command -v jq) but cannot run here (a sandbox may deny it); nothing was checked."
+  echo "Run doctor outside the sandbox (or with the sandbox's approval for jq). The hooks need jq too."
+  echo "This is not a project failure: do not start onboarding for it."
+  exit 2
+fi
 
 fails=0
 ok()   { [ $quiet = 1 ] || echo "✅ $1  $2"; }

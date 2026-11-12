@@ -39,6 +39,10 @@ mkdir "$tmp/nobin"
 out=$(PATH="$tmp/nobin" "$BASH" "$here/agents/claude/hooks/doctor.sh" "$p"); rc=$?
 t "doctor stops with exit 2 under a bash without grep" [ $rc = 2 ]
 t "doctor names the wrong bash and checks nothing" bash -c 'grep -q "wrong bash" <<<"$1" && ! grep -q "❌" <<<"$1"' _ "$out"
+mkdir "$tmp/denyjq"; printf '#!/bin/sh\nexit 126\n' > "$tmp/denyjq/jq"; chmod +x "$tmp/denyjq/jq"
+out=$(PATH="$tmp/denyjq:$PATH" bash "$here/agents/claude/hooks/doctor.sh" "$p"); rc=$?
+t "doctor stops with exit 2 when jq is found but cannot run (sandbox)" [ $rc = 2 ]
+t "doctor names the jq that cannot run and checks nothing" bash -c 'grep -q "cannot run here" <<<"$1" && ! grep -q "❌" <<<"$1"' _ "$out"
 
 # 2. Bootstrap, then a second run changes nothing.
 p=$tmp/py; mkdir -p "$p"; git -C "$p" init -q
@@ -224,6 +228,18 @@ hold "test_b failed"; t "stop hook holds again after a pass" [ $? = 2 ]
 rm "$p/a.txt"
 hold "test_b failed"; t "stop hook holds after a file is deleted" [ $? = 2 ]
 hold "test_b failed"; t "stop hook lets go once the deletion was held" [ $? = 0 ]
+# Notes (.ai/, docs/, *.md) changed since a hold or a release are the same
+# files: a failure the branch cannot fix is not held again at each plan edit.
+mkdir -p "$p/.ai"; echo n > "$p/.ai/plan.md"
+hold "test_b failed"; t "stop hook: a note changed after a release does not hold" [ $? = 0 ]
+echo x > "$p/a.txt"
+hold "test_b failed"; t "stop hook holds after a code file changes" [ $? = 2 ]
+echo n2 > "$p/.ai/plan.md"
+hold "test_b failed"; t "stop hook lets go when only a note changed since the hold" [ $? = 0 ]
+echo n3 > "$p/.ai/plan.md"
+hold "test_c failed"; t "stop hook: a note changed after a release does not rerun verify" [ $? = 0 ]
+echo y > "$p/a.txt"
+hold "test_b failed"; t "stop hook holds again after a code file changes" [ $? = 2 ]
 # A pass is remembered: with no change since, the next stop skips make verify
 # (it takes minutes in real projects); any change runs it again.
 c=$tmp/passcache; mkdir -p "$c"; git -C "$c" init -q
