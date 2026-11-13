@@ -90,7 +90,8 @@ Done when: the owner has decided.
   every project? **Yes, this repo only** (answered 2026-11-13).
 - **Q2.** The names stay in git history. Leave it (default), or does the
   owner want history rewritten? That is a forced push on a public repo and
-  breaks every PR link; this plan advises against it.
+  breaks every PR link; this plan advises against it. **Leave it**
+  (answered 2026-11-13).
 
 ## 6. Not in scope
 
@@ -108,3 +109,4 @@ Done when: the owner has decided.
 | Date | Decision | Reason |
 |---|---|---|
 | 2026-11-13 | Owner: local name check yes, in this repo only | This is the one public repo; the projects are private, so a check there guards nothing |
+| 2026-11-13 | Owner: git history is left as it is | A rewrite is a forced push on a public repo and breaks every PR link; the names leave the current files only |
