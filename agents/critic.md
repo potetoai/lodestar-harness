@@ -45,6 +45,12 @@ written, or names the fixes. A change the owner asks for or agrees to (also
 a criteria change during the build, `rules/testing.md`) gets one more
 narrowed run, whose findings also go to the owner.
 
+From the fourth run on, a run reports only BLOCKER and MAJOR findings
+(Output). Each MINOR one goes in one line, `- Minor, past run 3: ...`, and
+is kept as written: the author does not change the criteria for it, so it
+needs no further run. A fix the author still wants goes into the steps or
+the build, not the criteria.
+
 The `critic-limit.sh` hook enforces this: it counts the run lines (Output)
 of the plan the brief names and blocks a run past 3, plus one for each owner
 approval of the plan's criteria (the first one too: it covers the next
@@ -53,18 +59,20 @@ change, whose run comes before the new approval) and each "duyệt critic
 hook; it approves no criteria; it allows the next run even when past runs
 exceed the limit; the plan's name works with or without its date, and the
 block message prints the line to type). Ask for it only after a fix the
-owner asked for. The brief starts "You are the critic" and names the plan by its
+owner asked for, of a BLOCKER or MAJOR finding. The brief starts "You are the critic" and names the plan by its
 `.ai/plans/active/` path, so the hook sees the run.
 
 A full run, as if no review existed, is required when:
 
 - the plan has no earlier review;
 - the change touches stored data that the earlier criteria did not;
-- more than half of the criteria changed;
+- more than half of the criteria changed (count criteria, not lines);
 - the owner asks for it.
 
 A narrowed run that meets one of these cases says so in its report, and a
-full run follows.
+full run follows. The dispatcher checks these cases before it dispatches, so
+the last run the limit allows is already the right kind: the run limit
+still holds after it.
 
 The run adds one line under `## Criteria review` that says which kind of run
 it was (full or narrowed) and what it did not read, so the owner sees it
@@ -93,9 +101,19 @@ before approving. It starts `- Run <n> (full, <date>):` or
 ## Output
 
 Write the findings into the plan under `## Criteria review`, one line each:
-the problem, the proposed fix, and what the author did ("fixed", or "kept,
+the severity, the problem, the proposed fix, and what the author did ("fixed", or "kept,
 because ...", or at the run limit "left to the owner (run limit)"). With nothing to fix, write `- No findings.` The author then
 shows the owner the updated criteria and the review lines.
+
+Severity, first word of the line:
+
+- BLOCKER: could lose or corrupt stored data, opens a security hole, or a
+  criterion cannot pass as written (it contradicts another criterion or a
+  locked test).
+- MAJOR: a missing behavior or a wrong claim that would let a real defect
+  pass the tests.
+- MINOR: wording, records, a clearer test or check; nothing breaks if it
+  stays.
 
 Reviewed criteria. Once every finding is answered, the author ends the
 section with the line that names the criteria the review covers:
