@@ -56,13 +56,14 @@ phase 3).
 Report: the table, the five sessions with the most repeats, and how many of
 the 309 a limit of 2 and of 3 would have let go.
 
-Done when: the table is in the progress log and the owner has answered Q1.
+Done when: the table is in the progress log, and the report says whether
+the count supports the limit of 3 (Q1) or asks the owner to change it.
 
 ### Phase 1: Limit the repeats
 
 In `enforcement/agents/claude/hooks/verify-before-stop.sh`: keep a count
 beside the held state. When the failure id equals the last hold's and the
-count has reached the limit (Q1), let the stop go with one line that names
+count has reached the limit (3, Q1), let the stop go with one line that names
 the target and says the agent must tell the owner the failure is still
 there. Any different failure id, or a pass, resets the count. The locked
 Tests-First path and the unpushed-commits path keep their own once-per-state
@@ -102,8 +103,8 @@ Done when: gate S2-1 is met or stopped and the owner has seen the count.
 
 ## 5. Open questions
 
-- **Q1.** Limit of 2 or 3 holds on the same failure (parent Q4)? Phase 0
-  shows what each would have let go.
+- **Q1.** Limit of 2 or 3 holds on the same failure (parent Q4)? **3**
+  (answered 2026-11-13), unless phase 0 shows otherwise: then ask again.
 
 ## 6. Not in scope
 
@@ -123,3 +124,4 @@ Done when: gate S2-1 is met or stopped and the owner has seen the count.
 
 | Date | Decision | Reason |
 |---|---|---|
+| 2026-11-13 | Owner: limit 3 holds on the same failure, open to change after phase 0 | In the worst session 3 saves 23 of 26 turns and 2 saves 24; 3 leaves one more try at a real fix |

@@ -44,14 +44,14 @@ Done when: the table is logged.
 
 ### Phase 1: Keep the rhythm
 
-- A release day: one fixed weekday (owner picks, Q2). Merged changes wait on
+- A release day: one fixed weekday (owner picks, Q3). Merged changes wait on
   main; the handoff keeps a line "Unreleased: PR numbers".
 - The release PR text says `Lodestar release: batch` or
   `Lodestar release: urgent, <reason from the rule's list>`.
 - When the owner asks for an early release, the agent says once what it
   costs (three upgrade sessions, about 1M weighted units) and the next
   release day, then follows the owner's choice.
-- If Q1 is yes: a step in `.github/workflows/test.yml` (or a small script it
+- Q1 is yes (owner, 2026-11-13): a step in `.github/workflows/test.yml` (or a small script it
   calls) fails a PR that raises `enforcement/VERSION` when the last raise on
   main is under 7 days old and the PR text has no urgent line. Test it in
   `enforcement/test.sh` style with a fake history.
@@ -62,7 +62,7 @@ Done when: the table is logged.
   Router in this plan.
 
 Done when: the release-day line is in `enforcement/README.md` section 3, the
-check (if Q1 is yes) is merged, and gate S1-1 is set.
+check is merged, and gate S1-1 is set.
 
 ### Phase 2: Handoff
 
@@ -89,12 +89,15 @@ Done when: the 2026-12-09 count carries the line and the owner has seen it.
 |---|---|---|---|---|---|
 | S1-1 Rhythm kept | `VERSION` raises on main, urgent ones apart (`git log -- enforcement/VERSION`, PR text) | 14 days after phase 1 merges | 2026-11-27 | 2026-12-18 | waiting |
 | S1-2 Handoff short | Lines in `.ai/handoff.md` at each session end (read by hand, 5 sessions) | 5 sessions | 2026-11-27 | 2026-12-18 | waiting |
-| S1-3 Share | This repo's share of cost, 14 days (`scripts/usage-report.py`) | 14 days after phase 1 merges | 2026-12-09 | 2026-12-30 | waiting (11.2% on 2026-11-13) |
+| S1-3 Share | This repo's share of cost, 14 days (`scripts/usage-report.py`); target 5%, 10% if 5% proves too hard | 14 days after phase 1 merges | 2026-12-09 | 2026-12-30 | waiting (11.2% on 2026-11-13) |
 
 ## 5. Open questions
 
-- **Q1.** CI check on the release rhythm (parent Q1): yes or no?
-- **Q2.** Which weekday is release day, and the share target (parent Q2)?
+- **Q1.** CI check on the release rhythm (parent Q1): yes or no? **Yes**
+  (answered 2026-11-13).
+- **Q2.** The share target (parent Q2)? **5%; 10% if 5% proves too hard**
+  (answered 2026-11-13).
+- **Q3.** Which weekday is release day? Still open.
 
 ## 6. Not in scope
 
@@ -112,3 +115,4 @@ Done when: the 2026-12-09 count carries the line and the owner has seen it.
 
 | Date | Decision | Reason |
 |---|---|---|
+| 2026-11-13 | Owner: CI check on the release rhythm, yes; share target 5%, 10% if 5% proves too hard | The text rule of 2026-10-19 was not kept. The target is a signal at the monthly count, not a block |
