@@ -1295,6 +1295,7 @@ mkplan 2026-10-31-share-x "s works"; pl=.ai/plans/active/2026-10-31-share-x.md; 
 brief="You are the critic. Plan: .ai/plans/active/2026-10-31-share-x.md"
 out=$(CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/critic-limit.sh" 2>&1 >/dev/null <<<"$(jq -n --arg b "$brief" '{tool_input:{subagent_type:"critic",prompt:$b}}')")
 t "the critic block message names the line the owner types" grep -q "approve critic share-x$" <<<"$out"
+t "the critic block message says a MINOR finding past run 3 needs no run" grep -q "MINOR finding past run 3 stays as written" <<<"$out"
 CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/approval-record.sh" <<<'{"prompt":"duyệt critic 2026-10-31-share-x"}' >/dev/null
 t "'duyệt critic' with the dated name records the run count" grep -q " critic-run .ai/plans/active/2026-10-31-share-x.md 13$" .ai/approvals.log
 crit "$brief"; t "one 'duyệt critic' allows the next run past old runs" [ $? = 0 ]
