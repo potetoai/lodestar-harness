@@ -45,11 +45,12 @@ written, or names the fixes. A change the owner asks for or agrees to (also
 a criteria change during the build, `rules/testing.md`) gets one more
 narrowed run, whose findings also go to the owner.
 
-From the fourth run on, a run reports only BLOCKER and MAJOR findings
-(Output). Each MINOR one goes in one line, `- Minor, past run 3: ...`, and
-is kept as written: the author does not change the criteria for it, so it
-needs no further run. A fix the author still wants goes into the steps or
-the build, not the criteria.
+From the fourth run on, only BLOCKER and MAJOR findings (Output) may change
+the criteria. A MINOR finding is still written as usual, and the author's
+answer is "kept as written (past run 3)": the criteria do not change for it,
+so it needs no further run. A fix the author still wants goes into the steps
+or the build. Severity only sorts findings: the narrowed-run limits above,
+and their data loss and security exception, still decide what a run raises.
 
 The `critic-limit.sh` hook enforces this: it counts the run lines (Output)
 of the plan the brief names and blocks a run past 3, plus one for each owner
@@ -58,9 +59,10 @@ change, whose run comes before the new approval) and each "duyệt critic
 <plan name>" the owner types in their own message (recorded by the approval
 hook; it approves no criteria; it allows the next run even when past runs
 exceed the limit; the plan's name works with or without its date, and the
-block message prints the line to type). Ask for it only after a fix the
-owner asked for, of a BLOCKER or MAJOR finding. The brief starts "You are the critic" and names the plan by its
-`.ai/plans/active/` path, so the hook sees the run.
+block message prints the line to type). Ask for it only after the owner
+asks for a fix to a BLOCKER or MAJOR finding. The brief starts "You are the
+critic" and names the plan by its `.ai/plans/active/` path, so the hook sees
+the run.
 
 A full run, as if no review existed, is required when:
 
@@ -70,9 +72,9 @@ A full run, as if no review existed, is required when:
 - the owner asks for it.
 
 A narrowed run that meets one of these cases says so in its report, and a
-full run follows. The dispatcher checks these cases before it dispatches, so
-the last run the limit allows is already the right kind: the run limit
-still holds after it.
+full run follows. The dispatcher checks these cases before it dispatches the
+last run the limit allows: when one applies, that run is full, and no extra
+run follows it.
 
 The run adds one line under `## Criteria review` that says which kind of run
 it was (full or narrowed) and what it did not read, so the owner sees it
