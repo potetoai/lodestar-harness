@@ -49,14 +49,14 @@ plans.
 
 Done when: merged.
 
-### Phase 2: A check that keeps them out (if Q1 is yes)
+### Phase 2: A check that keeps them out
 
 The names cannot sit in CI or in a tracked file. A local check reads
 `.ai/private-names.txt` (gitignored, one name per line) and refuses a commit
 or a `gh pr create` whose text or staged diff holds one; with no such file
 it does nothing. It belongs in this repo's own `.claude/` hooks (a safety
-file: owner's typed merge approval), not in the project template, unless
-the owner wants projects to have it too.
+file: owner's typed merge approval), not in the project template (Q1: this
+repo only).
 
 Done when: merged, with a test that uses a fake name.
 
@@ -87,7 +87,7 @@ Done when: the owner has decided.
 ## 5. Open questions
 
 - **Q1.** A local name check (parent Q3): yes or no, and only here or in
-  every project?
+  every project? **Yes, this repo only** (answered 2026-11-13).
 - **Q2.** The names stay in git history. Leave it (default), or does the
   owner want history rewritten? That is a forced push on a public repo and
   breaks every PR link; this plan advises against it.
@@ -107,3 +107,4 @@ Done when: the owner has decided.
 
 | Date | Decision | Reason |
 |---|---|---|
+| 2026-11-13 | Owner: local name check yes, in this repo only | This is the one public repo; the projects are private, so a check there guards nothing |

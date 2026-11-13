@@ -70,13 +70,13 @@ the window.
 
 | # | File | What | Changes safety files | Starts |
 |---|---|---|---|---|
-| 1 | `plans/active/steady-1-own-cost.md` | Release rhythm, handoff, the harness's share of cost | only if Q1 is yes | now |
+| 1 | `plans/active/steady-1-own-cost.md` | Release rhythm, handoff, the harness's share of cost | yes (CI check, Q1) | now |
 | 2 | `plans/active/steady-2-stop-hook.md` | Stop-hook repeats; a handoff-length note | yes | now (phase 0 reads only) |
 | 3 | `plans/active/steady-3-test-suite.md` | Split `enforcement/test.sh`, run one part, fixture guard | yes | after child 2's fix merges |
 | 4 | `plans/active/steady-4-subagent-cost.md` | Subagent cost, round 2: run counts and output | no | 2026-11-27 (gate S4-0) |
 | 5 | `plans/active/steady-5-task-cost.md` | Small-task cost, reads, base context, plugins | no | phase 0 now; plugin step after 2026-11-24 |
 | 6 | `plans/active/steady-6-project-fit.md` | Does it pay, per kind of project; run-time checks | no | 2026-12-09 (monthly count) |
-| 7 | `plans/active/steady-7-plan-hygiene.md` | Project names out of tracked files; closed phases out of active plans | only if Q3 is yes | now for completed plans; active ones after 2026-11-26 |
+| 7 | `plans/active/steady-7-plan-hygiene.md` | Project names out of tracked files; closed phases out of active plans | yes (local name check, Q3) | now for completed plans; active ones after 2026-11-26 |
 
 Order and what may run side by side:
 
@@ -100,7 +100,7 @@ Counted with the section 2 command over the 14 days before each check.
 | Measure | Now | Target | First check |
 |---|---|---|---|
 | Template releases | 11 in 6 days | at most 1 per 7 days, urgent ones counted apart | 2026-11-27 |
-| This repo's share of cost | 11.2% | owner sets it (Q2); proposed 5% | 2026-12-09 |
+| This repo's share of cost | 11.2% | 5%; 10% if 5% proves too hard (Q2) | 2026-12-09 |
 | Turns sent back by a Stop hook | 1.7% | 0.8% or less | 14 days after child 2 reaches the projects |
 | Subagent share of cost | 30.2% | set after child 4 phase 0 | 2026-12-11 |
 | Handoff here | 68 lines | 30 lines or fewer | each session |
@@ -120,18 +120,20 @@ Counted with the section 2 command over the 14 days before each check.
   for critic and reviewer (dropped 2026-10-12), call budget in briefs
   (dropped 2026-10-12), Router card and brief rewrite (dropped 2026-10-12).
 
-## 6. Open questions
+## 6. Open questions (answered 2026-11-13)
 
 - **Q1 (child 1).** Should CI in this repo refuse a second `VERSION` raise
   within 7 days unless the PR text carries an urgent reason? The text rule of
-  2026-10-19 was not kept.
+  2026-10-19 was not kept. **Yes.**
 - **Q2 (child 1).** Target for this repo's share of cost: 5%, or another
-  number?
+  number? **5% for now; 10% if 5% proves too hard.** A signal read at the
+  monthly count, not a block on work.
 - **Q3 (child 7).** A local check for project names before a commit, read
   from a gitignored list? The names cannot be listed in CI without
-  publishing them.
+  publishing them. **Yes, in this repo only** (the projects are private).
 - **Q4 (child 2).** How many times may the same failure send the agent back
-  in one session before the stop is let go: 2 or 3?
+  in one session before the stop is let go: 2 or 3? **3**, unless child 2's
+  phase 0 count shows otherwise.
 
 ## 7. How to start a child
 
@@ -151,3 +153,4 @@ report." The agent routes the phase through the Router as usual.
 |---|---|---|
 | 2026-11-13 | One parent with seven children instead of one long plan | Owner hands each child to a different agent; an agent reads one child and section 2 here |
 | 2026-11-13 | Children 4 and 6 wait for data gates | The critic rule changed on 2026-11-13; counting now would mix old and new behaviour |
+| 2026-11-13 | Owner answered Q1-Q4: CI check on the release rhythm yes; share target 5% (10% if too hard); local name check yes, this repo only; Stop-hook limit 3 | Owner agreed with the recommendations. The text rule on releases was not kept; 3 holds saves nearly what 2 does (23 against 24 turns in the worst session) and leaves one more try at a real fix |
