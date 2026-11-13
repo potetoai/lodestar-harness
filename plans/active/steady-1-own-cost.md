@@ -44,7 +44,7 @@ Done when: the table is logged.
 
 ### Phase 1: Keep the rhythm
 
-- A release day: one fixed weekday (owner picks, Q3). Merged changes wait on
+- A release day: Saturday (owner, 2026-11-13, Q3). Merged changes wait on
   main; the handoff keeps a line "Unreleased: PR numbers".
 - The release PR text says `Lodestar release: batch` or
   `Lodestar release: urgent, <reason from the rule's list>`.
@@ -97,7 +97,7 @@ Done when: the 2026-12-09 count carries the line and the owner has seen it.
   (answered 2026-11-13).
 - **Q2.** The share target (parent Q2)? **5%; 10% if 5% proves too hard**
   (answered 2026-11-13).
-- **Q3.** Which weekday is release day? Still open.
+- **Q3.** Which weekday is release day? **Saturday** (answered 2026-11-13).
 
 ## 6. Not in scope
 
@@ -116,3 +116,4 @@ Done when: the 2026-12-09 count carries the line and the owner has seen it.
 | Date | Decision | Reason |
 |---|---|---|
 | 2026-11-13 | Owner: CI check on the release rhythm, yes; share target 5%, 10% if 5% proves too hard | The text rule of 2026-10-19 was not kept. The target is a signal at the monthly count, not a block |
+| 2026-11-13 | Owner: release day is Saturday | Owner's choice; merged changes wait on main until then, urgent releases apart |
