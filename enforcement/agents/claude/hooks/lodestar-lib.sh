@@ -154,19 +154,34 @@ branch_changed_files() {
     git -c core.quotepath=off ls-files --others --exclude-standard; } 2>/dev/null | sort -u
 }
 
-# Relock window: the owner approved changed criteria after the last valid
-# Tests-First round, so the tester may rewrite locked tests until the new
-# round is committed. Without a fresh owner approval it never opens: criteria
-# already in the approvals log of that round (a copy of the approved plan,
-# or a plan put back to an earlier approved version) do not count.
+# Criteria hashes that valid Tests-First rounds up to revision $1 (default
+# HEAD) carried: each plan a round changed, approved at that round. A round
+# uses up the approval of the criteria it carries. Criteria no round carried
+# stay fresh, also after another plan's round: each plan gets its own round.
+round_hashes() {
+  local c p
+  for c in $(git log --format=%H --grep='^Tests-First:' "${1:-HEAD}" -- 2>/dev/null); do
+    while IFS= read -r p; do
+      [[ $p == .ai/plans/*.md ]] && plan_approved_at "$c" "$p" || continue
+      git show "$c:$p" 2>/dev/null | criteria_hash
+    done < <(git -c core.quotepath=off diff-tree --root --no-commit-id --name-only -r "$c")
+  done
+}
+
+# Relock window: an active plan holds owner-approved criteria that no valid
+# Tests-First round carried yet (round_hashes), so the tester may rewrite
+# locked tests until that plan's round is committed. Without a fresh owner
+# approval it never opens: criteria a round already carried (a copy of the
+# approved plan, or a plan put back to an earlier approved version) do not
+# count.
 relock_window() {
-  local c p now then log
-  c=$(last_valid_tests_first) || return 1
-  log=$(git show "$c:.ai/approvals.log" 2>/dev/null)
+  local p now used
+  last_valid_tests_first >/dev/null || return 1
+  used=$(round_hashes)
   for p in .ai/plans/active/*.md; do
     [ -f "$p" ] && plan_approved_now "$p" || continue
-    now=$(criteria_hash < "$p"); then=$(git show "$c:$p" 2>/dev/null | criteria_hash)
-    [ "$now" != "$then" ] && ! hash_approved "$now" <<<"$log" && return 0
+    now=$(criteria_hash < "$p")
+    grep -qxF -- "$now" <<<"$used" || return 0
   done
   return 1
 }

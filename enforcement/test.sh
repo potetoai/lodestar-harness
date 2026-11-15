@@ -768,6 +768,12 @@ relock_branch relock-new-plan
 mkplan revised "a genuinely new criterion"; approve; weaken_locked_test
 progress_round 'fresh criteria on a new changed plan'
 check; t "PR relock C3: a new changed plan with fresh approved criteria permits revision" [ $? = 0 ]
+relock_branch relock-preapproved
+mkplan second "second plan names a test change"; approve; g add -A; g commit -qm 'approve second plan'
+progress_round 'another plan round after that approval'
+weaken_locked_test; echo '- Progress: second round' >> .ai/plans/active/second.md
+g add -A; g commit -qm 'second plan round' -m 'Tests-First: second'
+check; t "PR relock C3: another plan's round does not use up a plan's fresh approval" [ $? = 0 ]
 relock_branch relock-unrelated
 mkplan other "other fresh criterion"; approve
 g add -A; g commit -qm 'approve another plan between rounds'
@@ -980,6 +986,8 @@ lockedit Write '{"content":"tests/test_new.py\n"}'; t "lock: a copy of the appro
 rm .ai/plans/active/copy.md
 mkplan second "second works"; approve
 guard tests/test_lock.py; t "guard: a new plan the owner approves mid-task opens the relock window" [ $? = 0 ]
+g checkout -q -B guard-preapproved; g add -A; g commit -qm 'approve second plan'; progress_round 'another plan round after that approval'
+guard tests/test_lock.py; t "guard: another plan's round does not close a plan's relock window" [ $? = 0 ]
 g checkout -q -f b6r; g clean -qfd
 guard tests/test_lock.py; t "guard: a second round locks its tests again" [ $? = 2 ]
 mkplan lock-demo "lock demo works"
