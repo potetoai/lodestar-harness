@@ -8,6 +8,9 @@ Thumbs.db
 # Session handoff (local only; global CLAUDE.md step 5)
 .ai/handoff.md
 
+# Private project names, read by .claude/hooks/name-check.sh (never tracked)
+.ai/private-names.txt
+
 # Python bytecode (scripts/usage-report.py)
 __pycache__/
 
