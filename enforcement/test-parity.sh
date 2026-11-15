@@ -50,7 +50,7 @@ mkplan() {
   printf '## Acceptance criteria\n\n- [ ] %s\n' "$1" > "$p/.ai/plans/active/parity.md"
   local hash
   hash=$(. "$here/agents/claude/hooks/lodestar-lib.sh"; criteria_hash < "$p/.ai/plans/active/parity.md")
-  printf '2026-10-13 fixture-owner parity %s\n' "$hash" >> "$p/.ai/approvals.log"
+  printf '2026-10-13 00:00 .ai/plans/active/parity.md %s\n' "$hash" >> "$p/.ai/approvals.log"
 }
 
 # C7: pre-operation guards must validate their input and dependencies.

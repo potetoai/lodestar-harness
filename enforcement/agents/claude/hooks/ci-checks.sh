@@ -145,19 +145,18 @@ else
   echo "✅ no new lint suppressions"
 fi
 
-# A valid later round may revise old tests only with fresh approval for a
-# plan it changes, or the one test the owner freshly approved to fix
-# ("duyệt sửa test <path>", fresh_test_fixes). Compare with the preceding
-# valid round, including rounds that only added tests or omitted the lock, so
-# approval cannot be reused.
+# A valid later round may revise old tests only with a fresh approval
+# (fresh_approval) for a plan it changes: approval cannot be reused, while
+# another plan's round in between does not use it up. Or the one test the
+# owner freshly approved to fix ("duyệt sửa test <path>", fresh_test_fixes),
+# compared with the preceding valid round.
 fresh_relock_approval() {
-  local c=$1 previous=$2 p now then log
-  log=$(git show "$previous:.ai/approvals.log" 2>/dev/null)
+  local c=$1 p used
+  used=$(used_hashes "$c^")
   while IFS= read -r p; do
-    [[ $p == .ai/plans/*.md ]] && plan_approved_at "$c" "$p" || continue
-    now=$(git show "$c:$p" 2>/dev/null | criteria_hash)
-    then=$(git show "$previous:$p" 2>/dev/null | criteria_hash)
-    [ "$now" != "$then" ] && ! hash_approved "$now" <<<"$log" && return 0
+    [[ $p == .ai/plans/active/*.md ]] && plan_approved_at "$c" "$p" || continue
+    git show "$c:.ai/approvals.log" 2>/dev/null |
+      fresh_approval "$(git show "$c:$p" 2>/dev/null | criteria_hash)" "$p" "$used" && return 0
   done < <(git -c core.quotepath=off diff-tree --root --no-commit-id --name-only -r "$c")
   return 1
 }
@@ -177,7 +176,7 @@ for c in $(git log --reverse --format=%H --grep='^Tests-First:' "$from..HEAD"); 
   for later in $(git rev-list --reverse "$c..HEAD"); do
     relock_ok=0 fixes=""
     if valid_tests_first "$later"; then
-      fresh_relock_approval "$later" "$previous_round" && relock_ok=1
+      fresh_relock_approval "$later" && relock_ok=1
       fixes=$(fresh_test_fixes "$later" "$previous_round")
       previous_round=$later
     fi
@@ -199,7 +198,7 @@ if base_round=$(active_tests_first "$from"); then
   for later in $([ -n "$lock" ] && git rev-list --reverse "$from..HEAD"); do
     fixes=""
     if valid_tests_first "$later"; then
-      fresh_relock_approval "$later" "$previous_round" && { previous_round=$later; continue; }
+      fresh_relock_approval "$later" && { previous_round=$later; continue; }
       fixes=$(fresh_test_fixes "$later" "$previous_round")
       previous_round=$later
     fi
