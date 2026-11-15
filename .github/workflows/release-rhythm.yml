@@ -1,0 +1,23 @@
+name: Release rhythm
+
+# Only PRs that change enforcement/VERSION; "edited" reruns it when the PR
+# text gets its 'Lodestar release:' line (scripts/check-release-rhythm.sh).
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+    paths: [enforcement/VERSION]
+
+permissions:
+  contents: read
+
+jobs:
+  rhythm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - run: bash scripts/check-release-rhythm.sh "origin/$BASE_REF"
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          PR_BODY: ${{ github.event.pull_request.body }}
