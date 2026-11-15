@@ -20,7 +20,7 @@ re_pr='(^|[;&|(]|[[:space:]])gh[[:space:]]+pr[[:space:]]+(create|edit)([[:space:
 kind=""
 [[ $cmd =~ $re_commit ]] && kind=commit
 [[ $cmd =~ $re_pr ]] && kind=${kind:+$kind+}pr
-re_add='(^|[;&|(]|[[:space:]])git([[:space:]]+-[^[:space:]]+([[:space:]]+[^-[:space:]][^[:space:]]*)?)*[[:space:]]+add([[:space:]]|$)'
+re_add='(^|[;&|(]|[[:space:]])git([[:space:]]+-[^[:space:]]+([[:space:]]+[^-[:space:]][^[:space:]]*)?)*[[:space:]]+(add|stage)([[:space:]]|$)'
 [ -n "$kind" ] || exit 0
 
 dir=$(jq -r '.cwd // empty' <<<"$input" 2>/dev/null)
