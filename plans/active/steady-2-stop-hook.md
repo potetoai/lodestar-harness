@@ -126,7 +126,7 @@ Done when: gate S2-1 is met or stopped and the owner has seen the count.
 | Date | Phase | Work |
 |---|---|---|
 | 2026-11-13 | none | Plan written |
-| 2026-11-15 | 0 | `usage-report.py --holds`; report below; supports limit 3 (Q1); Q2 added (PR #201) |
+| 2026-11-15 | 0 | `usage-report.py --holds`; report below; supports limit 3 (Q1); Q2 added (PR #204) |
 
 Phase 0 report (`python scripts/usage-report.py --holds --since 2026-10-28
 --until 2026-11-13`, run 2026-11-15). The window now holds 326 holds in
