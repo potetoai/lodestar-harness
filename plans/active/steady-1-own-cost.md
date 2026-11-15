@@ -110,7 +110,7 @@ Done when: the 2026-12-09 count carries the line and the owner has seen it.
 | Date | Phase | Work |
 |---|---|---|
 | 2026-11-13 | none | Plan written |
-| 2026-11-15 | 0 | Why eleven releases: table below (PR pending) |
+| 2026-11-15 | 0 | Why eleven releases: table below (PR #201) |
 
 Phase 0, from `git log -- enforcement/VERSION` and each release PR's text.
 "Urgent" means a reason on the rule's list (`enforcement/README.md` section 3).

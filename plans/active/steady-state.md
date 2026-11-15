@@ -146,7 +146,10 @@ report." The agent routes the phase through the Router as usual.
 | Date | Child | Work |
 |---|---|---|
 | 2026-11-13 | all | Parent and seven child plans written from the review; no work started |
-| 2026-11-15 | 7 | Phase 1: names out of files that are not measuring (PR pending) |
+| 2026-11-15 | 7 | Phase 1: names out of files that are not measuring (PR #200) |
+| 2026-11-15 | 1 | Phase 0: eleven releases classed, cause is habit (PR #201) |
+| 2026-11-15 | 2 | Phase 0: holds counted, limit 3 supported, Q2 opened (PR #204) |
+| 2026-11-15 | 5 | Phase 0: three numbers explained, `/context` from the owner pending (PR #202) |
 
 ## 9. Decision log
 
