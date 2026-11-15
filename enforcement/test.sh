@@ -2281,14 +2281,24 @@ nc 'git commit -m add'; t "name check: a staged added line with a name blocks th
 t "name check: the message names the hit" grep -q Zorblax "$tmp/nc.err"
 nc 'git status'; t "name check: other commands pass" [ $? = 0 ]
 ng reset -q
+nc 'git add -A && git commit -m add'; t "name check: a new file not yet added blocks a chained add and commit" [ $? = 2 ]
+rm "$p/b.txt"
 nc 'git commit -m "fix QWERTINE crash"'; t "name check: a name in the message blocks, any case" [ $? = 2 ]
 nc 'git commit -m ok'; t "name check: clean text passes (blank and comment lines in the list match nothing)" [ $? = 0 ]
 ng rm -q old.txt
 nc 'git commit -m "drop a line"'; t "name check: removing a name passes" [ $? = 0 ]
 ng commit -qm drop; echo 'Zorblax again' >> "$p/a.txt"
-nc 'git commit -m tweak'; t "name check: an unstaged change does not count for a plain commit" [ $? = 0 ]
 nc 'git commit -am tweak'; t "name check: commit -a counts unstaged changes" [ $? = 2 ]
+nc 'git -c core.pager=cat commit -m tweak'; t "name check: options between git and commit are still a commit" [ $? = 2 ]
+nc "git -C \"$p\" -c core.pager=cat commit -m tweak" "$tmp"; t "name check: git -C <dir> commit checks that repo" [ $? = 2 ]
 ng checkout -q -- a.txt
+echo x > "$p/notes-zorblax.txt"
+nc 'git commit -m n'; t "name check: a name in a file name blocks" [ $? = 2 ]
+rm "$p/notes-zorblax.txt"
+printf '\357\273\277Zorblax\n' > "$p/.ai/private-names.txt"; echo 'Zorblax' > "$p/d.txt"
+nc 'git commit -m d'; t "name check: a list saved with a BOM still matches its first name" [ $? = 2 ]
+rm "$p/d.txt"; printf '# fake names\n\nZorblax\nQwertine\n' > "$p/.ai/private-names.txt"
+nc 'git commit -m ok'; t "name check: the untracked list file itself does not count" [ $? = 0 ]
 echo 'body about Qwertine' > "$p/body.md"
 nc 'gh pr create --title t --body-file body.md'; t "name check: a PR body file with a name blocks gh pr create" [ $? = 2 ]
 echo 'clean body' > "$p/body.md"
