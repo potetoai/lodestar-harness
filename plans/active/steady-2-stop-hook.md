@@ -107,11 +107,8 @@ Done when: gate S2-1 is met or stopped and the owner has seen the count.
   (answered 2026-11-13), unless phase 0 shows otherwise: then ask again.
   Phase 0 supports 3 (section 7).
 - **Q2.** Phase 1 failure id: keep the hook's id (whole output, digits
-  removed), or build it from the names of the failing tests? In one session
-  of project C the same two red tests kept switching between two texts (the
-  last 60 lines start elsewhere when progress lines wrap at another width),
-  so the exact id reset the count six times. Limit 3 lets
-  go 23 verify holds with the exact text, at most 48 with any verify failure.
+  removed), or build it from the names of the failing tests? **Test names**
+  (answered 2026-11-15); the text decides when no test is named (lint, types).
 
 ## 6. Not in scope
 
@@ -127,6 +124,7 @@ Done when: gate S2-1 is met or stopped and the owner has seen the count.
 |---|---|---|
 | 2026-11-13 | none | Plan written |
 | 2026-11-15 | 0 | `usage-report.py --holds`; report below; supports limit 3 (Q1); Q2 added (PR #204) |
+| 2026-11-15 | 1 | Limit 3 holds per failure, keyed on failing test names (PR #210) |
 
 Phase 0 report (`python scripts/usage-report.py --holds --since 2026-10-28
 --until 2026-11-13`, run 2026-11-15). The window now holds 326 holds in

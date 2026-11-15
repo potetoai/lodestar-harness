@@ -261,6 +261,14 @@ same_files() {
   [ "$id" = "$2" ] && { [ "$was" = "$tree" ] || docs_only "$was" "$tree"; }
 }
 [ -n "$held" ] && tree=$(state "" | head -n1)
+# fail_names OUT: the failing tests OUT names (pytest, jest, vitest, go,
+# cargo), sorted. Progress lines wrap at another width from run to run and
+# move the text; the names stay. Empty when no test is named (lint, types).
+fail_names() {
+  tr -d '\r' <<<"$1" |
+    grep -aoE '^(FAILED|ERROR) [^ ]+|--- FAIL: [^ ]+|^ *FAIL +.*|^test [^ ]+ \.\.\. FAILED|^ *(✕|×|✗) .*' |
+    sed -E 's/^ +//; s/ +\([^)]*\)$//' | sort -u
+}
 if [ -n "$held" ] && same_files "$released" "$target"; then
   echo "Lodestar: 'make $target' failed on these same files (notes aside) and the stop was let go; not run again until a code file changes." >&2
   exit 0
@@ -274,20 +282,27 @@ fi || {
   rm -f "${quick:-/nonexistent}"
   if [ -n "$held" ]; then
     tree=$(state "" | head -n1)  # again: verify may have formatted files
-    fid=$(tr -d '0-9' <<<"$target $out" | git hash-object --stdin)
+    names=$(fail_names "$out")
+    fid=$(tr -d '0-9' <<<"$target ${names:-$out}" | git hash-object --stdin)
     if same_files "$held" "$fid"; then
       echo "Lodestar: 'make $target' still fails, nothing but notes changed since the last hold; stop allowed." >&2
-      printf '%s
-%s
-' "$tree" "$target" > "$released"
+      printf '%s\n%s\n' "$tree" "$target" > "$released"
       exit 0
     fi
-    printf '%s
-%s
-' "$tree" "$fid" > "$held"; rm -f "$released"
+    # The same failure held 3 times in a row (code changed between): the agent
+    # cannot or does not fix it here. Let the stop go; CI stays the gate.
+    n=0; { [ -f "$held" ] && { read -r x; read -r x; read -r n; } < "$held" && [ "$x" = "$fid" ]; } || n=0
+    case $n in ''|*[!0-9]*) n=0 ;; esac
+    if [ "$n" -ge 3 ]; then
+      echo "Lodestar: 'make $target' failed the same way at the last 3 holds; stop allowed. Tell the owner it still fails." >&2
+      printf '%s\n%s\n' "$tree" "$target" > "$released"
+      exit 0
+    fi
+    n=$((n + 1)); printf '%s\n%s\n%s\n' "$tree" "$fid" "$n" > "$held"; rm -f "$released"
   fi
   echo "Not done yet: 'make $target' fails. Fix the problems below, then finish:" >&2
   echo "$out" | tail -n 60 >&2
+  [ "${n:-0}" = 3 ] && echo "Third hold for this failure: the next stop with it is let go. If you cannot fix it, tell the owner it still fails." >&2
   # Tests-first: unfinished builder work fails the locked tests by design.
   if [ ${#locked[@]} -gt 0 ]; then
     echo "If only locked Tests-First tests fail because the builder step is unfinished (for example you" >&2
