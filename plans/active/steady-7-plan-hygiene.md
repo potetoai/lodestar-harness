@@ -104,7 +104,8 @@ Done when: the owner has decided.
 |---|---|---|
 | 2026-11-13 | none | Plan written |
 | 2026-11-15 | 1 | Names out of 12 completed/strategy files and `docs-tidy.md`; only the two measuring plans keep names (PR #200) |
-| 2026-11-15 | 2 | Local name check `.claude/hooks/name-check.sh`, test block 26 with fake names (PR pending) |
+| 2026-11-15 | 2 | Local name check `.claude/hooks/name-check.sh`, test block 26 with fake names (PR #203) |
+| 2026-11-15 | 2 | Untracked files checked only when the command runs `git add` (PR #208) |
 
 ## 8. Decision log
 

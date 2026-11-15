@@ -7,10 +7,11 @@
 # worktrees share it. With no list the check does nothing. Names match as
 # plain text, any case, no word bounds (keep names long enough to be rare).
 # Removed lines never count: taking a name out passes. A commit is checked
-# against every change to tracked files and every new untracked file, since
-# the hook runs before a chained `git add ... && git commit`. Needs jq; without
-# it the check does nothing. Price of that: a name in an unrelated unstaged
-# change or untracked scratch file also blocks a plain commit; move or ignore it.
+# against every change to tracked files and, only when the command also runs
+# `git add`, every new untracked file, since the hook runs before a chained
+# `git add ... && git commit`. Needs jq; without it the check does nothing.
+# Price of that: a name in an unrelated unstaged change still blocks a plain
+# commit; an untracked scratch file blocks only a command that adds files.
 input=$(cat)
 cmd=$(jq -r '.tool_input.command // empty' <<<"$input" 2>/dev/null)
 [ -n "$cmd" ] || exit 0
@@ -19,6 +20,7 @@ re_pr='(^|[;&|(]|[[:space:]])gh[[:space:]]+pr[[:space:]]+(create|edit)([[:space:
 kind=""
 [[ $cmd =~ $re_commit ]] && kind=commit
 [[ $cmd =~ $re_pr ]] && kind=${kind:+$kind+}pr
+re_add='(^|[;&|(]|[[:space:]])git([[:space:]]+-[^[:space:]]+([[:space:]]+[^-[:space:]][^[:space:]]*)?)*[[:space:]]+(add|stage)([[:space:]]|$)'
 [ -n "$kind" ] || exit 0
 
 dir=$(jq -r '.cwd // empty' <<<"$input" 2>/dev/null)
@@ -65,10 +67,13 @@ while IFS= read -r f; do
   [ -n "$f" ] && [ -f "$f" ] && text+=$'\n'$(cat -- "$f")
 done < <(grep -oE "$re_file" <<<"$cmd" | sed -E 's/^(--body-file|--file|-F)[= ]+//')
 if [[ $kind == *commit* ]]; then
-  # Staged and unstaged (commit -a, a chained git add), then new files.
+  # Staged and unstaged (commit -a, a chained git add); new files only when
+  # the command runs `git add` too.
   if git rev-parse --verify -q HEAD >/dev/null; then text+=$'\n'$(added HEAD); else text+=$'\n'$(added --cached); fi
-  new=$(git -C "$top" -c core.quotepath=off ls-files -o --exclude-standard 2>/dev/null | grep -vxF .ai/private-names.txt)
-  text+=$'\n'$new
+  if [[ $cmd =~ $re_add ]]; then
+    new=$(git -C "$top" -c core.quotepath=off ls-files -o --exclude-standard 2>/dev/null | grep -vxF .ai/private-names.txt)
+    text+=$'\n'$new
+  fi
 fi
 if [[ $kind == *pr* ]]; then
   base=main
