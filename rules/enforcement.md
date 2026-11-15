@@ -262,3 +262,6 @@ Every rule:
   this worktree does not hold unchanged, one line each, so two sessions (or
   runtimes) do not start the same task unaware. The handoff starts with a
   `Where:` line (worktree, branch, runtime).
+- The same hook, when `.ai/handoff.md` has more than 30 lines, asks in one
+  line to overwrite it short at the next handoff: every new session reads it
+  whole. It never blocks.

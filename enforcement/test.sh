@@ -456,6 +456,9 @@ t "bootstrap gitignores the handoff file" bash -c 'cd "$1" && git check-ignore -
 echo "next: x" > "$tmp/py/.ai/handoff.md"
 out=$(remind "$tmp/py")
 t "global hook tells a new session to read the handoff" grep -q "read .ai/handoff.md" <<<"$out"
+t "global hook is quiet about a short handoff" bash -c '! grep -q "lines; at the next handoff" <<<"$1"' _ "$out"
+seq 31 > "$tmp/py/.ai/handoff.md"; out=$(remind "$tmp/py"); echo "next: x" > "$tmp/py/.ai/handoff.md"
+t "global hook asks to shorten a handoff over 30 lines" grep -q "handoff.md has 31 lines; at the next handoff overwrite it short" <<<"$out"
 pc() { git -C "$tmp/py" add .ai/plans/active && GIT_COMMITTER_DATE="$1" git -C "$tmp/py" -c user.name=t -c user.email=t@t commit -q --no-verify -m plan -- .ai/plans/active; }
 echo '# old' > "$tmp/py/.ai/plans/active/old.md"; pc '2020-01-01T12:00:00'
 echo '# new' > "$tmp/py/.ai/plans/active/new.md"; pc "$(date +%FT%T)"

@@ -153,6 +153,7 @@ report." The agent routes the phase through the Router as usual.
 | 2026-11-15 | 5 | Phase 0: three numbers explained, `/context` from the owner pending (PR #202) |
 | 2026-11-15 | 1 | Phase 1: release rhythm CI check (PR #207) |
 | 2026-11-15 | 7 | Phase 2: local name check (PR #203) |
+| 2026-11-15 | 2 | Phase 2: handoff over 30 lines gets a note at session start (PR #211) |
 
 ## 9. Decision log
 
