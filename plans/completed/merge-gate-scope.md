@@ -6,16 +6,16 @@
 ## 1. Why this plan
 
 On 2026-10-22 the owner asked for fewer "duyệt merge PR <n>" messages. From
-2026-10-16 to 2026-10-22 they typed 51 (App01 21, ProjectS 30). Why each PR
+2026-10-16 to 2026-10-22 they typed 51 (project A 21, project B 30). Why each PR
 was owner-only (`guard-install.sh`, rules/enforcement.md "Owner-only merge"):
 
 | PRs | Reason | Verdict |
 |---|---|---|
 | 16 | Lodestar template upgrade | Release cadence (harness-health phase 1) already cuts these |
 | 16 | Edits an already-locked test | Real risk: keep the owner |
-| 7 | ProjectS: only project docs in `.claude/docs/` | False positive |
-| 1 | ProjectS: `.claude/agents/` | Keep: agent files can carry hooks and permissions |
-| 3 | App01: only adds new tests to `.ai/test-lock` | False positive: tightens, criteria already approved |
+| 7 | project B: only project docs in `.claude/docs/` | False positive |
+| 1 | project B: `.claude/agents/` | Keep: agent files can carry hooks and permissions |
+| 3 | project A: only adds new tests to `.ai/test-lock` | False positive: tightens, criteria already approved |
 | 6 | Sensitive code plus new locked tests | Owner keeps (see Out of scope) |
 | 2 | `.ai/project.md`, or no clear reason | Keep |
 
@@ -60,7 +60,7 @@ The owner-only merge check in `enforcement/agents/claude/hooks/guard-install.sh`
   known limit: a PR that is not owner-only can still change test setup
   (`conftest.py`, test config, a Makefile test target) that weakens locked
   tests without editing them; rules/git.md section 12. rules/testing.md gets
-  the App01 line (`lodestar-relock-preapproved-locked-test`): approved
+  the project A line (`lodestar-relock-preapproved-locked-test`): approved
   criteria cannot schedule an edit of an already-locked test for a later
   step; plan that step as its own criteria change with a new approval, or
   write the early test so the later step only adds a new test.
@@ -78,7 +78,7 @@ or fixed); template upgrade PRs; edits of locked tests (owner keeps them).
 
 - Full run (critic subagent, 2026-10-22). Not read: `enforcement/test.sh`,
   `sensitive-gate.sh`, `approval-record.sh` beyond grep, the Codex adapter,
-  App01 PR data; the frontmatter findings come from knowledge of Claude Code,
+  project A PR data; the frontmatter findings come from knowledge of Claude Code,
   not checked against its current docs.
 - Freeing all of `.claude/` except hooks and settings frees agents, skills
   and commands, whose frontmatter can add hooks, change permission mode or
@@ -129,7 +129,7 @@ or fixed); template upgrade PRs; edits of locked tests (owner keeps them).
 ## 4. Decision log
 
 - 2026-10-22: owner chose "remove false positives first" over AI review of
-  sensitive code; locked-test edits stay owner-only; App01 relock report:
+  sensitive code; locked-test edits stay owner-only; project A relock report:
   option A (doc line, no new unlock path).
 - 2026-10-22: review items deferred (outside the approved criteria, or
   existing before this plan): GitHub lists at most 3000 files, so a huge PR

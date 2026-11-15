@@ -92,7 +92,7 @@ docs; medium risk, the approval detection itself does not change.
 - `bash enforcement/test.sh` and `bash scripts/check-links.sh` pass; CI green.
 - Throwaway project with `owner_language: en`: onboarding plus one tests-first
   task up to a PR. Delete everything afterwards.
-- VERSION 1.8.8 to 1.9.0. vn30 gets it at its next maintenance and adds
+- VERSION 1.8.8 to 1.9.0. project B gets it at its next maintenance and adds
   `owner_language: vi`.
 
 ## 5. Acceptance criteria
@@ -114,7 +114,7 @@ docs; medium risk, the approval detection itself does not change.
 - **Q1.** Default when the field is missing: English. Answered 2026-09-30.
 - **Q2.** Setup guide: translate to English, keep one copy only. Answered
   2026-09-30 (option A).
-- **Q3.** Existing Vietnamese history stays as is (vn30's open plans must not
+- **Q3.** Existing Vietnamese history stays as is (project B's open plans must not
   change: editing criteria voids their approval). Only the old plan's decision
   log, the one part agents reread, is translated to English. Answered
   2026-09-30; decision log translated the same day.
@@ -142,5 +142,5 @@ docs; medium risk, the approval detection itself does not change.
 | 2026-09-30 | Missing `owner_language` means English | Owner's choice; Orca is generic |
 | 2026-09-30 | Language is per project, in `.ai/project.md` | Each project has its own owner |
 | 2026-09-30 | Setup guide becomes English only (`setup-guide.md`) | Owner's choice; two copies drift apart, and owners of any language need a plain guide |
-| 2026-09-30 | Old Vietnamese history stays; only the old decision log is translated | Vietnamese costs roughly 2-3x the tokens of English, but only the decision log is reread; translating vn30 open plans would void their approvals |
+| 2026-09-30 | Old Vietnamese history stays; only the old decision log is translated | Vietnamese costs roughly 2-3x the tokens of English, but only the decision log is reread; translating project B open plans would void their approvals |
 | 2026-09-30 | "ok" is not an approval word | Owner rejected it: too common, false approvals |

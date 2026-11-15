@@ -21,7 +21,7 @@ This audit changes no policy, support claim or licensing. It proposes Week 2 doc
 | Runtime adapters | Claude Code (reference), Codex (`enforcement/agents/codex/`), Orca contract | See section 4 |
 | Evals | `evals/` (Router suite, scores) | Run only on Router PRs (AGENTS.md) |
 | Install docs | `enforcement/setup-guide.md` (Windows, step by step), `enforcement/README.md` §1 and §3 (manual, upgrade), `workflows/onboarding.md` S1 (per project) | Three places; see finding F6 |
-| Consuming projects | vn30, App01, ProjectS | All the owner's; not external adoption |
+| Consuming projects | project B, project A | All the owner's; not external adoption |
 
 ## 3. Findings
 
@@ -48,7 +48,7 @@ In the files read for this audit (README, `runtime-parity.md`, the setup guide, 
 
 | Path | Evidence today | Not yet shown |
 |---|---|---|
-| Claude Code alone, Windows 11, Git Bash | Owner's use on vn30, App01, ProjectS; `enforcement/test.sh` in CI | A fresh-clone setup by someone else; macOS/Linux live setup |
+| Claude Code alone, Windows 11, Git Bash | Owner's use on project B, project A; `enforcement/test.sh` in CI | A fresh-clone setup by someone else; macOS/Linux live setup |
 | Codex, Windows | Live smoke on 0.162.1 (`runtime-parity.md`) | 0.166.0 (installed now); other platforms |
 | Orca + Claude | Contract `ORCA-INTEGRATION.md`; owner uses Orca | A bounded validation of dispatch and evidence return (01) |
 

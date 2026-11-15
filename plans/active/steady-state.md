@@ -146,6 +146,7 @@ report." The agent routes the phase through the Router as usual.
 | Date | Child | Work |
 |---|---|---|
 | 2026-11-13 | all | Parent and seven child plans written from the review; no work started |
+| 2026-11-15 | 7 | Phase 1: names out of files that are not measuring (PR pending) |
 
 ## 9. Decision log
 

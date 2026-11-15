@@ -13,18 +13,18 @@ problems came out of it, and the owner said to act on all three:
 - **Release churn.** Template 2.0.0 (2026-10-01) to 2.7.11 (2026-10-19):
   at least 20 releases in 18 days, and 31 of 100 non-merge commits are `fix:`,
   most of them in the hooks. The owner pastes an upgrade prompt into each
-  project per release; on 2026-10-19 App01 was on 2.7.10 and ProjectS on
+  project per release; on 2026-10-19 project A was on 2.7.10 and project B on
   2.7.9.
 - **Hooks that read command text.** Several fixes taught a hook to read a
   shell command better: "guard sees a push only as git's subcommand"
-  (2.7.10, ProjectS row `lodestar-guard-false-positive`, 2026-10-18),
+  (2.7.10, project B row `lodestar-guard-false-positive`, 2026-10-18),
   "task-done nudge ignores heredoc bodies and quoted text", "approval hook
-  wrote approvals from another session and from 'để mình duyệt'" (vn30 row
+  wrote approvals from another session and from 'để mình duyệt'" (project B row
   `orca-approval-false-positive`). Text matching misses some forms and
   blocks others, so it keeps needing fixes.
 - **Cost is measured, quality is not.** `scripts/usage-report.py` measures
   tokens; nothing counts whether Lodestar catches bugs. The feedback logs
-  hold a few rows (ProjectS: 8 `lodestar-`/`orca-` rows, App01: none), and
+  hold a few rows (project B: 8 `lodestar-`/`orca-` rows, project A: none), and
   most hook faults were found and fixed in this repo's sessions without a
   row.
 
@@ -74,7 +74,7 @@ task-done nudge in `global/context-nudge.sh`. A check CI already does well
 Done when: the table is in this plan, the owner has chosen per row, and
 each change is merged with `enforcement/test.sh` green, in the next batch.
 
-Finding (2026-10-23): App01 and ProjectS are private repos on GitHub Free;
+Finding (2026-10-23): project A and project B are private repos on GitHub Free;
 GitHub refuses branch protection (403). CI blocks nothing there by itself:
 a red CI stops a merge only because the guard's merge gate waits for it.
 So the merge gate and the push-to-main block are the only locks.
@@ -126,17 +126,17 @@ PRs that ran CI (both private repos had no Actions minutes from 2026-10-25 to
 
 | Gate | Measure (source) | Minimum | Check | Stop | Status |
 |---|---|---|---|---|---|
-| HH-3 Quality numbers | Merged PRs since 2026-10-01 whose CI ran, per project (`gh pr list --state merged --search "merged:>=2026-10-01" --json number,statusCheckRollup`); PRs merged with no CI run left out and counted apart | 20 per project (App01, vn30) | 2026-11-05 | 2026-11-26 | met 2026-11-05: vn30 129, App01 108 |
+| HH-3 Quality numbers | Merged PRs since 2026-10-01 whose CI ran, per project (`gh pr list --state merged --search "merged:>=2026-10-01" --json number,statusCheckRollup`); PRs merged with no CI run left out and counted apart | 20 per project (project A, project B) | 2026-11-05 | 2026-11-26 | met 2026-11-05: project B 129, project A 108 |
 
 Done when: one report per project is in the progress log, and the owner has
 decided whether it becomes a maintenance step.
 
-Report 2026-11-05 (merged PRs and transcripts 2026-10-01..11-05; App01 =
-`save-organize-app`, 144 PRs, 720 transcripts; vn30, 152 PRs, 466
+Report 2026-11-05 (merged PRs and transcripts 2026-10-01..11-05; project A,
+144 PRs, 720 transcripts; project B, 152 PRs, 466
 transcripts). Block counts are hook messages, so one fault that blocks three
 stop attempts counts three; reminders (200k, task-done) are left out.
 
-| Measure | App01 | vn30 |
+| Measure | project A | project B |
 |---|---|---|
 | PRs with a review-fix commit (`fix`/`test` commit naming review) | 42 | 9 |
 | PRs with commits after the commit the review line names | 30 of 56 | 6 of 37 |
@@ -151,11 +151,11 @@ stop attempts counts three; reminders (200k, task-done) are left out.
 | Blocks that were right: tests-first, locks, owner merge approval | 19 criteria line, 4 locks, 4 owner approval | 14 sensitive gate, 5 locks, 13 owner approval |
 | False positives, fixed | 35 merge text (0 after #83), 7 Tests-First commit (removed), 145 unused-name lint mid-edit (#116, #118) | 16 merge text (0 after #83), 22 stop at tests-first HEAD (fixed 10-23), 49 unused-name lint, 3 push text (at least 1 false) |
 
-Reading: review catches the most (App01 42 PRs, vn30 9, where most work is
+Reading: review catches the most (project A 42 PRs, project B 9, where most work is
 data checks the owner reviews); CI caught 6 code faults but raised 8 false
 alarms from its own checks; the lint and merge-text false positives were the
-largest cost and are fixed (unused-name lint blocks since 11-03: App01 0,
-vn30 1, only two days of data). After merge, most faults the owner found are
+largest cost and are fixed (unused-name lint blocks since 11-03: project A 0,
+project B 1, only two days of data). After merge, most faults the owner found are
 agent judgement (feedback rows), not code that slipped past the checks.
 How: GraphQL merged PRs with per-commit check suites; transcript scan of
 `hook_blocking_error`, `PreToolUse ... hook error` and `Stop hook feedback`
@@ -169,7 +169,7 @@ and rules only written. Rating:
 | Finding | Rating | Action |
 |---|---|---|
 | F1 review line accepts any text | defect; do now, smaller than written | `ci-checks.sh` and `merge-pr.sh`: verdict starts with `approve`/`pass`, and the line names a commit of this PR. Commits after the reviewed one are not failed (decision log). Ships with the batch |
-| F2 hand merges skip the checks | already covered | `gh-sweep.sh` already lists merged PRs with no route or review line (it found ProjectS #157-#170); #92 ships with the batch |
+| F2 hand merges skip the checks | already covered | `gh-sweep.sh` already lists merged PRs with no route or review line (it found project B #157-#170); #92 ships with the batch |
 | F3 security review unchecked | drop for now | No cheap way to count security tasks; reopen on a feedback-log row where one merged without it |
 | F4 no `permissions.deny` | drop for now | No incident; deny rules can block the owner's work; reopen on an incident row |
 | F5 learning from mistakes | covered | Gate HH-3 above |
@@ -212,22 +212,22 @@ Done when: `plans/active/behavior-evals.md` is merged.
 | Date | Phase | Note |
 |---|---|---|
 | 2026-10-19 | 1 | Plan written from the owner's review request; release cadence rule added to `enforcement/README.md` §3 |
-| 2026-10-23 | 2 | ProjectS report `lodestar-verify-stop-tests-first`: `verify-before-stop.sh` now allows a stop at a clean HEAD that is the valid Tests-First commit (red tests by design); ships in the ~2026-10-30 batch |
+| 2026-10-23 | 2 | project B report `lodestar-verify-stop-tests-first`: `verify-before-stop.sh` now allows a stop at a clean HEAD that is the valid Tests-First commit (red tests by design); ships in the ~2026-10-30 batch |
 | 2026-10-23 | 2 | Hook review table written (owner said start now); owner chose per row; four changes to build, shipping in the next batch |
 | 2026-10-23 | 2 | Four changes built (one PR): `merge-pr.sh <n>` is the only merge (state: CI wait, unpushed commits, owner approval, pinned head), the guard blocks every other merge command; git pre-push hook `pre-push.sh` (bootstrap installs it, doctor A4d) replaces the guard's push checks; Tests-First commit check removed (CI check 3); task-done nudge reads the marker `merge-pr.sh` leaves. Also `check-readiness.sh` no longer hangs on an open empty stdin. `guard-install.sh` 358 -> 115 lines |
 | 2026-10-26 | 1 | Release 2.8.0 (batch of PRs #75-#87, incl. #87 CI minute saving), released early on owner request; within cadence (7 days after 2.7.11) |
-| 2026-10-27 | 2 | PR #92: `merge-pr.sh` refuses a PR without route/review lines (ProjectS merged 5 by hand while CI had no minutes); ships in the next batch |
+| 2026-10-27 | 2 | PR #92: `merge-pr.sh` refuses a PR without route/review lines (project B merged 5 by hand while CI had no minutes); ships in the next batch |
 | 2026-10-29 | idea | Idea enforced-vs-written rated; F1 built (review line: pass verdict + a commit of this PR), PR #106; ships in the next batch |
 | 2026-10-31 | 1 | Release 2.9.0 (batch of PRs #89-#111), 5 days after 2.8.0: owner exception to the cadence |
 | 2026-11-01 | 1 | PR #113: CI skips verify for Markdown plus `.ai/approvals.log` (October minutes over 2000); ships in the next batch |
-| 2026-11-01 | 1 | PR #114: ci.yml pins Node/Python from `.nvmrc`/`.python-version` (App01); doctor A4d passes in CI (ProjectS #179 blocked) |
-| 2026-11-01 | 1 | Release 2.9.1 (PRs #113, #114), 1 day after 2.9.0: owner exception, ProjectS PR #179 blocked by doctor A4d in CI |
-| 2026-11-02 | 1 | Release 2.9.2 (PR #116), 1 day after 2.9.1: owner exception, to cut lint-block token waste in App01 and ProjectS |
-| 2026-11-02 | 1 | Release 2.9.3 (PR #118), same day as 2.9.2: the #116 pass never fired with ruff colour output or oxlint (found by ProjectS) |
-| 2026-11-02 | 1 | Release 2.9.4 (PR #120), same day as 2.9.3: doctor requires a pinned Node/Python version (App01 CI broke when `lts/*` moved to Node 26) |
+| 2026-11-01 | 1 | PR #114: ci.yml pins Node/Python from `.nvmrc`/`.python-version` (project A); doctor A4d passes in CI (project B #179 blocked) |
+| 2026-11-01 | 1 | Release 2.9.1 (PRs #113, #114), 1 day after 2.9.0: owner exception, project B PR #179 blocked by doctor A4d in CI |
+| 2026-11-02 | 1 | Release 2.9.2 (PR #116), 1 day after 2.9.1: owner exception, to cut lint-block token waste in project A and project B |
+| 2026-11-02 | 1 | Release 2.9.3 (PR #118), same day as 2.9.2: the #116 pass never fired with ruff colour output or oxlint (found by project B) |
+| 2026-11-02 | 1 | Release 2.9.4 (PR #120), same day as 2.9.3: doctor requires a pinned Node/Python version (project A CI broke when `lts/*` moved to Node 26) |
 | 2026-11-02 | 1 | Release 2.9.5 (PR #122), same day as 2.9.4: bootstrap pins the project .venv python, not the first one on PATH |
 | 2026-11-02 | idea | Idea behavior-evals rated: Router suite in `plans/active/behavior-evals.md`; reviewer and text-only suites wait for gate EV-3 |
-| 2026-11-05 | 3 gate | HH-3 met: merged PRs since 10-01 with CI that ran: vn30 129 of 152, App01 108 of 144. Left out: CI that never started (failed in 5 s or less, out of minutes): vn30 23, App01 36. App01 #125, #126 ran and failed, then merged (11-01) |
+| 2026-11-05 | 3 gate | HH-3 met: merged PRs since 10-01 with CI that ran: project B 129 of 152, project A 108 of 144. Left out: CI that never started (failed in 5 s or less, out of minutes): project B 23, project A 36. project A #125, #126 ran and failed, then merged (11-01) |
 | 2026-11-05 | 3 | Report per project written in phase 3 (owner "2. làm"); Q2 waits for the owner |
 | 2026-11-05 | 3 | Q2 answered: not a maintenance step; all phases done, plan moved to `plans/completed/` |
 
@@ -244,13 +244,13 @@ Done when: `plans/active/behavior-evals.md` is merged.
 | 2026-10-25 | This source repo records the owner's "duyệt merge PR <n>": `.claude/settings.json` runs `approval-record.sh`, whose merge part no longer needs the Lodestar library (plan approvals still do); `.ai/approvals.log` is gitignored here | Owner wants the most automation; before, `merge-pr.sh` never saw an approval here, so every safety PR needed the owner on GitHub. The template file change ships in the batch; projects behave the same |
 | 2026-10-28 | Phase 3 starts on gate HH-3 (20 merged PRs with a CI run per project), not on a date or on other plans | Owner: plans start on data; phase 3 only reads data, and PRs hand-merged without CI cannot show caught faults |
 | 2026-10-31 | Release 2.9.0 five days after 2.8.0, outside the 7-14 day cadence | Owner chose it when asked (AskUserQuestion), knowing no fix blocks work. Projects upgrade once GitHub billing is fixed; one batch holds #92 merge-pr route check, #95 critic limit, #106 review line, #111 cloud sessions |
-| 2026-11-01 | CI skips setup and verify for a PR of Markdown plus `.ai/approvals.log` only; docs images not added | Owner asked why CI minutes ran out. October: App01 1471 + ProjectS 580 min (over 2000); 821 min were re-runs on push to main, already removed in 2.8.0. 24 plan/docs PRs ran full verify only because they carry the approval log (App01 verify ~8 min); images would add 4 more PRs but can break a doc-path test |
+| 2026-11-01 | CI skips setup and verify for a PR of Markdown plus `.ai/approvals.log` only; docs images not added | Owner asked why CI minutes ran out. October: project A 1471 + project B 580 min (over 2000); 821 min were re-runs on push to main, already removed in 2.8.0. 24 plan/docs PRs ran full verify only because they carry the approval log (project A verify ~8 min); images would add 4 more PRs but can break a doc-path test |
 | 2026-10-29 | F1: the review line counts only with a verdict starting `approve`/`pass` and a commit id of this PR; a review of an older commit of the PR still passes; `gh-sweep.sh` keeps its loose check | Owner "làm đi". Last 60 merged PRs per repo, 78 review lines: 56 start with approve/pass, 69 name a commit, 43 name the PR head. So 26 of 69 reviews had fix commits after them; "reviewed commit = head" would force a reviewer re-run on about a third of PRs (token budget). The 22 other verdicts ("no BLOCKER/MAJOR", "changes then pass") get a clear message and a one-word change. The sweep has no commit list and would flag old-format lines in projects before they upgrade |
-| 2026-11-01 | Release 2.9.1 one day after 2.9.0, outside the 7-14 day cadence | Owner typed "phát hành 2.9.1". #114 fixes doctor A4d failing in every fresh CI clone (git does not clone hooks), which blocks ProjectS PR #179; #113 skips CI verify for Markdown plus approval-log PRs |
-| 2026-11-02 | Release 2.9.2 one day after 2.9.1, outside the 7-14 day cadence | Owner chose it when offered wait vs. early release ("nâng cấp cho cả 2 đi vì nó giảm lượng token tiêu tốn"). #116 stops unused-name lint blocks mid-edit (App01 subagents lost 10-17 edits each) |
-| 2026-11-02 | Release 2.9.3 the same day as 2.9.2 | 2.9.2 was the owner's early release to cut tokens, but its pass never fired in ProjectS (ruff colour codes, oxlint format); #118 fixes it, so shipping now keeps that goal |
-| 2026-11-02 | Release 2.9.4 the same day as 2.9.3 | Owner "làm đi" after being told ProjectS has no pinned Node/Python and can break like App01 PR #132; `bootstrap.sh --upgrade` writes the pin files |
+| 2026-11-01 | Release 2.9.1 one day after 2.9.0, outside the 7-14 day cadence | Owner typed "phát hành 2.9.1". #114 fixes doctor A4d failing in every fresh CI clone (git does not clone hooks), which blocks project B PR #179; #113 skips CI verify for Markdown plus approval-log PRs |
+| 2026-11-02 | Release 2.9.2 one day after 2.9.1, outside the 7-14 day cadence | Owner chose it when offered wait vs. early release ("nâng cấp cho cả 2 đi vì nó giảm lượng token tiêu tốn"). #116 stops unused-name lint blocks mid-edit (project A subagents lost 10-17 edits each) |
+| 2026-11-02 | Release 2.9.3 the same day as 2.9.2 | 2.9.2 was the owner's early release to cut tokens, but its pass never fired in project B (ruff colour codes, oxlint format); #118 fixes it, so shipping now keeps that goal |
+| 2026-11-02 | Release 2.9.4 the same day as 2.9.3 | Owner "làm đi" after being told project B has no pinned Node/Python and can break like project A PR #132; `bootstrap.sh --upgrade` writes the pin files |
 | 2026-11-02 | Release 2.9.5 the same day as 2.9.4 | Follow-up to 2.9.4: #122 makes the pin written by `--upgrade` match the project .venv; planned in the handoff, owner said "continue" |
-| 2026-11-02 | Release 2.9.6 in the fix PR #124, the same day as 2.9.5 | App01 is blocked by the critic limit and waits for it; one PR means one owner merge approval |
+| 2026-11-02 | Release 2.9.6 in the fix PR #124, the same day as 2.9.5 | project A is blocked by the critic limit and waits for it; one PR means one owner merge approval |
 | 2026-11-02 | Behavior evals: Router suite only, run by hand on Router PRs, not in CI | Owner asked for a plan after the smoke test showed `claude plugin eval` works; `ROUTER.md` is the most edited policy file and has no behavior check |
 | 2026-11-05 | Q2: the quality count is not a maintenance step; it may run once more when `agent-pitfalls.md` P5 closes | Owner "làm đi" on the recommendation. The count needs custom GraphQL and transcript scans (about 40k tokens a run), not the "few lines" phase 3 allowed; the first report already showed review catches most and the big false positives are fixed |

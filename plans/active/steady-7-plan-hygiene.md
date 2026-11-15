@@ -103,6 +103,7 @@ Done when: the owner has decided.
 | Date | Phase | Work |
 |---|---|---|
 | 2026-11-13 | none | Plan written |
+| 2026-11-15 | 1 | Names out of 12 completed/strategy files and `docs-tidy.md`; only the two measuring plans keep names (PR pending) |
 
 ## 8. Decision log
 
