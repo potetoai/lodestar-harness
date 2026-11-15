@@ -780,6 +780,13 @@ mkdir -p .ai/plans/completed; g mv .ai/plans/active/old.md .ai/plans/completed/o
 g mv .ai/plans/completed/old.md .ai/plans/active/old.md; weaken_locked_test
 g add -A; g commit -qm 'reopen old plan' -m 'Tests-First: old'
 check; t "PR relock C4: a finished plan moved back cannot authorize revision" [ $? = 1 ]
+relock_branch relock-reopen-split
+mkplan old "old finished criterion"; approve; g add -A; g commit -qm 'approve old plan'
+mkdir -p .ai/plans/completed; g mv .ai/plans/active/old.md .ai/plans/completed/old.md; g commit -qm 'old plan done'
+g mv .ai/plans/completed/old.md .ai/plans/active/old.md; g commit -qm 'reopen old plan'
+weaken_locked_test; echo '- Progress: reopened' >> .ai/plans/active/old.md
+g add -A; g commit -qm 'round on reopened plan' -m 'Tests-First: old'
+check; t "PR relock C4: a finished plan moved back in an earlier commit cannot authorize revision" [ $? = 1 ]
 relock_branch relock-draft
 mkplan lock-demo "lock demo works" "draft one"; approve
 mkplan lock-demo "lock demo works" "draft two"; approve

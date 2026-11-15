@@ -156,11 +156,12 @@ branch_changed_files() {
 
 # Criteria hashes used up by revision $1 (default HEAD): each plan a valid
 # Tests-First round changed, approved at that round (a round uses up the
-# approval of the criteria it carries), and each plan in .ai/plans/completed/
-# (a finished plan's approval is spent). Criteria not used up stay fresh, also
+# approval of the criteria it carries), and each plan version ever committed
+# under .ai/plans/completed/ (a finished plan's approval is spent, also after
+# the plan moves back to active/). Criteria not used up stay fresh, also
 # after another plan's round: each plan gets its own round.
 used_hashes() {
-  local c p r=${1:-HEAD}
+  local c p cur r=${1:-HEAD}
   for c in $(git log --format=%H --grep='^Tests-First:' "$r" -- 2>/dev/null); do
     while IFS= read -r p; do
       [[ $p == .ai/plans/*.md ]] && plan_approved_at "$c" "$p" || continue
@@ -168,8 +169,11 @@ used_hashes() {
     done < <(git -c core.quotepath=off diff-tree --root --no-commit-id --name-only -r "$c")
   done
   while IFS= read -r p; do
-    [[ $p == *.md ]] && git show "$r:$p" 2>/dev/null | criteria_hash
-  done < <(git -c core.quotepath=off ls-tree -r --name-only "$r" -- .ai/plans/completed 2>/dev/null)
+    case $p in
+      '>'*) cur=${p#>} ;;
+      *.md) git show "$cur:$p" 2>/dev/null | criteria_hash ;;
+    esac
+  done < <(git -c core.quotepath=off log --full-history --format='>%H' --name-only --diff-filter=AMR "$r" -- .ai/plans/completed 2>/dev/null)
 }
 
 # Fresh approval: criteria hash $1 of plan path $2 is the newest approval of
