@@ -152,3 +152,4 @@ Findings:
 |---|---|---|
 | 2026-11-13 | Owner: CI check on the release rhythm, yes; share target 5%, 10% if 5% proves too hard | The text rule of 2026-10-19 was not kept. The target is a signal at the monthly count, not a block |
 | 2026-11-13 | Owner: release day is Saturday | Owner's choice; merged changes wait on main until then, urgent releases apart |
+| 2026-11-15 | Owner: tighten the "new hooks release at once" exception in phase 1; the new wording goes to the owner for approval | Loose as written; it can excuse most releases |

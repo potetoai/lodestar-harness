@@ -194,3 +194,4 @@ did not fall after 2026-11-10.
 
 | Date | Decision | Reason |
 |---|---|---|
+| 2026-11-15 | Owner: fix `usage-report.py` (session charged to a PR-body route; images counted as text) in phase 1 before rating ideas A, B, E | Ratings built on wrong counts would be wrong too |
