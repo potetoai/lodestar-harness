@@ -23,3 +23,4 @@ jobs:
       - run: SETUP_HOME="$RUNNER_TEMP/home" bash enforcement/setup-machine.sh --yes --no-selftest
       - run: bash enforcement/test.sh
       - run: bash scripts/check-links.sh
+      - run: bash scripts/test-release-rhythm.sh
