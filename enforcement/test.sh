@@ -2266,5 +2266,38 @@ p=$tmp/pparts; mkdir -p "$p"; git -C "$p" init -q
 bash "$here/bootstrap.sh" "$p" --stack python=backend --stack node-ts=frontend >/dev/null
 t "node-ts in a subdir gets no root .prettierignore" bash -c '[ ! -e "$1/.prettierignore" ] && [ ! -e "$1/frontend/.prettierignore" ]' _ "$p"
 
+# 26. This repo's own name check (.claude/hooks/name-check.sh, not a template):
+# a commit or PR whose text or added lines hold a name from the gitignored
+# .ai/private-names.txt is refused. The names here are fake.
+p=$tmp/names; mkdir -p "$p"; git -C "$p" init -q; git -C "$p" symbolic-ref HEAD refs/heads/main
+ng() { git -C "$p" -c user.name=t -c user.email=t@t "$@"; }
+echo base > "$p/a.txt"; echo 'old Zorblax line' > "$p/old.txt"; ng add -A; ng commit -qm init
+ng switch -qc feat/x
+nc() { jq -n --arg c "$1" --arg d "${2:-$p}" '{tool_name:"Bash",tool_input:{command:$c},cwd:$d}' | bash "$here/../.claude/hooks/name-check.sh" 2>"$tmp/nc.err"; }
+echo 'see Zorblax here' > "$p/b.txt"; ng add b.txt
+nc 'git commit -m add'; t "name check: no list, no check" [ $? = 0 ]
+mkdir -p "$p/.ai"; printf '# fake names\n\n  Zorblax  \r\nQwertine\n' > "$p/.ai/private-names.txt"
+nc 'git commit -m add'; t "name check: a staged added line with a name blocks the commit (exit 2)" [ $? = 2 ]
+t "name check: the message names the hit" grep -q Zorblax "$tmp/nc.err"
+nc 'git status'; t "name check: other commands pass" [ $? = 0 ]
+ng reset -q
+nc 'git commit -m "fix QWERTINE crash"'; t "name check: a name in the message blocks, any case" [ $? = 2 ]
+nc 'git commit -m ok'; t "name check: clean text passes (blank and comment lines in the list match nothing)" [ $? = 0 ]
+ng rm -q old.txt
+nc 'git commit -m "drop a line"'; t "name check: removing a name passes" [ $? = 0 ]
+ng commit -qm drop; echo 'Zorblax again' >> "$p/a.txt"
+nc 'git commit -m tweak'; t "name check: an unstaged change does not count for a plain commit" [ $? = 0 ]
+nc 'git commit -am tweak'; t "name check: commit -a counts unstaged changes" [ $? = 2 ]
+ng checkout -q -- a.txt
+echo 'body about Qwertine' > "$p/body.md"
+nc 'gh pr create --title t --body-file body.md'; t "name check: a PR body file with a name blocks gh pr create" [ $? = 2 ]
+echo 'clean body' > "$p/body.md"
+nc 'gh pr create --title t --body-file body.md'; t "name check: a clean PR passes" [ $? = 0 ]
+echo 'Qwertine' > "$p/c.txt"; ng add c.txt; ng commit -qm c
+nc 'gh pr create --title t --body-file body.md'; t "name check: a name added on the branch blocks gh pr create" [ $? = 2 ]
+ng worktree add -q "$tmp/names-wt" -b feat/wt main; echo 'Zorblax' > "$tmp/names-wt/w.txt"; git -C "$tmp/names-wt" add w.txt
+nc 'git commit -m w' "$tmp/names-wt"; t "name check: a worktree uses the main checkout's list" [ $? = 2 ]
+nc "cd \"$tmp/names-wt\" && git commit -m w" "$tmp"; t "name check: follows a leading cd" [ $? = 2 ]
+
 bash "$here/test-parity.sh" || failed=1
 [ $failed = 0 ] && echo "All tests passed." || { echo "Some tests failed."; exit 1; }

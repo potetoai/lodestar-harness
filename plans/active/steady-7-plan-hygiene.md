@@ -103,7 +103,8 @@ Done when: the owner has decided.
 | Date | Phase | Work |
 |---|---|---|
 | 2026-11-13 | none | Plan written |
-| 2026-11-15 | 1 | Names out of 12 completed/strategy files and `docs-tidy.md`; only the two measuring plans keep names (PR pending) |
+| 2026-11-15 | 1 | Names out of 12 completed/strategy files and `docs-tidy.md`; only the two measuring plans keep names (PR #200) |
+| 2026-11-15 | 2 | Local name check `.claude/hooks/name-check.sh`, test block 26 with fake names (PR pending) |
 
 ## 8. Decision log
 
@@ -111,3 +112,4 @@ Done when: the owner has decided.
 |---|---|---|
 | 2026-11-13 | Owner: local name check yes, in this repo only | This is the one public repo; the projects are private, so a check there guards nothing |
 | 2026-11-13 | Owner: git history is left as it is | A rewrite is a forced push on a public repo and breaks every PR link; the names leave the current files only |
+| 2026-11-15 | Name check: worktrees read the main checkout's list; a PR is also checked against lines the branch adds; removed lines never count | The list is gitignored, so a worktree has none of its own; phase 3 takes names out, which must pass |
