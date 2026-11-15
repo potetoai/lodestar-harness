@@ -9,6 +9,7 @@ token-saving change can be checked against numbers (plans/active/token-efficienc
   python scripts/usage-report.py --sessions    # one row per session too
   python scripts/usage-report.py --friction --since 2026-10-13   # where agents struggled
   python scripts/usage-report.py --excerpt <transcript> 205-329  # read one flagged range
+  python scripts/usage-report.py --holds --since 2026-10-28   # Stop-hook holds and repeats
 """
 import argparse
 import bisect
@@ -322,6 +323,109 @@ def friction_report(files, top=5):
         print(f"        read: --excerpt {path} {a}-{b}  ({len(kinds)} events{more})")
 
 
+# Holds (plans/active/steady-2-stop-hook.md, phase 0): what a Stop hook sent
+# the agent back for. Info lines ("Lodestar: ...") can come before the
+# message that holds, so the kind is the first of these markers in the text.
+HOLD_KINDS = [
+    ("verify", re.compile(r"Not done yet: 'make [\w-]+' fails|make cannot run 'verify'")),
+    ("unpushed", re.compile(r"Not done yet: \d+ commit\(s\) on")),
+    ("criteria", re.compile(r"Not done yet: these plans have a '## Criteria review'")),
+    ("locked", re.compile(r"Not done yet: tests locked by commit")),
+    ("feedback", re.compile(r"Check before finishing: the owner's last message")),
+]
+EDIT_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
+
+
+def holds_scan(path):
+    """One transcript -> holds as (kind, failure id, what changed since the
+    previous hold). The id is the text from the kind's marker on, digits and
+    spacing removed, as the hook's own id drops digits. What changed: "edit"
+    (an agent edit tool call), "owner" (an owner message, no agent edit) or
+    "none" (neither; reads and Bash calls count as none)."""
+    holds, edit, owner = [], False, False
+    with open(path, encoding="utf-8", errors="ignore") as fh:
+        for line in fh:
+            try:
+                e = json.loads(line)
+            except ValueError:
+                continue
+            if not isinstance(e, dict) or e.get("type") not in ("user", "assistant"):
+                continue
+            m = e.get("message")
+            content = m.get("content") if isinstance(m, dict) else None
+            items = [{"type": "text", "text": content}] if isinstance(content, str) else content or []
+            for c in items:
+                if not isinstance(c, dict):
+                    continue
+                if c.get("type") == "tool_use":
+                    edit = edit or c.get("name") in EDIT_TOOLS
+                    continue
+                if c.get("type") != "text" or e.get("type") != "user":
+                    continue
+                t = c.get("text", "")
+                if "Stop hook feedback" not in t:  # the hook's own entry is meta
+                    owner = owner or not e.get("isMeta") and bool(t.strip()) and not t.lstrip().startswith("<")
+                    continue
+                kind, at = "other", 0
+                for k, rx in HOLD_KINDS:
+                    hit = rx.search(t)
+                    if hit and (kind == "other" or hit.start() < at):
+                        kind, at = k, hit.start()
+                fid = " ".join(re.sub(r"\d+", "", t[at:]).split())
+                holds.append((kind, fid, "edit" if edit else "owner" if owner else "none"))
+                edit = owner = False
+    return holds
+
+
+def holds_report(sessions, turns, limits=(2, 3), top=5):
+    """Per project folder and hold kind: holds, repeats (same kind and id as
+    the session's previous hold) and what changed before each repeat; then the
+    sessions with the most repeats and what a limit of N holds on the same
+    failure would have let go (a run of n same holds lets n - N go). "loose"
+    compares the kind only, an upper bound: the transcript holds the last 60
+    lines of output, which shift when progress lines wrap at another width, so
+    the same failure can show as other text."""
+    rows, per_session = {}, []
+    for s in sessions:
+        holds = holds_scan(s["path"])
+        if not holds:
+            continue
+        folder = s["name"].rsplit(" ", 1)[0]
+        reps = run = loose = 0
+        for i, (kind, fid, changed) in enumerate(holds):
+            r = rows.setdefault((folder, kind), dict(holds=0, rep=0, loose=0, edit=0, owner=0, none=0,
+                                                     **{f"{x}{n}": 0 for n in limits for x in "lx"}))
+            r["holds"] += 1
+            run = run + 1 if i and holds[i - 1][:2] == (kind, fid) else 1
+            loose = loose + 1 if i and holds[i - 1][0] == kind else 1
+            if run > 1:
+                r["rep"] += 1
+                r[changed] += 1
+                reps += 1
+            r["loose"] += loose > 1
+            for n in limits:
+                r[f"l{n}"] += run > n
+                r[f"x{n}"] += loose > n
+        per_session.append((reps, len(holds), s["name"], s["path"]))
+    total = sum(r["holds"] for r in rows.values())
+    print(f"Stop-hook holds: {total} of {turns} turns; repeat = same kind and failure text"
+          " (digits removed) as the session's previous hold; loose = same kind only")
+    head = "".join(f" {'let go@' + str(n):>9}" for n in limits)
+    print(f"  {'project folder':28} {'kind':9} {'holds':>5} {'repeat':>6} {'edit':>5} {'owner':>5}"
+          f" {'none':>5} {'loose':>5}{head}")
+    for (folder, kind), r in sorted(rows.items(), key=lambda kv: (kv[0][0], -kv[1]["holds"])):
+        lim = "".join(f" {r[f'l{n}']:4}/{r[f'x{n}']:<4}" for n in limits)
+        print(f"  {folder:28} {kind:9} {r['holds']:5} {r['rep']:6} {r['edit']:5} {r['owner']:5}"
+              f" {r['none']:5} {r['loose']:5}{lim}")
+    for n in limits:
+        same, loose = (sum(r[f"{x}{n}"] for r in rows.values()) for x in "lx")
+        print(f"Limit {n}: {same} of {total} holds let go, {loose} loose (let go@N column: same/loose)")
+    per_session.sort(key=lambda x: -x[0])
+    print(f"Top {top} sessions by repeats (repeats / holds):")
+    for reps, n, name, path in per_session[:top]:
+        print(f"  {reps:4} / {n:<4} {name}\n              {path}")
+
+
 def excerpt(path, span, width=200):
     """One short line per transcript entry in a line range (`A-B`), so a
     flagged range can be read without its full tool output."""
@@ -377,6 +481,8 @@ def main():
     ap.add_argument("--sessions", action="store_true", help="print one row per session")
     ap.add_argument("--friction", action="store_true",
                     help="top 5 sessions by tool errors, hook blocks, repeats and interrupts")
+    ap.add_argument("--holds", action="store_true",
+                    help="Stop-hook holds per project and kind, repeats, and what a limit lets go")
     ap.add_argument("--excerpt", nargs=2, metavar=("FILE", "A-B"),
                     help="print a flagged transcript range, one short line per entry")
     a = ap.parse_args()
@@ -409,6 +515,9 @@ def main():
         friction_report([(s["name"], s["path"]) for s in sessions]
                         + [(f"{s['name']} sub {os.path.basename(p)[:14]}", p)
                            for s in sessions for p in s["sub_paths"]])
+        return
+    if a.holds:
+        holds_report(sessions, sum(len(s["usage"]) for s in sessions))
         return
 
     total = long_c = base_c = out_c = sub_c = pol_c = 0.0
