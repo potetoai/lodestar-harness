@@ -21,6 +21,9 @@ git rev-parse --git-dir >/dev/null 2>&1 || exit 0   # not a project
 if [ "$mode" != --prompt ] && [ -f .ai/handoff.md ]; then
   echo "Lodestar: read .ai/handoff.md first; the last session wrote where it stopped."
   echo "When the owner says \"continue\", continue from its next step."
+  # Every new session reads it whole; a long one costs tokens each time.
+  n=$(wc -l < .ai/handoff.md); n=${n// /}
+  [ "$n" -gt 30 ] && echo "Lodestar: .ai/handoff.md has $n lines; at the next handoff overwrite it short (30 lines at most)."
 fi
 # Other worktrees of this repo (another session, an orchestrator's worktree
 # for another runtime) may hold a handoff or an active plan for the same task.
