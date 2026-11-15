@@ -112,7 +112,7 @@ Done when: gate S5-1 is met or stopped.
 | Date | Phase | Work |
 |---|---|---|
 | 2026-11-13 | none | Plan written |
-| 2026-11-15 | 0 | Three numbers explained, four tables below (PR #PRNUM); item 3 waits for the owner's `/context` |
+| 2026-11-15 | 0 | Three numbers explained, four tables below (PR #202); item 3 waits for the owner's `/context` |
 
 ### Phase 0 findings (2026-11-15)
 
