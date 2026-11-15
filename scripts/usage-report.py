@@ -12,11 +12,13 @@ token-saving change can be checked against numbers (plans/active/token-efficienc
   python scripts/usage-report.py --holds --since 2026-10-28   # Stop-hook holds and repeats
 """
 import argparse
+import base64
 import bisect
 import glob
 import json
 import os
 import re
+import struct
 import sys
 
 # Price weights relative to one base input token.
@@ -33,12 +35,55 @@ ROUTE = re.compile(r"^[ \t]*\**Lodestar route:\**[ \t]*\**([A-Z_]+)\b\**"
                    r"(?:[ \t]+risk=\**([a-z]+)\**)?(?:[ \t]+escalated-from=\**([A-Z_]+)\**)?(.*)$", re.M)
 ROUTE_EXACT = re.compile(r"Lodestar route: [A-Z_]+ risk=[a-z]+(?: escalated-from=[A-Z_]+)?")
 # A subagent's role is the first role word in the start of its brief.
+# The link `gh pr create` prints when the PR opens.
+PR_URL = re.compile(r"github\.com/[^/\s\"]+/[^/\s\"]+/pull/\d+")
 ROLE = re.compile(r"\b(critic|reviewer|tester|builder|architect|qa)\b", re.I)
 
 
 def cost(u):
     return (W_IN * u.get("input_tokens", 0) + W_CW * u.get("cache_creation_input_tokens", 0)
             + W_CR * u.get("cache_read_input_tokens", 0) + W_OUT * u.get("output_tokens", 0))
+
+
+def image_tokens(block):
+    """What the model is charged for one image block: about width*height/750
+    after the runtime scales it to a 1568 long edge and 1.15 megapixels. Size
+    from the PNG or JPEG header; 1,600 (the cap) when it cannot be read."""
+    try:
+        b = base64.b64decode(((block.get("source") or {}).get("data") or "")[:65536])
+        w = h = 0
+        if b[:8] == b"\x89PNG\r\n\x1a\n":
+            w, h = struct.unpack(">II", b[16:24])
+        elif b[:2] == b"\xff\xd8":
+            i = 2
+            while i + 9 < len(b) and b[i] == 0xFF:
+                mk, ln = b[i + 1], struct.unpack(">H", b[i + 2:i + 4])[0]
+                if 0xC0 <= mk <= 0xCF and mk not in (0xC4, 0xC8, 0xCC):
+                    h, w = struct.unpack(">HH", b[i + 5:i + 9])
+                    break
+                i += 2 + ln
+        if not (w and h):
+            return 1600
+        k = min(1.0, 1568 / max(w, h), (1.15e6 / (w * h)) ** 0.5)
+        return int(w * h * k * k / 750)
+    except (ValueError, struct.error, TypeError, AttributeError):
+        return 1600
+
+
+def result_tokens(r):
+    """Tokens of one tool result: text by characters / 4, an image by its size
+    (a base64 image counted as text reads about 100 times too high)."""
+    if isinstance(r, str):
+        return len(r) // 4, 0
+    text = img = 0
+    for b in r if isinstance(r, list) else [r]:
+        if isinstance(b, dict) and b.get("type") == "image":
+            img += image_tokens(b)
+        elif isinstance(b, dict) and b.get("type") == "text":
+            text += len(b.get("text") or "") // 4
+        else:
+            text += len(json.dumps(b)) // 4
+    return text + img, img
 
 
 def context(u):
@@ -51,10 +96,14 @@ def scan(path):
     routes: (call index, workflow, risk, escalated-from); owner: call index of
     each owner message (the next call answers it). A session with no route
     line in its own text but one in a PR body it writes (Bash command or Write
-    content; a session continued after /clear) takes that line from its start."""
+    content; a session continued after /clear) takes one task per `gh pr create`
+    whose result shows a PR link (a blocked try that is run again counts once),
+    with the last route line written before it: the first task runs from the
+    session start, each next one from the call after the previous PR. With no
+    `gh pr create` seen, the first PR-body line covers the session."""
     usage, ts, policy_ids, tools = {}, {}, {}, {}
-    routes, owner, pr_routes = [], [], []
-    s = dict(date="", policy=0, hooks=0, asks=0, read_tok=0, tool_tok=0, off_format=0,
+    routes, owner, pr_routes, pr_tasks, pr_open = [], [], [], [], {}
+    s = dict(date="", policy=0, hooks=0, asks=0, read_tok=0, tool_tok=0, image_tok=0, off_format=0,
              prompt=None, tool_calls=0, pr_route=0)
     tool_turns = set()
     with open(path, encoding="utf-8", errors="ignore") as fh:
@@ -91,7 +140,10 @@ def scan(path):
                     tool_turns.add(m.get("id"))
                     s["asks"] += name == "AskUserQuestion"
                     if name in ("Bash", "Write"):
-                        pr_routes += ROUTE.findall(str(inp.get("command") or inp.get("content") or ""))
+                        text = str(inp.get("command") or inp.get("content") or "")
+                        pr_routes += ROUTE.findall(text)
+                        if name == "Bash" and re.search(r"\bgh\s+pr\s+create\b", text) and pr_routes:
+                            pr_open[c["id"]] = (len(usage) - 1,) + pr_routes[-1][:3]
                     target = str(inp.get("file_path") or inp.get("command") or "")
                     if POLICY.search(target) and (name == "Read" or (name == "Bash" and SHELL_READ.search(target))):
                         policy_ids[c["id"]] = True
@@ -102,15 +154,21 @@ def scan(path):
                 elif c.get("type") == "text" and e.get("type") == "user":
                     s["hooks"] += "Stop hook feedback" in c.get("text", "")
                 elif c.get("type") == "tool_result":
-                    r = c.get("content")
-                    n = (len(r) if isinstance(r, str) else len(json.dumps(r))) // 4
+                    if c.get("tool_use_id") in pr_open and not c.get("is_error") \
+                            and PR_URL.search(json.dumps(c.get("content"))):
+                        pr_tasks.append(pr_open.pop(c["tool_use_id"]))
+                    n, img = result_tokens(c.get("content"))
                     s["tool_tok"] += n
+                    s["image_tok"] += img
                     if tools.get(c.get("tool_use_id")) == "Read":
                         s["read_tok"] += n
                     if c.get("tool_use_id") in policy_ids:
                         s["policy"] += n
     s["usage"], s["ts"] = list(usage.values()), list(ts.values())
-    if not routes and pr_routes:
+    if not routes and pr_tasks:
+        routes = [((pr_tasks[k - 1][0] + 1) if k else 0,) + t[1:] for k, t in enumerate(pr_tasks)]
+        s["pr_route"] = len(routes)
+    elif not routes and pr_routes:
         routes, s["pr_route"] = [(0,) + pr_routes[0][:3]], 1
     s["routes"], s["owner"] = routes, owner
     s["tool_turns"] = len(tool_turns)
@@ -160,18 +218,27 @@ def route_report(sessions, total):
     starts a segment that runs to the next route line or the session end; calls
     before the first line are "(no route line)". A subagent's cost goes to the
     segment open when it started."""
-    stats, esc = {}, {}
+    stats, esc, per_task = {}, {}, {}
     for s in sessions:
         starts = [r[0] for r in s["routes"]]
         names = [r[1] for r in s["routes"]]
+        task = [0.0] * len(starts)
 
         def seg(i):
             k = bisect.bisect_right(starts, i)
             return names[k - 1] if k else "(no route line)"
+
+        def add(i, c):
+            stats.setdefault(seg(i), [0, 0.0, 0])[1] += c
+            k = bisect.bisect_right(starts, i)
+            if k:
+                task[k - 1] += c
         for i, u in enumerate(s["usage"]):
-            stats.setdefault(seg(i), [0, 0.0, 0])[1] += cost(u)
+            add(i, cost(u))
         for start, c in s["subs"]:
-            stats.setdefault(seg(bisect.bisect_right(s["ts"], start) - 1), [0, 0.0, 0])[1] += c
+            add(bisect.bisect_right(s["ts"], start) - 1, c)
+        for wf, c in zip(names, task):
+            per_task.setdefault(wf, []).append(c)
         for i in s["owner"]:
             if starts and i > starts[0]:
                 stats[seg(i - 1)][2] += 1
@@ -183,12 +250,13 @@ def route_report(sessions, total):
     off = sum(s["off_format"] for s in sessions)
     from_pr = sum(s["pr_route"] for s in sessions)
     print(f"Route lines: {sum(v[0] for v in stats.values())} ({off} off-format,"
-          f" {from_pr} from a PR body only); sessions without one: {unrouted} of {len(sessions)}")
-    print(f"  {'workflow':20} {'tasks':>5} {'cost':>6} {'per task':>9} {'owner msgs/task':>15}")
+          f" {from_pr} from PR bodies only); sessions without one: {unrouted} of {len(sessions)}")
+    print(f"  {'workflow':20} {'tasks':>5} {'cost':>6} {'per task':>9} {'median':>9} {'owner msgs/task':>15}")
     for wf, (n, c, o) in sorted(stats.items(), key=lambda kv: -kv[1][1]):
         per = f"{int(c / n):9}" if n else f"{'-':>9}"
+        med = f"{int(median(per_task[wf])):9}" if per_task.get(wf) else f"{'-':>9}"
         msgs = f"{o / n:15.1f}" if n else f"{'-':>15}"
-        print(f"  {wf:20} {n:5} {c / total * 100:5.1f}% {per} {msgs}")
+        print(f"  {wf:20} {n:5} {c / total * 100:5.1f}% {per} {med} {msgs}")
     up = sum(v for k, v in esc.items() if k.startswith("SIMPLE->"))
     print(f"Escalations: {', '.join(f'{k} {v}' for k, v in sorted(esc.items())) or 'none'}"
           f" (SIMPLE calls that escalated: {up} of {stats.get('SIMPLE', [0])[0]})")
@@ -216,7 +284,7 @@ def restart_saving(sessions, threshold, restart=90000):
 # Friction (workflows/maintenance.md, step 2): where a session struggled.
 # The context nudge is a reminder, not a block, so it does not count.
 INTERRUPT = re.compile(r"\[Request interrupted by user|The user doesn't want to proceed")
-HOOK_BLOCK = re.compile(r"hook error|^Blocked|Stop hook feedback|denied by", re.M)
+HOOK_BLOCK = re.compile(r"hook error|^Blocked\b|Stop hook feedback|denied by", re.M)
 NOT_FRICTION = re.compile(r"context-nudge")
 GAP = 40  # events closer than this many transcript lines form one range
 LEAD = 30  # lines read before a range, to see what led to it
@@ -521,7 +589,7 @@ def main():
         return
 
     total = long_c = base_c = out_c = sub_c = pol_c = 0.0
-    turns = hooks = asks = read_tok = tool_tok = 0
+    turns = hooks = asks = read_tok = tool_tok = image_tok = 0
     firsts, rows = [], []
     for s in sessions:
         us = s["usage"]
@@ -539,6 +607,7 @@ def main():
         asks += s["asks"]
         read_tok += s["read_tok"]
         tool_tok += s["tool_tok"]
+        image_tok += s["image_tok"]
         firsts.append(ctx[0])
         rows.append((s["date"], s["name"], n, max(ctx), int(c), s["policy"], s["hooks"], int(s["sub_cost"])))
 
@@ -562,7 +631,8 @@ def main():
     print(f"  policy reading (upper bound) {pct(pol_c)}")
     print(f"Turns forced by a Stop hook: {hooks} of {turns}")
     print(f"Owner questions (AskUserQuestion): {asks}")
-    print(f"Read share of tool-result tokens: {read_tok / tool_tok * 100 if tool_tok else 0:.0f}%")
+    print(f"Read share of tool-result tokens: {read_tok / tool_tok * 100 if tool_tok else 0:.0f}%"
+          f" (images {image_tok / tool_tok * 100 if tool_tok else 0:.0f}% of all)")
     for th in sorted({150000, a.nudge}):
         saved, n = restart_saving(sessions, th)
         print(f"Restart at {th // 1000}k (handoff + /clear): cost -{saved:.0f}%, {n} restarts (upper estimate)")
