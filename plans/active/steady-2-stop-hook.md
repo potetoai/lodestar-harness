@@ -160,9 +160,9 @@ owner message, no agent edit; none = neither.
   `7cecc667` 5 of 6, A `fe6d7c80` 3 of 7.
 - Runs of the same verify failure: 92; length 1: 69, 2: 10, 3: 9, 6 or more:
   4 (6, 7, 7, 15). Limit 3 lets go only those four stuck runs (23 holds).
-  Limit 2 adds 14: the nine runs of three, of which four went on to a new
+  Limit 2 adds 13 (14 counting one unpushed hold): the nine runs of three, of which four went on to a new
   failure or a push (the agent was still fixing).
-- Q1: the count supports 3. Limit 2 saves 14 more turns in 17 days and cuts
+- Q1: the count supports 3. Limit 2 saves 13 more verify turns in 17 days and cuts
   runs that were still making progress.
 - Criteria holds (82) never repeat with the same text; same kind in a row 46
   times. Out of scope here; a candidate for the parent plan.
