@@ -366,7 +366,7 @@ out=$(rep "$py1"); rc=$?; t "repeat: the third hold says the next stop is let go
 out=$(rep "$py2"); rc=$?; t "repeat: the fourth stop is let go and names the target" bash -c '[ $1 = 0 ] && grep -q "make verify. failed the same way" <<<"$2"' _ "$rc" "$out"
 rep "$py1" >/dev/null; t "repeat: later stops with that failure are let go" [ $? = 0 ]
 rep "FAILED tests/test_x.py::test_c - z" >/dev/null; t "repeat: a different failing test holds again" [ $? = 2 ]
-rep "$py1" >/dev/null; rep "$py1" >/dev/null; t "repeat: a new failure starts its own count" [ $? = 2 ]
+rep "$py1" >/dev/null; rep "$py1" >/dev/null; rep "$py1" >/dev/null; t "repeat: a new failure starts its own count" [ $? = 2 ]
 rep "" >/dev/null; rep "$py1" >/dev/null; rep "$py1" >/dev/null; rep "$py1" >/dev/null
 t "repeat: a pass resets the count" [ $? = 2 ]
 rep "--- FAIL: TestA (0.01s)\nok" >/dev/null; rep "--- FAIL: TestA (0.03s)\nmore" >/dev/null; rep "--- FAIL: TestA (0.2s)" >/dev/null
