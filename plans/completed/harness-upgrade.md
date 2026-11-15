@@ -449,7 +449,7 @@ dựng tầng A và B) → chủ dự án làm tầng C → rồi mới làm tí
   template `project.md`; `bootstrap.sh` hỗ trợ repo nhiều phần (`--stack python=backend --stack node-ts=frontend`);
   hook nhắc toàn máy (`check-readiness.sh`, `install.sh`), **đã cài** trên máy chủ repo và thử bằng phiên
   Claude thật.
-- Thử brownfield trên `vn30-stock-tracker` (FastAPI + React), trong worktree riêng, **chỉ là bài thử**: PR đã
+- Thử brownfield trên project B (FastAPI + React), trong worktree riêng, **chỉ là bài thử**: PR đã
   đóng không gộp, nhánh và worktree đã xóa. Kết quả: `make verify` khoảng 3 giây; `doctor.sh` Ready; CI xanh;
   `kiem_tra_nhanh.py --db` 185/185 sau `ruff --fix`; pre-push của dự án đạt. Canary: lỗi lint thường và import
   `vnstock` ngoài `adapters/` (bất biến thành luật ruff `TID251`) đều bị chặn. Baseline: `ruff --fix` commit riêng,
@@ -669,7 +669,7 @@ không log số tài khoản/số thẻ. Structural test là **bắt buộc**.
 | 2026-09-29 | 5 | Template plan, file kế hoạch bắt buộc cho việc lớn + rủi ro cao (CI kiểm), reviewer kiểm nợ kỹ thuật | Giai đoạn 5 xong |
 | 2026-09-29 | 4 | Gom dòng trống (không đổi chữ), kiểm link trong CI | Giai đoạn 4 xong |
 | 2026-09-29 | 3 | Tests-first + khóa test, CI chặn vùng nhạy cảm thiếu test, bắt nhãn né linter, map level→lệnh, hướng dẫn bất biến→luật máy; thử thật với builder bị xúi | Giai đoạn 3 xong |
-| 2026-09-29 | 2 | Onboarding, intake gate, hook nhắc toàn máy, bootstrap nhiều phần; thử brownfield trên vn30 (đã xóa sau thử) | Thử greenfield đạt (thư mục tạm, đã xóa). Giai đoạn 2 xong |
+| 2026-09-29 | 2 | Onboarding, intake gate, hook nhắc toàn máy, bootstrap nhiều phần; thử brownfield trên project B (đã xóa sau thử) | Thử greenfield đạt (thư mục tạm, đã xóa). Giai đoạn 2 xong |
 | 2026-09-29 | 1 | Làm xong `enforcement/`, `rules/enforcement.md`, `CLAUDE.md` gốc; thử thật trên dự án mẫu Python và node-ts | `ci.yml` đã thử thật trên `orca-ci-sandbox`: xanh khi đúng, đỏ khi test hỏng hoặc lộ secret |
 
 ## 11. Decision log
@@ -702,7 +702,7 @@ không log số tài khoản/số thẻ. Structural test là **bắt buộc**.
 | 2026-09-29 | Install a machine-wide reminder hook (`SessionStart`) | Machine safety net when an agent skips the Router; it reminds, never blocks |
 | 2026-09-29 | Trials on real projects are throwaway: no real PRs, delete afterwards | The owner applies the system to real projects once it is finished |
 | 2026-09-29 | Onboarding has 2 paths in **one** file: A (new project) and B (existing project), sharing S1–S4; after onboarding every project follows the same process | About 70% of steps are shared; 2 files would duplicate and drift. When `onboarding.md` passes ~250 lines, split into a shared file + 2 short path files |
-| 2026-09-29 | Path B takes a before/after snapshot: the project's existing checks must give identical results before and after onboarding | The biggest risk for an existing project is breaking what works; the vn30 trial did this by hand |
+| 2026-09-29 | Path B takes a before/after snapshot: the project's existing checks must give identical results before and after onboarding | The biggest risk for an existing project is breaking what works; the project B trial did this by hand |
 | 2026-09-29 | Path A has a default-stack table; the owner confirms | Greenfield trial: the agent had to invent defaults |
 | 2026-09-29 | High-risk work: the owner approves **plain-language criteria**, not test code; a tester writes tests first, the builder may not edit them | The owner does not read code; separate who sets the exam from who takes it (owner's idea) |
 | 2026-09-29 | Changing `sensitive_paths` without tests: CI blocks unless a `No-Test-Reason:` trailer is present | Prevents token tests; the reason is public in the PR |

@@ -45,12 +45,12 @@ Kinds: **defect** = a check that should catch a case and does not;
   breaking old PR texts is low (only new merges are checked).
   Check: new tests for "changes requested" and "old commit" fail; existing
   route tests still pass.
-- **F2 (risk, P2).** When CI cannot run (no Actions minutes, App01 and ProjectS
+- **F2 (risk, P2).** When CI cannot run (no Actions minutes, project A and project B
   in late October), people merge on GitHub by hand and no Lodestar check runs:
-  ProjectS #157-#170 were hand-merged with a missing review line or a wrong route line (`.ai/handoff.md`,
+  project B #157-#170 were hand-merged with a missing review line or a wrong route line (`.ai/handoff.md`,
   sweeps 2026-10-28/29). Fix #92 ships with the batch. Idea only: the daily
   maintenance sweep lists merged PRs whose text fails `route_check`, so the
-  slip is seen within a day. Check: the sweep names #170 on ProjectS.
+  slip is seen within a day. Check: the sweep names #170 on project B.
 - **F3 (risk, P2).** Router rule 13 says a security-sensitive task is not done
   until `security_review` passes; no file under `enforcement/` reads that word.
   Fix idea: the review line names `security` when the route says so, checked
@@ -63,8 +63,8 @@ Kinds: **defect** = a check that should catch a case and does not;
   Needs care: deny rules can block the owner's own work. Decide only after a
   real incident or a count of such commands in session logs.
 - **F5 (watch, P3).** Learning from mistakes depends on correction keywords
-  (`feedback-check.sh`) and on the agent writing the row; ProjectS has 8 rows,
-  App01 none (`harness-health.md` section 1). That plan already measures this
+  (`feedback-check.sh`) and on the agent writing the row; project B has 8 rows,
+  project A none (`harness-health.md` section 1). That plan already measures this
   (HH-3); no separate work.
 
 ## 4. Not proposed

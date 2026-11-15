@@ -6,7 +6,7 @@
 
 ## 1. Goal
 
-Four ideas found while running vn30 under Orca, built into Orca itself (not
+Four ideas found while running project B under Orca, built into Orca itself (not
 installed as plugins or skills), plus one leftover from the GitHub username
 change:
 
@@ -23,11 +23,11 @@ change:
 
 | Item | Today |
 |---|---|
-| Criteria review | Nobody checks criteria before approval. On vn30 plan A (2026-09-30) a review by hand found about 6 gaps: thresholds with no data behind them, scope limited to named cases instead of a whole-data diff, rounding tolerance, an approval-phrase trap ("duyệt A / duyệt B" offered when the choice edits the criteria), over-strict bans. Tests-first flow: `rules/testing.md` section 3, steps 1 (criteria) and 2 (owner approval). |
-| Handoff | vn30 keeps it in `DANG-LAM.md` (Vietnamese); orca-workflow keeps it in this machine's private memory. Global `CLAUDE.md` step 5 says "the plan's progress log, or the project's status file". `check-readiness.sh` exits early in orca-workflow itself. |
-| Mutation testing | None. vn30 did it by hand (M1-M4). Stack Makefiles: `enforcement/stacks/{python,node-ts}/Makefile`; PR summary: `ci-checks.sh` section 5. |
+| Criteria review | Nobody checks criteria before approval. On project B plan A (2026-09-30) a review by hand found about 6 gaps: thresholds with no data behind them, scope limited to named cases instead of a whole-data diff, rounding tolerance, an approval-phrase trap ("duyệt A / duyệt B" offered when the choice edits the criteria), over-strict bans. Tests-first flow: `rules/testing.md` section 3, steps 1 (criteria) and 2 (owner approval). |
+| Handoff | project B keeps it in `DANG-LAM.md` (Vietnamese); orca-workflow keeps it in this machine's private memory. Global `CLAUDE.md` step 5 says "the plan's progress log, or the project's status file". `check-readiness.sh` exits early in orca-workflow itself. |
+| Mutation testing | None. project B did it by hand (M1-M4). Stack Makefiles: `enforcement/stacks/{python,node-ts}/Makefile`; PR summary: `ci-checks.sh` section 5. |
 | Name | "Orca" means both Orca ADE (stablyai, the orchestrator) and this policy repo. Rejected names: Keel, Ballast, Trellis, Bridle, Bosun. Still open: Halyard, Lodestar, Sextant, or a coined name. |
-| Username | `enforcement/setup-guide.md:24` clones from the old GitHub username. vn30 `.ai/enforcement.json` "repo" too (fixed by vn30 on its next upgrade). |
+| Username | `enforcement/setup-guide.md:24` clones from the old GitHub username. project B `.ai/enforcement.json` "repo" too (fixed by project B on its next upgrade). |
 
 ## 3. Order and why
 
@@ -84,8 +84,8 @@ Workflow for every phase: BUILD_REVIEW (builder + reviewer).
   says so). Template for the file in `enforcement/project/.ai/`.
 - orca-workflow: move the handoff part of this machine's "Harness state"
   memory into `.ai/handoff.md`; the memory keeps only stable facts.
-- vn30: its session moves `DANG-LAM.md` into `.ai/handoff.md` at its next
-  maintenance (`workflows/maintenance.md` gets the step). We never edit vn30
+- project B: its session moves `DANG-LAM.md` into `.ai/handoff.md` at its next
+  maintenance (`workflows/maintenance.md` gets the step). We never edit project B
   directly.
 
 ### Phase 3 — Mutation testing, report only (template 1.12.0)
@@ -115,7 +115,7 @@ reads the old keys once and rewrites them.
 
 ## 5. Acceptance criteria
 
-- [x] Phase 1: replayed on vn30 plan A's criteria as first written (before the
+- [x] Phase 1: replayed on project B plan A's criteria as first written (before the
   hand review), the critic finds at least 4 of the 6 gaps found by hand.
 - [x] Phase 1: with the critic section empty, "approve" is not recorded and
   the agent is told to run the critic; filled, it is recorded as before.
@@ -141,7 +141,7 @@ reads the old keys once and rewrites them.
   another machine (rare; copy the file).
 - **Q3.** Phase 3: mutation testing on changed sensitive files only, or every
   changed code file? Answered 2026-10-01: sensitive only (CI time; that is
-  where vn30 did it by hand).
+  where project B did it by hand).
 - **Q4.** Phase 4: the new name. Answered 2026-10-01: Lodestar-harness
   (repo `lodestar-harness`, short form Lodestar). The GitHub repo is renamed
   after merge; the folder moves to `D:/AI/Lodestar-harness` after merge.
@@ -156,7 +156,7 @@ Reviewed 2026-10-02: nothing here needs work now (decision log).
   from the phone. Candidate: an explicit owner phrase lets the agent run it,
   logged like an approval. Dropped: it weakens the guard, and the one push
   that needed it was blocked by a project hook failing on outside data.
-- Candidate rules from vn30: live-data checks report instead of blocking
+- Candidate rules from project B: live-data checks report instead of blocking
   pushes of unrelated code; classify a timeout by the exception chain
   (`__cause__`), not only our own clock. The critic covers "no hard-coded
   latest dates", "diff changed data against an outside source" and "settle
@@ -168,7 +168,7 @@ Reviewed 2026-10-02: nothing here needs work now (decision log).
 - Orca + Superpowers + gstack are three overlapping process systems on this
   machine; review later. Closed: a merged PR puts the Router over Superpowers;
   gstack is not installed and the Router uses it only when present.
-- Missing stack environment goes unnoticed (vn30, 2026-10-01): the project
+- Missing stack environment goes unnoticed (project B, 2026-10-01): the project
   moved from `D:` to `F:` and `make setup` never ran there (no
   `backend/.venv`), so `make verify` failed and nothing flagged it at session
   start. Candidate: `doctor.sh` and `check-readiness.sh` detect a missing
@@ -181,7 +181,7 @@ Reviewed 2026-10-02: nothing here needs work now (decision log).
 |---|---|---|
 | 2026-10-01 | — | Plan written; Q1 answered (hook); phase 1 approved |
 | 2026-10-01 | 1 | `agents/critic.md`; `criteria_reviewed` in `orca-lib.sh`; `approval-record.sh` records nothing for a plan with an empty `## Criteria review`; plan TEMPLATE section; tests-first step 1, `workflows/complex.md` gate, Router, README, `rules/enforcement.md`; setup-guide clones from `potetoai`; VERSION 1.10.0. test.sh and check-links pass |
-| 2026-10-01 | 1 | Blind replay on vn30 plan A's first draft (code at `7eac792^`, no transcripts): critic found 4 of the 6 hand-found gaps (whole-DB scope instead of 6 symbols; tolerance on "equal"; tolerance with a unit, absolute for low prices; criterion 3 too strict, shown to contradict criterion 5). Missed: the same whole-DB scope for criterion 6 (only for criterion 4); the approval-phrase trap (it came from a later owner message, not in the draft). Found 5 more: k also drives `_xet_quyen_mua` and `dieu_chinh_qua_muc`; earlier auto-patches not re-checked; checks on live DB state; "explain every difference" untestable; no signal for direction B debt |
+| 2026-10-01 | 1 | Blind replay on project B plan A's first draft (code at `7eac792^`, no transcripts): critic found 4 of the 6 hand-found gaps (whole-DB scope instead of 6 symbols; tolerance on "equal"; tolerance with a unit, absolute for low prices; criterion 3 too strict, shown to contradict criterion 5). Missed: the same whole-DB scope for criterion 6 (only for criterion 4); the approval-phrase trap (it came from a later owner message, not in the draft). Found 5 more: k also drives `_xet_quyen_mua` and `dieu_chinh_qua_muc`; earlier auto-patches not re-checked; checks on live DB state; "explain every difference" untestable; no signal for direction B debt |
 | 2026-10-01 | 2 | Q2 answered (gitignored). `check-readiness.sh` tells a new session to read `.ai/handoff.md` (session start only, also in orca-workflow); `bootstrap.sh` gitignores it and does not warn about it; global `CLAUDE.md` step 5 names the file and "continue"; maintenance step 1 moves an old status file into it; doctor A12 warns when `.venv` / `node_modules` is missing and the session hook says "run make setup"; orca-workflow's own handoff moved from machine memory into `.ai/handoff.md`; VERSION 1.11.0. test.sh and check-links pass |
 | 2026-10-01 | 2 | Global `CLAUDE.md` "For subagents": a dispatched subagent skips startup steps 1-3 and 5; `workflows/build-review.md` Review cost points to it. Fixed test.sh `git check-ignore -q` with two paths. test.sh and check-links pass |
 | 2026-10-01 | 3 | Q3 answered (sensitive only). Spike on Windows in throwaway projects: cosmic-ray limits itself to given files and runs on Windows (mutmut 3 does not); Stryker `--mutate` with the command runner works with any `npm test`. `make test-mutation FILES=...` in both stacks (cosmic-ray added to `requirements-dev.txt`; Stryker is a devDependency the project adds); multi-part root Makefile routes files to each part; `ci-checks.sh` section 6 runs it on changed sensitive files with a 15-minute limit and writes the score and survivors to the PR summary, never failing; `rules/testing.md`, `rules/enforcement.md`, reviewer role; VERSION 1.12.0. End to end on a throwaway python project: weak test, 8 survivors named with lines; strong tests, score shown. Review fixes: incompetent mutants counted apart, `timeout -k` plus restore of the mutated files, empty report, missing Stryker says "not set up". test.sh and check-links pass |
@@ -203,7 +203,7 @@ Reviewed 2026-10-02: nothing here needs work now (decision log).
 | 2026-10-01 | A12 is a warning, not a failure | A missing env is fixed by one command (`make setup`), not a readiness gap; a failure would block every session until then |
 | 2026-10-01 | Small diffs get a cheap review: goal and diff in the prompt, no extra reading, no test rerun, cheapest model (`workflows/build-review.md` Review cost) | A fresh-subagent review of this phase's ~50-line diff cost about 40k tokens re-reading files; owner asked to cut it |
 | 2026-10-01 | The review is not tied to the criteria hash: after a criteria edit the agent must rerun the critic by rule, the hook does not check it | A stale-review check needs a second hash per plan; add it if agents skip the rerun |
-| 2026-10-01 | Q3: mutation testing runs on changed files in `sensitive_paths` only | Owner's choice; CI time, and that is where vn30 did it by hand |
+| 2026-10-01 | Q3: mutation testing runs on changed files in `sensitive_paths` only | Owner's choice; CI time, and that is where project B did it by hand |
 | 2026-10-01 | Python mutation tool: cosmic-ray, not mutmut | mutmut 3 needs `fork()` (no native Windows, where the owner works); cosmic-ray takes a file list and runs on both |
 | 2026-10-01 | The python `test-mutation` recipe runs the tests once first and reports mutants that did not run | cosmic-ray marks a broken test command as killed or incompetent, which would show a perfect score |
 | 2026-10-01 | Mutation testing is opt-in per PR (label `test-mutation`; agent suggests, owner agrees) | Owner's choice after the phase cost ~70k tokens; acting on survivors in every sensitive PR costs agent tokens, and sensitive changes already have approved criteria and locked tests |

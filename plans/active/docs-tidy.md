@@ -89,7 +89,7 @@ decision log; the reviewer finds no lost rule; links pass.
 
 ### Phase 4: Check and close
 
-Two weeks after phase 3, read the feedback logs of this repo, vn30 and App01
+Two weeks after phase 3, read the feedback logs of this repo, project B and project A
 for any miss traced to a moved rule. None: move this plan to
 `plans/completed/`. Any: put the text back where the miss happened.
 

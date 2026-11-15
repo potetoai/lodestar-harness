@@ -108,7 +108,7 @@ Throwaway repo, probe hooks in `.codex/hooks.json`, one `codex exec` run:
 
 ## 5. Open questions
 
-- **Q1:** existing projects (vn30): rename on `--upgrade`, or leave
+- **Q1:** existing projects (project B): rename on `--upgrade`, or leave
   `CLAUDE.md` and only warn? **Rename** (owner, 2026-10-11).
 - **Q2:** phase 2 now, or after Codex has been used as a reviewer for a while?
   **Now** (owner, 2026-10-11).
@@ -130,8 +130,8 @@ Throwaway repo, probe hooks in `.codex/hooks.json`, one `codex exec` run:
 | 2026-10-11 | 2 | Live (throwaway project from `bootstrap.sh`, real Codex run): patch to `.ai/approvals.log` blocked; lint reason returned for a BAD file; `pip install` blocked; Stop sent Codex back until `make verify` passed. Open: inside its Windows sandbox Codex itself cannot find `make` (hooks run outside it) |
 | 2026-10-11 | 2 | Review (PR #14), fixed: spaces around a patch file line slipped past the guards; a patch with no file line now blocks; `../` resolved in bash (macOS has no `realpath -m`); `--upgrade` refreshes `commandWindows`. `enforcement/test.sh` 268 pass (23 new). Open, same as Claude: a shell write (`echo >> file`) is not seen by the file guards; CI still checks |
 | 2026-10-11 | 2 | Merged as PR #14 |
-| 2026-10-12 | 2 | App01 upgraded to 2.3.0 (vn30: PR open). Two generic bugs found in that upgrade, fixed on `fix/bootstrap-crlf-prettier` (template 2.3.1): from a CRLF checkout of this repo `--upgrade` rewrote unchanged files as CRLF (files now install as LF, compared without CR); Prettier failed on `.codex/hooks.json` (node-ts at the repo root gets `.claude/` and `.codex/` in `.prettierignore`). `enforcement/test.sh` 278 pass (10 new in sections 24 and 25) |
-| 2026-10-12 | — | Merged as PR #15 (template 2.3.1). vn30 on 2.3.0 (its PR merged 2026-10-11). Owner agreed to close; plan moved to `completed/`. Left open for Codex: no `make` inside its Windows sandbox; a shell write is not seen by the file guards (CI is the gate); the PR #14 review fixes had no second live Codex run |
+| 2026-10-12 | 2 | project A upgraded to 2.3.0 (project B: PR open). Two generic bugs found in that upgrade, fixed on `fix/bootstrap-crlf-prettier` (template 2.3.1): from a CRLF checkout of this repo `--upgrade` rewrote unchanged files as CRLF (files now install as LF, compared without CR); Prettier failed on `.codex/hooks.json` (node-ts at the repo root gets `.claude/` and `.codex/` in `.prettierignore`). `enforcement/test.sh` 278 pass (10 new in sections 24 and 25) |
+| 2026-10-12 | — | Merged as PR #15 (template 2.3.1). project B on 2.3.0 (its PR merged 2026-10-11). Owner agreed to close; plan moved to `completed/`. Left open for Codex: no `make` inside its Windows sandbox; a shell write is not seen by the file guards (CI is the gate); the PR #14 review fixes had no second live Codex run |
 
 ## 8. Decision log
 
