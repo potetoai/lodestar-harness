@@ -172,3 +172,4 @@ owner message, no agent edit; none = neither.
 | Date | Decision | Reason |
 |---|---|---|
 | 2026-11-13 | Owner: limit 3 holds on the same failure, open to change after phase 0 | In the worst session 3 saves 23 of 26 turns and 2 saves 24; 3 leaves one more try at a real fix |
+| 2026-11-15 | Owner: phase 1 keys a repeated failure on the failing test names, not the exact output text | Output text shifts when lines wrap and resets the count; test names are stable |

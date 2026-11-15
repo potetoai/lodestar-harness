@@ -111,3 +111,4 @@ Done when: the owner has decided.
 |---|---|---|
 | 2026-11-13 | Owner: local name check yes, in this repo only | This is the one public repo; the projects are private, so a check there guards nothing |
 | 2026-11-13 | Owner: git history is left as it is | A rewrite is a forced push on a public repo and breaks every PR link; the names leave the current files only |
+| 2026-11-15 | Owner: scan untracked files only when the command has `git add` | A scratch file that cannot enter the commit should not block it |
