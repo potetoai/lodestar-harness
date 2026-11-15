@@ -113,6 +113,7 @@ Done when: gate S5-1 is met or stopped.
 |---|---|---|
 | 2026-11-13 | none | Plan written |
 | 2026-11-15 | 0 | Three numbers explained, four tables below (PR #202); item 3 waits for the owner's `/context` |
+| 2026-11-15 | 1 | `usage-report.py` fixed (PR #212): one task per opened PR, images by size, median per task; recount below |
 
 ### Phase 0 findings (2026-11-15)
 
@@ -189,6 +190,21 @@ did not fall after 2026-11-10.
 | Global `settings.json` | `opus`, effort medium for it |
 | SIMPLE tasks on the strong tier | 74 of 76 (2 on another model) |
 | All turns on the strong tier | 97% |
+
+### Phase 1 recount with the fixed report (2026-11-15)
+
+Same window, 400 sessions. A PR-body route now makes one task per opened PR,
+from the call after the previous PR; an image counts by its size, not as
+base64 text.
+
+| Measure | Old report | Fixed report (before / after 11-10) |
+|---|---|---|
+| SIMPLE tasks, mean cost, median cost | 76, 0.43M, none | 90, 0.38M, 0.21M (0.22M / 0.12M) |
+| SIMPLE owner messages per task | 4.0 | 3.5 |
+| `Read` share of tool-result tokens; images | 58%; counted as text | 23%; 2% of all |
+
+The first task of a session still starts at the session's first call, so
+the mean keeps the carried work; rate ideas A, B, E on the median.
 
 ## 8. Decision log
 
