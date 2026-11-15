@@ -41,7 +41,7 @@ remain the gate).
 
 ## 3. Phases
 
-### Phase 0: What the 309 holds were (read only)
+### Phase 0: What the 309 holds were (read only; done 2026-11-15, report in section 7)
 
 Add a `--holds` table to `scripts/usage-report.py`, so the count can be
 repeated without a model: per project and per hook message kind (verify
@@ -105,6 +105,13 @@ Done when: gate S2-1 is met or stopped and the owner has seen the count.
 
 - **Q1.** Limit of 2 or 3 holds on the same failure (parent Q4)? **3**
   (answered 2026-11-13), unless phase 0 shows otherwise: then ask again.
+  Phase 0 supports 3 (section 7).
+- **Q2.** Phase 1 failure id: keep the hook's id (whole output, digits
+  removed), or build it from the names of the failing tests? In one session
+  of project C the same two red tests kept switching between two texts (the
+  last 60 lines start elsewhere when progress lines wrap at another width),
+  so the exact id reset the count six times. Limit 3 lets
+  go 23 verify holds with the exact text, at most 48 with any verify failure.
 
 ## 6. Not in scope
 
@@ -119,6 +126,46 @@ Done when: gate S2-1 is met or stopped and the owner has seen the count.
 | Date | Phase | Work |
 |---|---|---|
 | 2026-11-13 | none | Plan written |
+| 2026-11-15 | 0 | `usage-report.py --holds`; report below; supports limit 3 (Q1); Q2 added (PR #204) |
+
+Phase 0 report (`python scripts/usage-report.py --holds --since 2026-10-28
+--until 2026-11-13`, run 2026-11-15). The window now holds 326 holds in
+18,745 turns, not 309 in 18,050: sessions begun by 2026-11-13 kept running.
+A repeat has the same kind and text (digits removed) as the session's
+previous hold. Before a repeat: edit = an agent edit tool call; owner = an
+owner message, no agent edit; none = neither.
+
+| Project | Kind | Holds | Repeats | edit / owner / none | Let go at 2 | Let go at 3 |
+|---|---|---|---|---|---|---|
+| A | verify fails | 73 | 21 | 8 / 8 / 5 | 11 | 7 |
+| A | criteria not reviewed | 52 | 0 | - | 0 | 0 |
+| A | unpushed commits | 43 | 3 | 2 / 0 / 1 | 1 | 0 |
+| A | feedback check | 8 | 2 | 1 / 1 / 0 | 0 | 0 |
+| B | verify fails | 28 | 5 | 4 / 1 / 0 | 1 | 0 |
+| B | unpushed commits | 21 | 0 | - | 0 | 0 |
+| B | criteria not reviewed | 20 | 0 | - | 0 | 0 |
+| B | feedback check | 6 | 0 | - | 0 | 0 |
+| C | verify fails | 50 | 33 | 10 / 18 / 5 | 24 | 16 |
+| C | criteria not reviewed | 10 | 0 | - | 0 | 0 |
+| C | unpushed commits | 9 | 0 | - | 0 | 0 |
+| C | feedback check | 4 | 1 | 1 / 0 / 0 | 0 | 0 |
+| C | locked tests | 2 | 1 | 0 / 1 / 0 | 0 | 0 |
+| All | | 326 | 66 | 26 / 29 / 11 | 37 | 23 |
+
+- Kinds: verify fails 151, criteria 82, unpushed 73, feedback check 18
+  (0.1% of turns; nothing proposed), locked tests 2.
+- Top five sessions by repeats (repeats of holds): C `efdc92f6` 14 of 15
+  (one failure the whole session), C `c6e618ea` 12 of 22 (the session in
+  section 1; its failure shows as two texts, Q2), A `4011fd3b` 6 of 8, A
+  `7cecc667` 5 of 6, A `fe6d7c80` 3 of 7.
+- Runs of the same verify failure: 92; length 1: 69, 2: 10, 3: 9, 6 or more:
+  4 (6, 7, 7, 15). Limit 3 lets go only those four stuck runs (23 holds).
+  Limit 2 adds 13 (14 counting one unpushed hold): the nine runs of three, of which four went on to a new
+  failure or a push (the agent was still fixing).
+- Q1: the count supports 3. Limit 2 saves 13 more verify turns in 17 days and cuts
+  runs that were still making progress.
+- Criteria holds (82) never repeat with the same text; same kind in a row 46
+  times. Out of scope here; a candidate for the parent plan.
 
 ## 8. Decision log
 
