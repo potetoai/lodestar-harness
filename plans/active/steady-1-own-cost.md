@@ -111,6 +111,7 @@ Done when: the 2026-12-09 count carries the line and the owner has seen it.
 |---|---|---|
 | 2026-11-13 | none | Plan written |
 | 2026-11-15 | 0 | Why eleven releases: table below (PR #201) |
+| 2026-11-15 | 1 | Release check, release-day text, exception tightened (PR #207) |
 
 Phase 0, from `git log -- enforcement/VERSION` and each release PR's text.
 "Urgent" means a reason on the rule's list (`enforcement/README.md` section 3).
@@ -153,3 +154,5 @@ Findings:
 | 2026-11-13 | Owner: CI check on the release rhythm, yes; share target 5%, 10% if 5% proves too hard | The text rule of 2026-10-19 was not kept. The target is a signal at the monthly count, not a block |
 | 2026-11-13 | Owner: release day is Saturday | Owner's choice; merged changes wait on main until then, urgent releases apart |
 | 2026-11-15 | Owner: tighten the "new hooks release at once" exception in phase 1; the new wording goes to the owner for approval | Loose as written; it can excuse most releases |
+| 2026-11-15 | Batch threshold 6 days, not 7 | A weekly Saturday release a few hours earlier than the last one would fail at 7 |
+| 2026-11-15 | Router rule 15 makes every session in an outdated project propose an upgrade (doctor A9b); wording proposed in PR #207, Router not edited | The plan forbids Router edits here; a ROUTER.md PR needs the eval suite |
