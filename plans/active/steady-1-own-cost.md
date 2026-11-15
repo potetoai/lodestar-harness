@@ -110,6 +110,41 @@ Done when: the 2026-12-09 count carries the line and the owner has seen it.
 | Date | Phase | Work |
 |---|---|---|
 | 2026-11-13 | none | Plan written |
+| 2026-11-15 | 0 | Why eleven releases: table below (PR pending) |
+
+Phase 0, from `git log -- enforcement/VERSION` and each release PR's text.
+"Urgent" means a reason on the rule's list (`enforcement/README.md` section 3).
+
+| Version | Date | PR | Carried | Class | Reason given |
+|---|---|---|---|---|---|
+| 2.9.7 | 11-07 | #166 | #162-#165 | urgent | test-fix approval missing in project A's hooks; a wrong locked test could not be fixed |
+| 2.9.8 | 11-07 | #168 | #167 | urgent | Stop hook's long changed-file list blocked project A; a fault 2.9.7 shipped |
+| 2.9.9 | 11-07 | #169 | own fix | urgent | a test locked twice blocked the test-fix approval in project B |
+| 2.9.10 | 11-08 | #171 | #170 | urgent | a gitleaks download outage turned project CI red (B, A) |
+| 2.9.11 | 11-09 | #176 | #172-#174 | owner | owner's go: weekly main CI, to cut CI minutes sooner |
+| 2.9.12 | 11-09 | #180 | #177, #178 | owner | owner's go, so projects not yet on 2.9.11 upgrade once |
+| 2.9.13 | 11-10 | #183 | #181 | neither | opt-in feature (`owner_only_paths`); no reason given |
+| 2.9.14 | 11-10 | #185 | #184 | neither | "no project took 2.9.13 yet, so they upgrade once" (agent's choice) |
+| 2.9.15 | 11-10 | #187 | #186 | neither | guard checks PR text before sending, to cut red CI runs |
+| 2.9.16 | 11-11 | #190 | #188, #189 | neither | none given; fix for a gap a project reported, and a session-start note |
+| 2.9.17 | 11-12 | #193 | #191, #192 | neither | none given; carried fixes for a guard false block and a Stop-hook repeat loop, both project reports |
+
+Findings:
+
+- 4 urgent, 2 owner, 5 neither. The urgent four came in two days (11-07,
+  11-08); 2.9.8 fixed a fault 2.9.7 shipped. Once the owner asked early
+  (11-09), the agents kept releasing each merge the same day: habit.
+- Three of the five "neither" releases (2.9.13 to 2.9.15) shipped in 100
+  minutes on 11-10, one per merged PR. 2.9.14's reason ("upgrade once")
+  reverses itself: each release asked for one more upgrade.
+- After 2.9.10 no release PR named the rule's list or the next batch
+  date, and nothing stopped one. 2.9.16 and 2.9.17 gave no reason at all.
+- 2.9.17's two fixes (a guard false block, a Stop-hook repeat loop) could
+  have passed as urgent ("a hook blocking correct work") had the PR said
+  so; the `Lodestar release:` line of phase 1 makes that choice visible.
+- Fit for phase 1: the cause is habit after the first early release, not
+  urgent faults. The CI check (Q1) and the release line target that; the
+  urgent path stays needed (4 of 11).
 
 ## 8. Decision log
 
