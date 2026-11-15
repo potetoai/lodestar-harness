@@ -145,19 +145,18 @@ else
   echo "✅ no new lint suppressions"
 fi
 
-# A valid later round may revise old tests only with fresh approval for a
-# plan it changes: approved criteria no earlier valid round carried
-# (round_hashes), so approval cannot be reused, while another plan's round in
-# between does not use it up. Or the one test the owner freshly approved to
-# fix ("duyệt sửa test <path>", fresh_test_fixes), compared with the
-# preceding valid round.
+# A valid later round may revise old tests only with a fresh approval
+# (fresh_approval) for a plan it changes: approval cannot be reused, while
+# another plan's round in between does not use it up. Or the one test the
+# owner freshly approved to fix ("duyệt sửa test <path>", fresh_test_fixes),
+# compared with the preceding valid round.
 fresh_relock_approval() {
-  local c=$1 p now used
-  used=$(round_hashes "$c^")
+  local c=$1 p used
+  used=$(used_hashes "$c^")
   while IFS= read -r p; do
-    [[ $p == .ai/plans/*.md ]] && plan_approved_at "$c" "$p" || continue
-    now=$(git show "$c:$p" 2>/dev/null | criteria_hash)
-    grep -qxF -- "$now" <<<"$used" || return 0
+    [[ $p == .ai/plans/active/*.md ]] && plan_approved_at "$c" "$p" || continue
+    git show "$c:.ai/approvals.log" 2>/dev/null |
+      fresh_approval "$(git show "$c:$p" 2>/dev/null | criteria_hash)" "$p" "$used" && return 0
   done < <(git -c core.quotepath=off diff-tree --root --no-commit-id --name-only -r "$c")
   return 1
 }
