@@ -149,6 +149,7 @@ report." The agent routes the phase through the Router as usual.
 | 2026-11-15 | 7 | Phase 1: names out of files that are not measuring (PR #200) |
 | 2026-11-15 | 1 | Phase 0: eleven releases classed, cause is habit (PR #201) |
 | 2026-11-15 | 2 | Phase 0: holds counted, limit 3 supported, Q2 opened (PR #204) |
+| 2026-11-15 | 2 | Phase 1: same failure let go after 3 holds (PR #210) |
 | 2026-11-15 | 5 | Phase 0: three numbers explained, `/context` from the owner pending (PR #202) |
 | 2026-11-15 | 1 | Phase 1: release rhythm CI check (PR #207) |
 | 2026-11-15 | 7 | Phase 2: local name check (PR #203) |

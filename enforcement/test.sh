@@ -239,7 +239,9 @@ hold "test_b failed"; t "stop hook lets go when only a note changed since the ho
 echo n3 > "$p/.ai/plan.md"
 hold "test_c failed"; t "stop hook: a note changed after a release does not rerun verify" [ $? = 0 ]
 echo y > "$p/a.txt"
-hold "test_b failed"; t "stop hook holds again after a code file changes" [ $? = 2 ]
+hold "test_b failed"; t "stop hook lets go a failure held 3 times in a row (code changed between)" [ $? = 0 ]
+echo z > "$p/a.txt"
+hold "test_d failed"; t "stop hook holds a new failure after that" [ $? = 2 ]
 # A pass is remembered: with no change since, the next stop skips make verify
 # (it takes minutes in real projects); any change runs it again.
 c=$tmp/passcache; mkdir -p "$c"; git -C "$c" init -q
@@ -253,7 +255,7 @@ cstop; cstop; t "stop hook skips make verify when nothing changed since a pass" 
 echo b > "$c/a.txt"; cstop; t "stop hook runs make verify again after a change" [ "$(runs)" = 2 ]
 echo c > "$c/new.txt"; cstop; cstop; t "stop hook: a new file runs it once, then skips" [ "$(runs)" = 3 ]
 printf 'verify:
-	@echo run >> "$$RUNS"; exit 1
+	@echo run >> "$$RUNS"; cat a.txt; exit 1
 ' > "$c/Makefile"
 cstop; t "stop hook: a failing run after a change still holds" [ $? = 2 ]
 cstop; cstop; cstop; t "stop hook: once a failure was let go, later stops do not rerun verify" [ $? = 0 -a "$(runs)" = 5 ]
@@ -349,6 +351,29 @@ git -C "$p" checkout -q -b proto/try
 hold "test_c failed"; t "stop hook lets a prototype branch stop while verify fails" [ $? = 0 ]
 git -C "$p" checkout -q -; echo e > "$p/a.txt"
 hold "test_c failed"; t "stop hook holds that failure again off the prototype branch" [ $? = 2 ]
+
+# 6b2. The same failure is held 3 times in a row, then let go; the failing test
+#      names, not the wrapped progress text, say whether it is the same.
+r=$tmp/repeat; mkdir -p "$r"; git -C "$r" init -q
+printf 'verify:\n\t@[ -z "$$MSG" ] || { printf "%%b\\n" "$$MSG"; exit 1; }\n' > "$r/Makefile"
+echo a > "$r/a.txt"; git -C "$r" add -A; git -C "$r" -c user.name=t -c user.email=t@t commit -qm init
+rep() { echo "$RANDOM$RANDOM" > "$r/a.txt"; MSG=$1 CLAUDE_PROJECT_DIR=$r bash "$here/agents/claude/hooks/verify-before-stop.sh" 2>&1 >/dev/null <<<'{"stop_hook_active":false}'; }
+py1='tests/test_x.py ..F\n.F [ 50%%]\nFAILED tests/test_x.py::test_a - assert 1 == 2\nFAILED tests/test_x.py::test_b - x'
+py2='tests/test_x.py ..F.F\n [ 50%%]\nFAILED tests/test_x.py::test_b - y\nFAILED tests/test_x.py::test_a - assert 3 == 4'
+rep "$py1" >/dev/null; t "repeat: first hold" [ $? = 2 ]
+rep "$py2" >/dev/null; t "repeat: same failing tests in other wrapped text is held again" [ $? = 2 ]
+out=$(rep "$py1"); rc=$?; t "repeat: the third hold says the next stop is let go" bash -c '[ $1 = 2 ] && grep -q "next stop with it is let go" <<<"$2"' _ "$rc" "$out"
+out=$(rep "$py2"); rc=$?; t "repeat: the fourth stop is let go and names the target" bash -c '[ $1 = 0 ] && grep -q "make verify. failed the same way" <<<"$2"' _ "$rc" "$out"
+rep "$py1" >/dev/null; t "repeat: later stops with that failure are let go" [ $? = 0 ]
+rep "FAILED tests/test_x.py::test_c - z" >/dev/null; t "repeat: a different failing test holds again" [ $? = 2 ]
+rep "$py1" >/dev/null; rep "$py1" >/dev/null; rep "$py1" >/dev/null; t "repeat: a new failure starts its own count" [ $? = 2 ]
+rep "" >/dev/null; rep "$py1" >/dev/null; rep "$py1" >/dev/null; rep "$py1" >/dev/null
+t "repeat: a pass resets the count" [ $? = 2 ]
+rep "--- FAIL: TestA (0.01s)\nok" >/dev/null; rep "--- FAIL: TestA (0.03s)\nmore" >/dev/null; rep "--- FAIL: TestA (0.2s)" >/dev/null
+rep "--- FAIL: TestA (1.5s)" >/dev/null; t "repeat: go test names count too" [ $? = 0 ]
+rep "lint: a.py:1 E501" >/dev/null; rep "lint: a.py:2 E501" >/dev/null; rep "lint: a.py:3 E501" >/dev/null
+rep "lint: b.py:1 E501" >/dev/null; t "repeat: with no test names the text decides" [ $? = 2 ]
+for i in 1 2 3 4; do CLAUDE_PROJECT_DIR=$tmp/hooks bash "$here/agents/claude/hooks/verify-before-stop.sh" 2>/dev/null <<<"{\"stop_hook_active\":false}"; done; t "repeat: without git every failed stop still holds" [ $? = 2 ]
 
 # 6c. Stop hook sends the agent back once per HEAD while commits exist only on
 #     this machine: push the own branch (always allowed); on main, move them.
