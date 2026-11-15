@@ -104,8 +104,20 @@ raise `VERSION` at most once every 7-14 days, so each project upgrades
 rarely. Merged changes wait on main until the next batch. Release at once
 only for a fault that blocks work in a project (a hook blocking correct
 work, a false approval, a broken install) or a security fix. Projects read
-`rules/` and `agents/` live from this repo, so a change whose rule text
-needs new hooks is released at once, with that change.
+`rules/` and `agents/` live from this repo, so a rule text that needs new
+hooks must not reach main before its hooks are released: keep that PR open
+until the release day and merge it with the batch, unless its fault is on
+the list above.
+
+Release day is Saturday (owner, 2026-11-13). Until then the handoff keeps a
+line `Unreleased: <PR numbers>`. The release PR text carries
+`Lodestar release: batch` or `Lodestar release: urgent, <reason from the
+list above>`; CI (`scripts/check-release-rhythm.sh`) fails a batch release
+less than 6 days after the last raise on main. When the owner asks for an
+early release, say once what it costs (one upgrade session per project,
+about 1M weighted units in all) and the next release day, then follow the
+owner's choice. In projects, an upgrade that is not urgent rides the 14-day
+maintenance run (`workflows/maintenance.md`).
 
 Raise `VERSION`, then in each project:
 
