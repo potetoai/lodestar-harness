@@ -9,7 +9,8 @@
 # Removed lines never count: taking a name out passes. A commit is checked
 # against every change to tracked files and every new untracked file, since
 # the hook runs before a chained `git add ... && git commit`. Needs jq; without
-# it the check does nothing.
+# it the check does nothing. Price of that: a name in an unrelated unstaged
+# change or untracked scratch file also blocks a plain commit; move or ignore it.
 input=$(cat)
 cmd=$(jq -r '.tool_input.command // empty' <<<"$input" 2>/dev/null)
 [ -n "$cmd" ] || exit 0
@@ -54,7 +55,7 @@ tr -d '\r' < "$list" | LC_ALL=C sed -e $'1s/^\xEF\xBB\xBF//' -e 's/^[[:space:]]*
 # Added lines and the changed paths (a name in a file name counts too).
 added() {
   git diff --no-color --no-ext-diff -U0 "$@" 2>/dev/null | grep '^+' | grep -vE '^\+\+\+ (a/|b/|/dev/null)'
-  git diff --name-only --no-renames "$@" 2>/dev/null
+  git -c core.quotepath=off diff --name-only --no-renames "$@" 2>/dev/null
 }
 text=$cmd
 # A message or body read from a file (-F, --file, --body-file).
@@ -66,7 +67,7 @@ done < <(grep -oE "$re_file" <<<"$cmd" | sed -E 's/^(--body-file|--file|-F)[= ]+
 if [[ $kind == *commit* ]]; then
   # Staged and unstaged (commit -a, a chained git add), then new files.
   if git rev-parse --verify -q HEAD >/dev/null; then text+=$'\n'$(added HEAD); else text+=$'\n'$(added --cached); fi
-  new=$(git -C "$top" ls-files -o --exclude-standard 2>/dev/null | grep -vxF .ai/private-names.txt)
+  new=$(git -C "$top" -c core.quotepath=off ls-files -o --exclude-standard 2>/dev/null | grep -vxF .ai/private-names.txt)
   text+=$'\n'$new
 fi
 if [[ $kind == *pr* ]]; then
