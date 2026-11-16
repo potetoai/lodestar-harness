@@ -115,6 +115,7 @@ Done when: gate S5-1 is met or stopped.
 | 2026-11-15 | 0 | Three numbers explained, four tables below (PR #202); item 3 waits for the owner's `/context` |
 | 2026-11-15 | 1 | `usage-report.py` fixed (PR #212): one task per opened PR, images by size, median per task; recount below |
 | 2026-11-16 | 1 | Ideas rated, owner chose A, B, C, D (trial); E dropped, F later (PR #213) |
+| 2026-11-16 | 1 | A and B in `workflows/simple.md` (PR #214) |
 
 ### Phase 0 findings (2026-11-15)
 
