@@ -18,7 +18,7 @@ lint:
 # ESLint runs on script files only.
 lint-file:
 	@$(NPX) prettier --write --ignore-unknown --log-level warn "$(FILE)"
-	@case "$(FILE)" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) $(NPX) eslint "$(FILE)" ;; esac
+	@case "$(FILE)" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs|*.mts|*.cts) $(NPX) eslint "$(FILE)" ;; esac
 
 format-check:
 	$(NPX) prettier --check .
