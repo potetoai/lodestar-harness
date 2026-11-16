@@ -55,8 +55,8 @@ and their data loss and security exception, still decide what a run raises.
 The `critic-limit.sh` hook enforces this: it counts the run lines (Output)
 of the plan the brief names and blocks a run past 3, plus one for each owner
 approval of the plan's criteria (the first one too: it covers the next
-change, whose run comes before the new approval) and each "duyệt critic
-<plan name>" the owner types in their own message (recorded by the approval
+change, whose run comes before the new approval) and each "approve critic
+<plan name>" (or "duyệt critic ...") the owner types in their own message (recorded by the approval
 hook; it approves no criteria; it allows the next run even when past runs
 exceed the limit; the plan's name works with or without its date, and the
 block message prints the line to type). Ask for it only after the owner
