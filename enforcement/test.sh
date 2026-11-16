@@ -328,6 +328,7 @@ t "python test-related runs the changed module's and changed tests only" bash -c
 out=$(make -s -C "$y" test-related PY=echo CHANGED="README.md" 2>&1); t "python test-related with no related tests runs none" grep -q "no tests for the changed files" <<<"$out"
 out=$(make -s -C "$y" -n verify-quick 2>&1); t "python stack has verify-quick" [ $? = 0 ]
 out=$(make -s -C "$here/stacks/node-ts" test-related CHANGED= 2>&1); t "node test-related with no changed files runs nothing" grep -q "no changed files" <<<"$out"
+for e in mts cts; do out=$(make -s -C "$here/stacks/node-ts" lint-file NPX=echo FILE=a.$e 2>&1); t "node lint-file runs eslint on .$e" grep -q "^eslint a.$e" <<<"$out"; done
 # In a subfolder project the notes are .ai/ and docs/ of that folder; its
 # name is matched as plain text (dot and [ are not patterns).
 q=$tmp/mononotes; s='a.b[c'; mkdir -p "$q/$s/.ai" "$q/aXb[c/docs"; git -C "$q" init -q; cp "$c/Makefile" "$q/$s/"
