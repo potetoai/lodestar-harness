@@ -98,7 +98,7 @@ Done when: gate S5-1 is met or stopped.
 
 ## 5. Open questions
 
-- **Q1.** May SIMPLE changes of one sitting share a PR (idea A), or does the
+- **Q1.** (answered 2026-11-16: yes, decision log) May SIMPLE changes of one sitting share a PR (idea A), or does the
   owner want one PR per change for the record?
 
 ## 6. Not in scope
@@ -114,6 +114,7 @@ Done when: gate S5-1 is met or stopped.
 | 2026-11-13 | none | Plan written |
 | 2026-11-15 | 0 | Three numbers explained, four tables below (PR #202); item 3 waits for the owner's `/context` |
 | 2026-11-15 | 1 | `usage-report.py` fixed (PR #212): one task per opened PR, images by size, median per task; recount below |
+| 2026-11-16 | 1 | Ideas rated, owner chose A, B, C, D (trial); E dropped, F later (PR #213) |
 
 ### Phase 0 findings (2026-11-15)
 
@@ -206,8 +207,21 @@ base64 text.
 The first task of a session still starts at the session's first call, so
 the mean keeps the carried work; rate ideas A, B, E on the median.
 
+### Phase 1 ratings (2026-11-16)
+
+| # | Rating | From the numbers | File, PR |
+|---|---|---|---|
+| A | Do | Fixed steps 9.2 turns against 5.9 for the change; 34% of owner messages are a new request in the same session | `workflows/simple.md`, next PR |
+| B | Do | CI wait and merge 3.1 turns per task: push and `merge-pr.sh` in one call, no `gh pr checks` polling | `workflows/simple.md`, same PR as A |
+| C | Do (owner) | claude.ai design set: 0 uses in 400 sessions, 0.5k each turn; built-in skills cannot be turned off | owner's settings, no PR |
+| D | Do (trial) | 97% of turns on the strong tier; 7 days in one mostly-SIMPLE project, kept only if cost falls with no rise in corrections | project's local settings, no PR; result in this log |
+| E | Drop | Whole-file text reads over 10k are 1.6% of reads; `Read` is 23% of tool results, not 59% | none |
+| F | Later | Waits for gate S5-0 (owner's check 2026-11-24) | none |
+
 ## 8. Decision log
 
 | Date | Decision | Reason |
 |---|---|---|
+| 2026-11-16 | Q1 answered: small changes of one sitting may share one PR, one line each in the PR text | Owner chose; fixed steps cost more than the change |
+| 2026-11-16 | D runs as a 7-day trial in one project, back to the strong tier if owner corrections rise | Owner chose the trial over a default change |
 | 2026-11-15 | Owner: fix `usage-report.py` (session charged to a PR-body route; images counted as text) in phase 1 before rating ideas A, B, E | Ratings built on wrong counts would be wrong too |

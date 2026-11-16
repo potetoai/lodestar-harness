@@ -155,6 +155,7 @@ report." The agent routes the phase through the Router as usual.
 | 2026-11-15 | 7 | Phase 2: local name check (PR #203) |
 | 2026-11-15 | 2 | Phase 2: handoff over 30 lines gets a note at session start (PR #211) |
 | 2026-11-15 | 5 | Phase 1: usage report counts fixed before rating (PR #212) |
+| 2026-11-16 | 5 | Phase 1: ideas rated; A, B, C, D (trial) chosen (PR #213) |
 
 ## 9. Decision log
 
