@@ -906,6 +906,7 @@ done
 newbranch b8; mkdir -p .claude/hooks .github/workflows .ai/plans
 cp "$here/agents/claude/hooks/ci-checks.sh" "$here/agents/claude/hooks/lint-file.sh" .claude/hooks/
 cp "$here/github/ci.yml" .github/workflows/; cp "$here/project/.ai/plans/TEMPLATE.md" .ai/plans/
+t "CI secret scan covers HEAD only, not other branches (--all)" grep -q -- "gitleaks git .*--log-opts=HEAD" .github/workflows/ci.yml
 g add -A; g commit -qm "onboarding: add Lodestar files"
 out=$(bash "$here/agents/claude/hooks/ci-checks.sh" main 2>&1); rc=$?
 t "PR: Lodestar's own hook files do not trip the suppression check" [ $rc = 0 ]
