@@ -117,6 +117,7 @@ Done when: gate S5-1 is met or stopped.
 | 2026-11-16 | 1 | Ideas rated, owner chose A, B, C, D (trial); E dropped, F later (PR #213) |
 | 2026-11-16 | 1 | A and B in `workflows/simple.md` (PR #214) |
 | 2026-11-16 | 1 | D deferred: no project is mostly SIMPLE (next PR) |
+| 2026-11-16 | 0 | Item 3: owner's `/context` in all four; artifact tools 7.5k to 8.4k in C and here (this PR) |
 
 ### Phase 0 findings (2026-11-15)
 
@@ -181,7 +182,14 @@ in each project is still to come).
 | Instructions (CLAUDE.md, AGENTS.md, memory) | 1.5k to 2.5k | all |
 
 Add-ons are about 1.5k to 2k of a 31k first turn; the rest is the runtime's
-own prompt and tools. Median first turn per project, before / after: A 26.6k /
+own prompt and tools.
+
+Owner's fresh-session `/context` (2026-11-16): A 20.3k, B 20.2k, C 28.3k,
+this repo 27.9k. Runtime prompt and tools are 13.1k to 13.7k in all four.
+C and this repo also load seven claude-artifacts MCP tools up front (8.4k
+and 7.5k); A and B set `"enableArtifact": false` in local settings and load
+none. Instructions 1.3k to 3.6k (this repo adds `AGENTS.md`), skills 2.5k to
+3.1k. Median first turn per project, before / after: A 26.6k /
 28.9k, B 30.1k / 32.6k, C 37.9k / 37.3k, this repo 37.8k / 37.2k. The base
 did not fall after 2026-11-10.
 
