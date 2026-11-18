@@ -31,7 +31,7 @@ what is still open.
 - Git history keeps the old text. Rewriting history is not part of this
   plan (Q2).
 - `agent-pitfalls.md` and `skill-harvest.md` are measuring until gate P5
-  closes (2026-11-26); `plans/active/docs-tidy.md` forbids text changes to
+  closes (2026-11-26); `plans/completed/docs-tidy.md` forbids text changes to
   them before that. Phase 1 leaves both alone.
 - Do not delete policy or history: closed phases move to
   `plans/completed/`, with a pointer left behind.

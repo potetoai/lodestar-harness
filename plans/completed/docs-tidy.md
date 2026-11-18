@@ -122,6 +122,7 @@ for any miss traced to a moved rule. None: move this plan to
 | 2026-10-16 | 1 | PR #45 merged (0dba3f4) on green CI; `plans/ideas/` kept in git with a README |
 | 2026-11-04 | 2 | Blank lines inside lists, arrow chains and label-to-list/example gaps removed in the six files (16-20% fewer, not a third: the rest sit between paragraphs and blocks); `ROUTER.md` Agent Selection one sentence; PR #135 |
 | 2026-11-04 | 3 | Pairs 1-4 now one text plus a link (one commit each); pair 5 kept with links; PR #139 |
+| 2026-11-18 | 4 | Feedback logs (this repo, B, A) since 11-04: no miss traced to a moved rule; plan moved to `plans/completed/` (PR #220) |
 
 ## 7. Decision log
 
@@ -135,3 +136,4 @@ for any miss traced to a moved rule. None: move this plan to
 | 2026-10-28 | Phases 2-3 start on gate DT-1: only files that agent-pitfalls P5-a..c still measure wait for those gates | Owner: plans start on data, not only a date; the policy-reading numbers are already taken, so the other files need no wait |
 | 2026-11-04 | Phase 2 stops at 16-20% fewer blank lines, below the one-third target | The target was an estimate; the remaining blank lines separate paragraphs and blocks (`AGENTS.md`: one blank line between blocks), and joining them would merge paragraphs, which the phase does not allow |
 | 2026-11-04 | Phase 3 pair 5 (`agents/architect.md` Frontend/Backend Architecture vs `rules/architecture.md` sections 5-6) kept; the role links the rule | Not the same text: the role lists what to evaluate per layer and which patterns fit; the rule lists what every change must do. They share a few words, not a rule that can drift; merging would grow one file without removing a place |
+| 2026-11-18 | Phase 4: close, nothing put back | No row in this repo's log since 11-04. B and A rows hit unmoved text: the route and review lines stay in `rules/git.md` section 12 (PR #139 removed none), and the critic, hook and project-rule rows touch files phase 3 did not move |
