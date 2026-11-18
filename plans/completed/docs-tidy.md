@@ -122,7 +122,7 @@ for any miss traced to a moved rule. None: move this plan to
 | 2026-10-16 | 1 | PR #45 merged (0dba3f4) on green CI; `plans/ideas/` kept in git with a README |
 | 2026-11-04 | 2 | Blank lines inside lists, arrow chains and label-to-list/example gaps removed in the six files (16-20% fewer, not a third: the rest sit between paragraphs and blocks); `ROUTER.md` Agent Selection one sentence; PR #135 |
 | 2026-11-04 | 3 | Pairs 1-4 now one text plus a link (one commit each); pair 5 kept with links; PR #139 |
-| 2026-11-18 | 4 | Feedback logs (this repo, B, A) since 11-04: no miss traced to a moved rule; plan moved to `plans/completed/` (PR pending) |
+| 2026-11-18 | 4 | Feedback logs (this repo, B, A) since 11-04: no miss traced to a moved rule; plan moved to `plans/completed/` (PR #220) |
 
 ## 7. Decision log
 
