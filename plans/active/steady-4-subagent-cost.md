@@ -114,7 +114,7 @@ Done when: gate S4-1 is met or stopped and the owner has seen the count.
 | Date | Phase | Work |
 |---|---|---|
 | 2026-11-13 | none | Plan written; section 2 measured |
-| 2026-11-19 | 0 | Measured A, B and a risk split; H not measured; second rating in section 11 (PR #PRN) |
+| 2026-11-19 | 0 | Measured A, B and a risk split; H not measured; second rating in section 11 (PR #222) |
 
 ## 10. Decision log
 
