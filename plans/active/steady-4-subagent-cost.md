@@ -95,7 +95,7 @@ Done when: gate S4-1 is met or stopped and the owner has seen the count.
 
 | Gate | Measure (source) | Minimum | Check | Stop | Status |
 |---|---|---|---|---|---|
-| S4-0 Start | Critic and reviewer runs made after 2026-11-13 (`scripts/usage-report.py --since 2026-11-14`); `agent-pitfalls.md` phase 5 closed | 40 critic runs and 40 reviewer runs from 2 projects | 2026-11-27 | 2026-12-18 | waiting |
+| S4-0 Start | Critic and reviewer runs made after 2026-11-13 (`scripts/usage-report.py --since 2026-11-14`); `agent-pitfalls.md` phase 5 closed | 40 critic runs and 40 reviewer runs from 2 projects | 2026-11-27 | 2026-12-18 | met 2026-11-19: critic 54, reviewer 61, 4 projects; started early (decision log) |
 | S4-1 Effect | Subagent share of cost and runs per task, 14 days after phase 1 | 100 runs from 2 projects | 14 days after phase 1 | 3 weeks later | waiting (30.2%, 411 runs on 2026-11-13) |
 
 ## 7. Open questions
@@ -114,8 +114,69 @@ Done when: gate S4-1 is met or stopped and the owner has seen the count.
 | Date | Phase | Work |
 |---|---|---|
 | 2026-11-13 | none | Plan written; section 2 measured |
+| 2026-11-19 | 0 | Measured A, B and a risk split; H not measured; second rating in section 11 (PR #222) |
 
 ## 10. Decision log
 
 | Date | Decision | Reason |
 |---|---|---|
+| 2026-11-19 | Phase 0 started before 2026-11-27, owner agreed | Gate counts were met. P5-c (critic limit) was decided on 2026-11-13, and data from 2026-11-14 is all under the new critic rule. P5-a (PROTOTYPE) has nothing to do with subagents |
+
+## 11. Phase 0 results (2026-11-14 to 2026-11-19)
+
+Source: `scripts/usage-report.py --since 2026-11-14`. Runs per route line
+and the output split are now in the report. The risk split came from a
+one-off read. 117 sessions, 229 subagent runs, 88.8M weighted units, 51% of
+all cost.
+
+| Role | Runs | Share | Cost per run | Calls | Split | Output: report / tool input / thinking |
+|---|---|---|---|---|---|---|
+| builder | 37 | 34.0% | 672k | 44 | 2/23/54/22 | 3/30/66 |
+| tester | 33 | 27.5% | 769k | 38 | 2/21/47/30 | 3/28/69 |
+| reviewer | 61 | 19.2% | 221k | 16 | 7/28/41/24 | 8/17/74 |
+| critic | 54 | 10.8% | 134k | 10 | 11/26/32/31 | 9/19/72 |
+| other | 44 | 8.5% | 93k | 5 | 8/37/27/28 | 14/27/59 |
+
+The rest of output is estimated as output tokens minus visible characters / 4.
+The transcripts do not keep thinking text.
+
+Runs by project, workflow and risk (one-off read):
+
+| Project | Route | Tasks | critic / reviewer / tester / builder / other |
+|---|---|---|---|
+| C | BUILD_REVIEW high | 23 | 27 / 23 / 13 / 20 / 35 |
+| C | BUILD_REVIEW, no risk on the line | 4 | 15 / 2 / 9 / 5 / 1 |
+| C | SIMPLE low | 8 | 2 / 4 / 1 / 2 / 1 |
+| A | COMPLEX high | 8 | 0 / 9 / 3 / 6 / 0 |
+| A | BUILD_REVIEW high | 2 | 3 / 2 / 3 / 2 / 0 |
+| A | BUILD_REVIEW low and medium | 18 | 1 / 8 / 0 / 0 / 0 |
+| A | SIMPLE low | 13 | 0 / 1 / 0 / 0 / 0 |
+| B, this repo | all | 17 | 0 / 9 / 0 / 0 / 4 |
+
+What the numbers say:
+
+- Project C made 150 of the 229 runs (65%). Its tasks are high risk or have no
+  risk on the line: 27 of 29 BUILD_REVIEW tasks. Its `sensitive_paths` is empty
+  and it has no high-risk invariant. The route reasons it states call the
+  correctness of research data "data integrity", and Router rule 16 then turns
+  every such task into tests-first (critic, tester, builder, reviewer). A
+  BUILD_REVIEW task costs 3.0M in C and 1.2M in A.
+- About 70% of output is thinking, and only 3-9% is report text.
+- Builder and tester runs are long (44 and 38 calls), and half their cost is
+  context sent again.
+- Reviewer runs on low and medium BUILD_REVIEW are rare: 9 runs in 25 tasks
+  outside C. Diff sizes were not read.
+- Idea H (cost per changed line) was not measured. It needs the PR diff sizes,
+  and the risk split above already explains where the runs come from.
+
+Second rating:
+
+| # | Idea | Rating with numbers |
+|---|---|---|
+| C | Report shape | **Drop**: report text is 3-9% of output, under 3% of a run |
+| D | Lower effort on small, low-risk reviews | **Small**: thinking is about 18% of a reviewer run, but low-risk reviewer runs are 9 in 5 days. The replay costs more than it saves |
+| E | Second review reads the fix diff only | **Drop**: about 1 reviewer run per task, so there are few repeats |
+| F | Raise the 100-line line | **Drop**: about 13 runs, about 3% of subagent cost |
+| G | Rerun cost note before a critic rerun | **Wait** (after P5): critic is 1.2 runs per high-risk task in C, so reruns are not the driver now |
+| I | New: say what "data integrity" means in the Router (stored real data lost or corrupted, not whether computed output is correct; correctness gets normal tests) | **Do, owner decides**: it is a Router change, so it goes into the 2026-11-26 `ROUTER.md` eval run already planned. It targets the 65% of runs |
+

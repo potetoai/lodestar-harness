@@ -104,7 +104,7 @@ def scan(path):
     usage, ts, policy_ids, tools = {}, {}, {}, {}
     routes, owner, pr_routes, pr_tasks, pr_open = [], [], [], [], {}
     s = dict(date="", policy=0, hooks=0, asks=0, read_tok=0, tool_tok=0, image_tok=0, off_format=0,
-             prompt=None, tool_calls=0, pr_route=0)
+             prompt=None, tool_calls=0, pr_route=0, out_text=0, out_tool=0)
     tool_turns = set()
     with open(path, encoding="utf-8", errors="ignore") as fh:
         for line in fh:
@@ -136,6 +136,8 @@ def scan(path):
                     name, inp = c.get("name"), c.get("input") or {}
                     inp = inp if isinstance(inp, dict) else {}
                     tools[c["id"]] = name
+                    # A subagent's final report is a SubagentHandback tool call.
+                    s["out_text" if name == "SubagentHandback" else "out_tool"] += len(json.dumps(inp)) // 4
                     s["tool_calls"] += 1
                     tool_turns.add(m.get("id"))
                     s["asks"] += name == "AskUserQuestion"
@@ -148,6 +150,7 @@ def scan(path):
                     if POLICY.search(target) and (name == "Read" or (name == "Bash" and SHELL_READ.search(target))):
                         policy_ids[c["id"]] = True
                 elif c.get("type") == "text" and e.get("type") == "assistant":
+                    s["out_text"] += len(c.get("text") or "") // 4
                     for r in ROUTE.finditer(c.get("text", "")):
                         routes.append((len(usage) - 1,) + r.groups()[:3])
                         s["off_format"] += not ROUTE_EXACT.fullmatch(r.group(0).strip())
@@ -179,6 +182,11 @@ def median(xs):
     return sorted(xs)[len(xs) // 2]
 
 
+def role_of(sub):
+    m = ROLE.search((sub["prompt"] or "")[:600])
+    return m.group(1).lower() if m else "other"
+
+
 def subagent_report(subs):
     """Per role: where the cost of subagent runs goes. A run pays for its whole
     context again on every call, so calls per run is the number to watch
@@ -188,29 +196,33 @@ def subagent_report(subs):
         us = sub["usage"]
         if not us:
             continue
-        m = ROLE.search((sub["prompt"] or "")[:600])
         first = cost(us[0]) - W_OUT * us[0].get("output_tokens", 0)
         new = sum(W_IN * u.get("input_tokens", 0) + W_CW * u.get("cache_creation_input_tokens", 0) for u in us[1:])
         again = sum(W_CR * u.get("cache_read_input_tokens", 0) for u in us[1:])
         out = W_OUT * sum(u.get("output_tokens", 0) for u in us)
         ctx = [context(u) for u in us]
-        roles.setdefault(m.group(1).lower() if m else "other", []).append(
+        roles.setdefault(role_of(sub), []).append(
             (first + new + again + out, len(us), ctx[0], max(ctx), first, new, again, out,
-             sub["tool_calls"], sub["tool_turns"]))
+             sub["tool_calls"], sub["tool_turns"], sum(u.get("output_tokens", 0) for u in us),
+             sub["out_text"], sub["out_tool"]))
     total = sum(r[0] for rs in roles.values() for r in rs)
     if not total:
         return
     print(f"Subagent runs: {sum(len(rs) for rs in roles.values())}, {int(total)} weighted units"
-          " (medians per run; split: first call / new input later / context re-sent / output)")
+          " (medians per run; split: first call / new input later / context re-sent / output;"
+          " output: report text / tool input / the rest, mostly thinking, estimated from characters)")
     print(f"  {'role':10} {'runs':>4} {'share':>6} {'cost':>8} {'calls':>5} {'start':>7} {'peak':>7}"
-          f" {'split':>15} {'tools/call':>10}")
+          f" {'split':>15} {'tools/call':>10} {'output':>9}")
     for role, rs in sorted(roles.items(), key=lambda kv: -sum(r[0] for r in kv[1])):
         c = sum(r[0] for r in rs)
         split = "/".join(f"{sum(r[i] for r in rs) / c * 100:.0f}" for i in (4, 5, 6, 7))
         turns = sum(r[9] for r in rs)
+        o = sum(r[10] for r in rs) or 1
+        tx, tu = min(sum(r[11] for r in rs), o), min(sum(r[12] for r in rs), o)
+        osplit = "/".join(f"{x / o * 100:.0f}" for x in (tx, min(tu, o - tx), max(o - tx - tu, 0)))
         print(f"  {role:10} {len(rs):4} {c / total * 100:5.1f}% {int(median([r[0] for r in rs])):8}"
               f" {median([r[1] for r in rs]):5} {median([r[2] for r in rs]):7} {median([r[3] for r in rs]):7}"
-              f" {split:>15} {sum(r[8] for r in rs) / turns if turns else 0:10.2f}")
+              f" {split:>15} {sum(r[8] for r in rs) / turns if turns else 0:10.2f} {osplit:>9}")
 
 
 def route_report(sessions, total):
@@ -218,7 +230,7 @@ def route_report(sessions, total):
     starts a segment that runs to the next route line or the session end; calls
     before the first line are "(no route line)". A subagent's cost goes to the
     segment open when it started."""
-    stats, esc, per_task = {}, {}, {}
+    stats, esc, per_task, runs = {}, {}, {}, {}
     for s in sessions:
         starts = [r[0] for r in s["routes"]]
         names = [r[1] for r in s["routes"]]
@@ -235,8 +247,11 @@ def route_report(sessions, total):
                 task[k - 1] += c
         for i, u in enumerate(s["usage"]):
             add(i, cost(u))
-        for start, c in s["subs"]:
-            add(bisect.bisect_right(s["ts"], start) - 1, c)
+        for start, c, role in s["subs"]:
+            i = bisect.bisect_right(s["ts"], start) - 1
+            add(i, c)
+            r = runs.setdefault(seg(i), {})
+            r[role] = r.get(role, 0) + 1
         for wf, c in zip(names, task):
             per_task.setdefault(wf, []).append(c)
         for i in s["owner"]:
@@ -251,12 +266,16 @@ def route_report(sessions, total):
     from_pr = sum(s["pr_route"] for s in sessions)
     print(f"Route lines: {sum(v[0] for v in stats.values())} ({off} off-format,"
           f" {from_pr} from PR bodies only); sessions without one: {unrouted} of {len(sessions)}")
-    print(f"  {'workflow':20} {'tasks':>5} {'cost':>6} {'per task':>9} {'median':>9} {'owner msgs/task':>15}")
+    print(f"  {'workflow':20} {'tasks':>5} {'cost':>6} {'per task':>9} {'median':>9} {'owner msgs/task':>15}"
+          f"  subagent runs per task (critic/reviewer/tester/builder/other)")
     for wf, (n, c, o) in sorted(stats.items(), key=lambda kv: -kv[1][1]):
         per = f"{int(c / n):9}" if n else f"{'-':>9}"
         med = f"{int(median(per_task[wf])):9}" if per_task.get(wf) else f"{'-':>9}"
         msgs = f"{o / n:15.1f}" if n else f"{'-':>15}"
-        print(f"  {wf:20} {n:5} {c / total * 100:5.1f}% {per} {med} {msgs}")
+        r = runs.get(wf, {})
+        rpt = "/".join(f"{r.get(k, 0) / n:.1f}" if n else "-" for k in ("critic", "reviewer", "tester", "builder"))
+        rpt += f"/{sum(v for k, v in r.items() if k not in ('critic', 'reviewer', 'tester', 'builder')) / n:.1f}" if n else "/-"
+        print(f"  {wf:20} {n:5} {c / total * 100:5.1f}% {per} {med} {msgs}  {rpt}")
     up = sum(v for k, v in esc.items() if k.startswith("SIMPLE->"))
     print(f"Escalations: {', '.join(f'{k} {v}' for k, v in sorted(esc.items())) or 'none'}"
           f" (SIMPLE calls that escalated: {up} of {stats.get('SIMPLE', [0])[0]})")
@@ -568,9 +587,9 @@ def main():
                 continue
             subdir = os.path.join(a.root, d, os.path.basename(f)[:-6], "subagents")
             subs = [scan(sf) for sf in glob.glob(os.path.join(subdir, "*.jsonl"))]
-            s["subs"] = [(sub["ts"][0] if sub["ts"] else "", sum(cost(u) for u in sub["usage"]))
+            s["subs"] = [(sub["ts"][0] if sub["ts"] else "", sum(cost(u) for u in sub["usage"]), role_of(sub))
                          for sub in subs]
-            s["sub_cost"] = sum(c for _, c in s["subs"])
+            s["sub_cost"] = sum(c for _, c, _ in s["subs"])
             s["sub_scans"] = subs
             s["name"] = f"{d[:28]} {os.path.basename(f)[:8]}"
             s["path"] = f

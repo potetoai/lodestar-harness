@@ -73,7 +73,7 @@ the window.
 | 1 | `plans/active/steady-1-own-cost.md` | Release rhythm, handoff, the harness's share of cost | yes (CI check, Q1) | now |
 | 2 | `plans/active/steady-2-stop-hook.md` | Stop-hook repeats; a handoff-length note | yes | now (phase 0 reads only) |
 | 3 | `plans/active/steady-3-test-suite.md` | Split `enforcement/test.sh`, run one part, fixture guard | yes | after child 2's fix merges |
-| 4 | `plans/active/steady-4-subagent-cost.md` | Subagent cost, round 2: run counts and output | no | 2026-11-27 (gate S4-0) |
+| 4 | `plans/active/steady-4-subagent-cost.md` | Subagent cost, round 2: run counts and output | yes | phase 0 done 2026-11-19; owner picks idea I |
 | 5 | `plans/active/steady-5-task-cost.md` | Small-task cost, reads, base context, plugins | no | phase 0 now; plugin step after 2026-11-24 |
 | 6 | `plans/active/steady-6-project-fit.md` | Does it pay, per kind of project; run-time checks | no | 2026-12-09 (monthly count) |
 | 7 | `plans/active/steady-7-plan-hygiene.md` | Project names out of tracked files; closed phases out of active plans | yes (local name check, Q3) | now for completed plans; active ones after 2026-11-26 |
@@ -156,6 +156,7 @@ report." The agent routes the phase through the Router as usual.
 | 2026-11-15 | 2 | Phase 2: handoff over 30 lines gets a note at session start (PR #211) |
 | 2026-11-15 | 5 | Phase 1: usage report counts fixed before rating (PR #212) |
 | 2026-11-16 | 5 | Phase 1: ideas rated; A, B, C, D (trial) chosen (PR #213) |
+| 2026-11-19 | 4 | Phase 0 early: project C's high-risk routes make 65% of runs (PR #222) |
 
 ## 9. Decision log
 
