@@ -118,6 +118,7 @@ Done when: gate S5-1 is met or stopped.
 | 2026-11-16 | 1 | A and B in `workflows/simple.md` (PR #214) |
 | 2026-11-16 | 1 | D deferred: no project is mostly SIMPLE (next PR) |
 | 2026-11-16 | 0 | Item 3: owner's `/context` in all four; artifact tools 7.5k to 8.4k in C and here (this PR) |
+| 2026-11-19 | 0 | `"enableArtifact": false` in C and here (2026-11-17): first turn about 38-39k to 25-27k in both, about 12k less per session start |
 
 ### Phase 0 findings (2026-11-15)
 
