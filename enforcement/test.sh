@@ -1059,6 +1059,9 @@ guard tests/test_lock.py; t "test fix: the approved test opens" [ $? = 0 ]
 guard tests/test_next.py; t "test fix: another locked test stays locked" [ $? = 2 ]
 guard .ai/test-lock; t "test fix: the lock file stays locked" [ $? = 2 ]
 CLAUDE_PROJECT_DIR=$p bash -c '. .claude/hooks/lodestar-lib.sh && test_fix_window tests/test_lock.py' ; t "test fix: the stop hook's window check sees the approval" [ $? = 0 ]
+n2=$(wc -l < .ai/approvals.log); out=$(recfix "duyệt sửa test test_lock\nduyệt sửa test test_next\n> duyệt sửa test test_lock")
+t "test fix: one line per test records each named test (a quoted line or repeat adds none)" bash -c '[ "$(wc -l < .ai/approvals.log)" -eq $(($1 + 2)) ] && tail -n1 .ai/approvals.log | grep -qE " test-fix tests/test_next.py$"' _ "$n2"
+sedi "$((n2 + 1)),\$d" .ai/approvals.log
 n2=$(wc -l < .ai/approvals.log); printf 'tests/test_lock.py\nTests/Test_Lock.py\n' >> .ai/test-lock
 out=$(recfix "duyệt sửa test tests/test_lock.py")
 t "test fix: a path locked twice (relocked in a later round) still records one approval" bash -c 'tail -n1 .ai/approvals.log | grep -qE " test-fix tests/test_lock.py$" && [ "$(wc -l < .ai/approvals.log)" -eq $(($1 + 1)) ]' _ "$n2"
