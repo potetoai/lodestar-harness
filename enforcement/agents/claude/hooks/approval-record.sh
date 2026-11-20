@@ -83,18 +83,27 @@ fi
 # "duyệt sửa test <path>...": the owner approves fixing locked tests that are
 # wrong while the criteria are right (rules/testing.md, "When a test or
 # criterion turns out wrong"). It approves no criteria and uses no critic run.
-# Each name, on the first line, must match one locked path: the whole path,
-# its file name, or the file name up to its first dot; "*", "?" and "[" match
-# nothing. "duyệt sửa 3 test" without names opens no test and lists the lines.
-# A message that names no locked test but names an active plan ("approve
-# fix tests for plan login") goes on to the plan approval below.
+# The names come from the first line and from each later line that itself
+# starts with "duyệt sửa test" (one line per test, as the hint below asks;
+# a quoted or bulleted line does not). Each name must match one locked path:
+# the whole path, its file name, or the file name up to its first dot; "*",
+# "?" and "[" match nothing. "duyệt sửa 3 test" without names opens no test
+# and lists the lines. A message that names no locked test but names an
+# active plan ("approve fix tests for plan login") goes on to the plan
+# approval below.
 fixre='^(duyệt|duyet|approve|approved)[[:space:]]+((sửa|sua|fix)[[:space:]]+([0-9]+[[:space:]]+)?tests?|tests?[[:space:]]+fix(es)?)([^[:alnum:]_-]|$)'
 line1=${start%%$'\n'*}
 if grep -qE "$fixre" <<<"$line1" && [ -s .ai/test-lock ] && lock_active; then
   # A path listed twice (a later round locks it again) is one test.
   mapfile -t lockp < <(lock_paths < .ai/test-lock | awk '!seen[tolower($0)]++')
   now=$(date '+%Y-%m-%d %H:%M') bad=() n=0
-  read -ra toks <<<"$(sed -E "s/$fixre//" <<<"$line1" | tr ",;\`\"'" '     ')"
+  fixnames=$(first=1; while IFS= read -r line; do
+    if [ $first = 1 ]; then ls=$line1; first=0; else ls=${line#"${line%%[![:space:]]*}"}; fi
+    grep -qE "$fixre" <<<"$ls" || continue
+    grep -qE '(chưa|chua|không|khong|đừng|dung|not|don.t|do not)[[:space:]]+(duyệt|duyet|approve)' <<<"$ls" && continue
+    sed -E "s/$fixre//" <<<"$ls"
+  done <<<"$low")
+  read -ra toks <<<"$(tr ",;\`\"'\n" '      ' <<<"$fixnames" | awk '{for (i = 1; i <= NF; i++) if (!seen[$i]++) printf "%s ", $i}')"
   for tok in "${toks[@]}"; do
     tok=${tok%[.:]}
     case $tok in và|va|and|'&'|'') continue ;; *[][*?]*) bad+=("$tok"); continue ;; esac
