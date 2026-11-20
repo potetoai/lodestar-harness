@@ -16,9 +16,20 @@ prompt=$(jq -r '.prompt // empty' | tr -d '\r')
 # A message from another Claude session arrives as a prompt too; only the owner approves.
 grep -q '<cross-session-message' <<<"$prompt" && exit 0
 low=${prompt,,}
-# Only a message that STARTS with the approval word approves: "để mình duyệt"
-# or "chờ duyệt" inside a longer message asks for approval, it does not give it.
-start=${low#"${low%%[![:space:][:punct:]]*}"}
+# Only a line that STARTS with the approval word approves: "để mình duyệt"
+# or "chờ duyệt" inside a line asks for approval, it does not give it. The
+# owner may answer other questions first, so the approval line may come later.
+# $own keeps the lines the owner typed: a quoted line ("> duyệt merge PR 9")
+# or a line inside a code block (from a pasted prompt) is dropped, leading
+# spaces are cut, and the first line also loses leading punctuation.
+own=$(first=1 fence=0; while IFS= read -r line; do
+  ls=${line#"${line%%[![:space:]]*}"}
+  case $ls in '```'*|'~~~'*) fence=$((1 - fence)); continue ;; '>'*) continue ;; esac
+  [ $fence = 1 ] && continue
+  [ $first = 1 ] && ls=${ls#"${ls%%[![:space:][:punct:]]*}"} && first=0
+  printf '%s\n' "$ls"
+done <<<"$low")
+start=$own
 grep -qE '^(duyệt|duyet|approve|approved)([^[:alpha:]]|$)' <<<"$start" || exit 0
 # "chưa duyệt", "không duyệt", "not approve"... are not approvals.
 grep -qE '(chưa|chua|không|khong|đừng|dung|not|don.t|do not)[[:space:]]+(duyệt|duyet|approve)' <<<"$low" && exit 0
@@ -32,16 +43,14 @@ grep -qE '(chưa|chua|không|khong|đừng|dung|not|don.t|do not)[[:space:]]+(du
 # PR 6" approve nothing. Only the first "merge" of a line counts ("không
 # merge PR 6"). Each line that itself starts with the approval word is one
 # approval ("duyệt merge PR 1" / "duyệt merge PR 2" on two lines approves both);
-# other lines approve nothing. After the first line, a quoted or bulleted line
-# ("> duyệt merge PR 9", from a pasted prompt) is not the owner's own words.
-first=1
-nums=$(while IFS= read -r line; do
-  if [ $first = 1 ]; then ls=$start; first=0; else ls=${line#"${line%%[![:space:]]*}"}; fi
+# other lines approve nothing. A quoted or bulleted line ("> duyệt merge PR
+# 9", from a pasted prompt) is not the owner's own words ($own drops it).
+nums=$(while IFS= read -r ls; do
   grep -qE '^(duyệt|duyet|approve|approved)([^[:alpha:]]|$)' <<<"$ls" || continue
   grep -qE '(chưa|chua|không|khong|đừng|dung|not|don.t|do not)[[:space:]]+(duyệt|duyet|approve)' <<<"$ls" && continue
   grep -oE '(^|[^[:alpha:]])merge[[:space:]]+(pr[[:space:]]*#?|#)[0-9]+([[:space:]]*(,|and|và|&)[[:space:]]*(pr[[:space:]]*#?|#)?[0-9]+)*' <<<"$ls" |
     head -n1 | sed -E 's/^[^m]*merge//' | grep -oE '[0-9]+'
-done <<<"$low" | awk '!seen[$0]++')
+done <<<"$own" | awk '!seen[$0]++')
 if [ -n "$nums" ]; then
   now=$(date '+%Y-%m-%d %H:%M')
   mkdir -p .ai
@@ -69,7 +78,7 @@ short_name() { local n; n=$(basename "$1" .md); n=${n,,}; echo "${n#[0-9][0-9][0
 named_in_prompt() {
   local full short; full=$(basename "$1" .md); full=${full,,}; short=$(short_name "$1")
   full=$(sed 's/[][\.^$*+?(){}|]/\\&/g' <<<"$full"); short=$(sed 's/[][\.^$*+?(){}|]/\\&/g' <<<"$short")
-  grep -qE "(^|[^[:alnum:]-])($full|$short)([^[:alnum:]-]|\$)" <<<"$low"
+  grep -qE "(^|[^[:alnum:]-])($full|$short)([^[:alnum:]-]|\$)" <<<"$own"
 }
 
 if ! ls .ai/plans/active/*.md >/dev/null 2>&1; then
@@ -83,8 +92,8 @@ fi
 # "duyệt sửa test <path>...": the owner approves fixing locked tests that are
 # wrong while the criteria are right (rules/testing.md, "When a test or
 # criterion turns out wrong"). It approves no criteria and uses no critic run.
-# The names come from the first line and from each later line that itself
-# starts with "duyệt sửa test" (one line per test, as the hint below asks;
+# The names come from each line that itself starts with "duyệt sửa test",
+# wherever it is in the message (one line per test, as the hint below asks;
 # a quoted or bulleted line does not). Each name must match one locked path:
 # the whole path, its file name, or the file name up to its first dot; "*",
 # "?" and "[" match nothing. "duyệt sửa 3 test" without names opens no test
@@ -92,17 +101,15 @@ fi
 # active plan ("approve fix tests for plan login") goes on to the plan
 # approval below.
 fixre='^(duyệt|duyet|approve|approved)[[:space:]]+((sửa|sua|fix)[[:space:]]+([0-9]+[[:space:]]+)?tests?|tests?[[:space:]]+fix(es)?)([^[:alnum:]_-]|$)'
-line1=${start%%$'\n'*}
-if grep -qE "$fixre" <<<"$line1" && [ -s .ai/test-lock ] && lock_active; then
+if grep -qE "$fixre" <<<"$own" && [ -s .ai/test-lock ] && lock_active; then
   # A path listed twice (a later round locks it again) is one test.
   mapfile -t lockp < <(lock_paths < .ai/test-lock | awk '!seen[tolower($0)]++')
   now=$(date '+%Y-%m-%d %H:%M') bad=() n=0
-  fixnames=$(first=1; while IFS= read -r line; do
-    if [ $first = 1 ]; then ls=$line1; first=0; else ls=${line#"${line%%[![:space:]]*}"}; fi
+  fixnames=$(while IFS= read -r ls; do
     grep -qE "$fixre" <<<"$ls" || continue
     grep -qE '(chưa|chua|không|khong|đừng|dung|not|don.t|do not)[[:space:]]+(duyệt|duyet|approve)' <<<"$ls" && continue
     sed -E "s/$fixre//" <<<"$ls"
-  done <<<"$low")
+  done <<<"$own")
   read -ra toks <<<"$(tr ",;\`\"'\n" '      ' <<<"$fixnames" | awk '{for (i = 1; i <= NF; i++) { t = $i; sub(/[.:]$/, "", t); if (!seen[t]++) printf "%s ", t } }')"
   for tok in "${toks[@]}"; do
     tok=${tok%[.:]}
