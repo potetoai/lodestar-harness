@@ -62,7 +62,8 @@ exceed the limit; the plan's name works with or without its date, and the
 block message prints the line to type). Ask for it only after the owner
 asks for a fix to a BLOCKER or MAJOR finding. The brief starts "You are the
 critic" and names the plan by its `.ai/plans/active/` path, so the hook sees
-the run.
+the run. Each run is a fresh dispatch: never resume a critic with
+SendMessage (the hook blocks it).
 
 A full run, as if no review existed, is required when:
 
