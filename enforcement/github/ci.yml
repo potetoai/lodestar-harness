@@ -26,7 +26,11 @@ permissions:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    # A private repo out of free minutes can run CI on the owner's own Linux
+    # machine (or WSL): register a self-hosted runner, then set the repo
+    # variable LODESTAR_RUNNER=self-hosted. Never on a public repo: a fork PR
+    # would run its code on that machine. Unset, CI uses GitHub's runner.
+    runs-on: ${{ vars.LODESTAR_RUNNER || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v7
         with:
