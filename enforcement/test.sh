@@ -1062,6 +1062,9 @@ CLAUDE_PROJECT_DIR=$p bash -c '. .claude/hooks/lodestar-lib.sh && test_fix_windo
 n2=$(wc -l < .ai/approvals.log); out=$(recfix "duyệt sửa test test_lock\nduyệt sửa test test_next\n> duyệt sửa test test_lock")
 t "test fix: one line per test records each named test (a quoted line or repeat adds none)" bash -c '[ "$(wc -l < .ai/approvals.log)" -eq $(($1 + 2)) ] && tail -n1 .ai/approvals.log | grep -qE " test-fix tests/test_next.py$"' _ "$n2"
 sedi "$((n2 + 1)),\$d" .ai/approvals.log
+out=$(recfix "câu 1: chọn A\ncâu 2: ok\nduyệt sửa test test_lock")
+t "test fix: a 'duyệt sửa test' line after other answers records the test" bash -c '[ "$(wc -l < .ai/approvals.log)" -eq $(($1 + 1)) ] && tail -n1 .ai/approvals.log | grep -qE " test-fix tests/test_lock.py$"' _ "$n2"
+sedi "$((n2 + 1)),\$d" .ai/approvals.log
 n2=$(wc -l < .ai/approvals.log); printf 'tests/test_lock.py\nTests/Test_Lock.py\n' >> .ai/test-lock
 out=$(recfix "duyệt sửa test tests/test_lock.py")
 t "test fix: a path locked twice (relocked in a later round) still records one approval" bash -c 'tail -n1 .ai/approvals.log | grep -qE " test-fix tests/test_lock.py$" && [ "$(wc -l < .ai/approvals.log)" -eq $(($1 + 1)) ]' _ "$n2"
@@ -1132,6 +1135,12 @@ recm 'duyệt merge PR 5\nmerge PR 6 nữa' def456 >/dev/null; t "a line without
 rm "$p/.ai/approvals.log"
 recm 'duyệt merge PR 5\n> duyệt merge PR 9\n- approve merge #8' def456 >/dev/null; t "a quoted or bulleted later line approves no merge" bash -c 'grep -q " merge-pr 5 def456$" "$1" && [ $(wc -l < "$1") -eq 1 ]' _ "$p/.ai/approvals.log"
 rm "$p/.ai/approvals.log"
+recm 'ok, cảm ơn\nduyệt merge PR 5' def456 >/dev/null; t "an approval line after other answers still records the merge" bash -c 'grep -q " merge-pr 5 def456$" "$1" && [ $(wc -l < "$1") -eq 1 ]' _ "$p/.ai/approvals.log"
+rm "$p/.ai/approvals.log"
+recm 'duyệt\n> duyệt merge PR 9\n```\nduyệt merge PR 8\n```' def456 >/dev/null; t "a quoted or code-block line approves no merge, even after a plain approval" bash -c '! grep -q " merge-pr " "$1"' _ "$p/.ai/approvals.log"
+rm -f "$p/.ai/approvals.log"
+recm '````\n```\n```\n```\nduyệt merge PR 12\n````\n\n- duyệt merge PR 13' def456 >/dev/null; t "a code block closes only on its own mark; a blank first line keeps the bullet strip" bash -c '! grep -q " merge-pr 12 " "$1" && grep -q " merge-pr 13 def456$" "$1"' _ "$p/.ai/approvals.log"
+rm -f "$p/.ai/approvals.log"
 out=$(recm "duyệt merge PR 52" ""); t "a merge approval gh cannot read records nothing and says so" bash -c '[ ! -s "$2" ] && grep -q "could not read PR #52" <<<"$1"' _ "$out" "$p/.ai/approvals.log"
 # The lodestar-harness source repo has no .claude/hooks/ library: merge approvals only.
 q=$tmp/apprsrc; mkdir -p "$q"

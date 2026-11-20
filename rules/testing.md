@@ -152,8 +152,10 @@ automatically; when unsure, select it.
    `vi`, else **"approve"**. Both work in every project. The owner reviews
    criteria, not test code. A hook (`approval-record.sh`) records that
    approval with a hash of the criteria in `.ai/approvals.log`; the agent
-   never writes that file. Only a message that starts with the approval word
-   counts ("để mình duyệt" does not), and only one the owner types: an answer
+   never writes that file. Only a line that starts with the approval word
+   counts ("để mình duyệt" does not; answers to other questions may come in
+   earlier lines; a quoted or code-block line does not count), and only one
+   the owner types: an answer
    picked in a question box (AskUserQuestion) is not recorded, so never ask
    for approval that way. With several plans waiting, the owner
    names each one ("approve fix-login", the file name without its date); the
