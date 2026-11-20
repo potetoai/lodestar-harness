@@ -103,7 +103,7 @@ if grep -qE "$fixre" <<<"$line1" && [ -s .ai/test-lock ] && lock_active; then
     grep -qE '(chưa|chua|không|khong|đừng|dung|not|don.t|do not)[[:space:]]+(duyệt|duyet|approve)' <<<"$ls" && continue
     sed -E "s/$fixre//" <<<"$ls"
   done <<<"$low")
-  read -ra toks <<<"$(tr ",;\`\"'\n" '      ' <<<"$fixnames" | awk '{for (i = 1; i <= NF; i++) if (!seen[$i]++) printf "%s ", $i}')"
+  read -ra toks <<<"$(tr ",;\`\"'\n" '      ' <<<"$fixnames" | awk '{for (i = 1; i <= NF; i++) { t = $i; sub(/[.:]$/, "", t); if (!seen[t]++) printf "%s ", t } }')"
   for tok in "${toks[@]}"; do
     tok=${tok%[.:]}
     case $tok in và|va|and|'&'|'') continue ;; *[][*?]*) bad+=("$tok"); continue ;; esac
