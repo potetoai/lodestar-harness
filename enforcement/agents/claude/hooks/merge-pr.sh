@@ -25,6 +25,8 @@
 # 3. Waits for CI (gh pr checks --watch); merges only when it exits 0. When
 #    GitHub did not start the jobs (no Actions minutes, billing), it marks CI
 #    off, so every Stop runs the full 'make verify'; a green CI clears it.
+#    When the only failure is the "PR checks" step (PR text fixed with
+#    'gh pr edit' after CI ran; an edit starts no run), it re-runs that job once.
 # 4. Merges with --match-head-commit <the head checked above>, so GitHub
 #    refuses a head pushed after the checks.
 # 5. With --delete-branch, the approval lines not yet committed are set
@@ -275,6 +277,29 @@ for try in 1 2 3 4 5 6; do
   grep -qi 'no checks reported' <<<"$out" || break
   [ $try = 6 ] || sleep "${LODESTAR_CHECKS_RETRY:-10}"
 done
+# PR text fixed after CI ran: 'gh pr edit' starts no run, so the "PR checks"
+# step failed on the old text. The text passed the same check above; when
+# that step is the only failure of each red job, re-run those jobs once.
+pr_text_jobs() {
+  local id st ids=
+  for id in $(gh api "repos/{owner}/{repo}/commits/$oid/check-runs" \
+      -q '.check_runs[] | select(.conclusion == "failure") | .id' 2>/dev/null | tr -d '\r'); do
+    st=$(gh api "repos/{owner}/{repo}/actions/jobs/$id" -q '[.steps[]? | select(.conclusion == "failure") | .name] | join(",")' 2>/dev/null | tr -d '\r')
+    [ "$st" = "PR checks" ] || return 1
+    ids+=" $id"
+  done
+  [ -n "$ids" ] && echo $ids
+}
+if [ $rc != 0 ] && rjobs=$(pr_text_jobs); then
+  echo "merge-pr: CI failed only at 'PR checks', likely on PR text fixed after it ran; re-running that job once..."
+  for id in $rjobs; do gh run rerun --job "$id" >/dev/null 2>&1 || echo "merge-pr: could not re-run job $id." >&2; done
+  # Wait until GitHub lists the job as pending again (gh pr checks exits 8),
+  # so the watch below does not return the old failure.
+  for try in 1 2 3 4 5 6; do
+    sleep "${LODESTAR_CHECKS_RETRY:-10}"; gh pr checks "$n" >/dev/null 2>&1; [ $? = 8 ] && break
+  done
+  out=$(gh pr checks "$n" --watch --interval 15 2>&1); rc=$?
+fi
 # CI-off mark (verify-before-stop.sh): while GitHub refuses to start the jobs
 # (no Actions minutes, spending limit, billing), every Stop runs the full
 # 'make verify'; a green CI clears it. GitHub says why in the failed check

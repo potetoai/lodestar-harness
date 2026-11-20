@@ -187,6 +187,10 @@ if [ ${#named[@]} = 0 ] && [ ${#pending[@]} -gt 1 ]; then
   exit 0
 fi
 [ ${#named[@]} -gt 0 ] && pending=("${named[@]}")
+# The plain word with no plan named may approve something else (a look, a
+# result, a step), not this plan's criteria: say so with each refusal below.
+other=
+[ ${#named[@]} = 0 ] && other="If the owner approved something else (a look, a result, a step) and not these criteria, nothing is needed for this plan; go on with the work."
 
 now=$(date '+%Y-%m-%d %H:%M')
 for p in "${pending[@]}"; do
@@ -194,6 +198,7 @@ for p in "${pending[@]}"; do
     echo "Lodestar: the owner approved, but $p has no '## Criteria review', so nothing was recorded for it."
     echo "Run the critic first (lodestar-harness agents/critic.md, in a fresh subagent), fix the criteria,"
     echo "fill that section, show the owner the result, then ask for the approval word again."
+    [ -z "$other" ] || echo "$other"
     continue
   fi
   h=$(criteria_hash < "$p")
@@ -202,6 +207,7 @@ for p in "${pending[@]}"; do
     echo "they are now (no '- Reviewed criteria:' line with their hash), so nothing was recorded for it."
     echo "Run the critic on the change first (lodestar-harness agents/critic.md, 'Re-run after a criteria"
     echo "change' and 'Output'), show the owner the result, then ask for the approval word again."
+    [ -z "$other" ] || echo "$other"
     continue
   fi
   echo "$now $p $h" >> .ai/approvals.log
