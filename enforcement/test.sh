@@ -1181,6 +1181,8 @@ sedi '$d' "$p/.ai/plans/active/2026-01-04-v.md"
 printf -- '- AC1 had no threshold: added "within 0.1%%".
 ' >> "$p/.ai/plans/active/2026-01-04-v.md"
 out=$(rec "duyệt v"); t "a filled review that does not name the criteria is not recorded" bash -c '! grep -q "v.md" "$2" && grep -q "does not cover" <<<"$1"' _ "$out" "$p/.ai/approvals.log"
+t "a refusal for a plan the owner named does not say the word may approve something else" bash -c '! grep -q "something else" <<<"$1"' _ "$out"
+out=$(rec "duyệt"); t "a bare approval word that hits an unreviewed plan says it may approve something else" bash -c '! grep -q "v.md" "$2" && grep -q "something else" <<<"$1"' _ "$out" "$p/.ai/approvals.log"
 printf -- '- Reviewed criteria: %s\n' "$vh" >> "$p/.ai/plans/active/2026-01-04-v.md"
 rec "duyệt v" >/dev/null; t "the same plan with a filled criteria review is recorded" grep -q "v.md" "$p/.ai/approvals.log"
 sedi '/^## Criteria review/,$d' "$p/.ai/plans/active/x.md"
@@ -1707,7 +1709,8 @@ t "doctor C1 names the GitHub Free limit" grep -q "C1  main cannot be locked: pr
 # `gh api .../files` the files as JSON; `gh api .../contents/.ai/test-lock?
 # ref=<r>` prints $FAKE_LOCK_TIP (r = base branch) or $FAKE_LOCK_BASE (r =
 # base commit): unset is HTTP 404, "ERR" another error. `gh pr checks` exits
-# $FAKE_CHECKS (0; "none": no checks reported); `gh pr merge` writes its
+# $FAKE_CHECKS (0; "none": no checks reported; after `gh run rerun`,
+# $FAKE_CHECKS2, 0); $FAKE_FAILSTEP: a red job's failed steps; `gh pr merge` writes its
 # arguments to $FAKE_DIR/merged. `gh pr view --json author,body,commits`
 # prints $FAKE_AUTHOR (me), $FAKE_COMMITS (the PR's commit ids; one starting
 # aaaaaaa) and $FAKE_BODY (a BUILD_REVIEW route reviewed at aaaaaaa). Empty
@@ -1744,7 +1747,10 @@ case "$*" in
     [ "$v" = ERR ] && { echo "gh: Server Error (HTTP 502)" >&2; exit 1; }
     printf '%b\n' "$v" ;;
   *check-runs/*/annotations*) printf '%s\n' "$FAKE_ANNOT" ;;
-  *commits/*/check-runs*) [ -n "$FAKE_ANNOT" ] && echo 99 ;;
+  *commits/*/check-runs*) [ -n "$FAKE_ANNOT$FAKE_FAILSTEP" ] && echo 99 ;;
+  *actions/jobs/*) printf '%s
+' "$FAKE_FAILSTEP" ;;
+  "run rerun"*) echo "$*" > "$FAKE_DIR/rerun" ;;
   *pulls/*/commits*)
     q=; while [ $# -gt 0 ]; do case $1 in -q|--jq) q=$2; shift ;; esac; shift; done
     j=$(jq -cn --arg c "${FAKE_COMMITS-aaaaaaa0000000000000000000000000000000000}" --arg ntr "${FAKE_NTR-}" \
@@ -1771,6 +1777,7 @@ case "$*" in
     { echo "$*"; [ -f "$FAKE_DIR/merged" ] && echo AFTER-MERGE; } > "$FAKE_DIR/comment" ;;
   "pr checks"*) : > "$FAKE_DIR/checked"
     [ "$FAKE_CHECKS" = none ] && { echo "no checks reported on the 'x' branch"; exit 1; }
+    [ -f "$FAKE_DIR/rerun" ] && { echo "verify pass"; exit "${FAKE_CHECKS2:-0}"; }
     echo "verify pass"; exit "${FAKE_CHECKS:-0}" ;;
   "pr merge"*) echo "$*" > "$FAKE_DIR/merged"
     case "$*" in *--delete-branch*) [ -n "$FAKE_LOCAL" ] || exit 0
@@ -1823,6 +1830,12 @@ rm -f "$m/.git/lodestar-ci-off"; FAKE_ANNOT="Job failed: exceeded 360 minutes" F
 t "merge-pr: a timed-out job marks nothing" test ! -f "$m/.git/lodestar-ci-off"
 FAKE_ANNOT="tests/test_billing.py:12 AssertionError: spending limit not applied" FAKE_CHECKS=1 mp 7 "$pr7"
 t "merge-pr: a failing billing test marks nothing" test ! -f "$m/.git/lodestar-ci-off"
+rm -f "$tmp/rerun"; FAKE_FAILSTEP="PR checks" FAKE_CHECKS=1 mp 7 "$pr7"
+t "merge-pr re-runs a job that failed only at 'PR checks' (text fixed after CI), then merges" bash -c '[ $1 = 0 ] && grep -q "run rerun --job 99" "$2"' _ $? "$tmp/rerun"
+rm -f "$tmp/rerun"; FAKE_FAILSTEP="PR checks" FAKE_CHECKS=1 FAKE_CHECKS2=1 mp 7 "$pr7"; t "merge-pr re-runs once; still red is refused" [ $? = 1 ]
+rm -f "$tmp/rerun"; FAKE_FAILSTEP="PR checks,Verify" FAKE_CHECKS=1 mp 7 "$pr7"
+t "merge-pr re-runs nothing when another step failed too" bash -c '[ $1 = 1 ] && [ ! -f "$2" ]' _ $? "$tmp/rerun"
+rm -f "$tmp/rerun"
 out=$(cd "$m" && FAKE_DIR=$tmp FAKE_GH=$pr7 FAKE_CHECKS=1 LODESTAR_CHECKS_RETRY=0 PATH="$tmp/ghpr:$PATH" CLAUDE_PROJECT_DIR=$m bash "$here/agents/claude/hooks/merge-pr.sh" 7 2>&1)
 t "merge-pr on a red CI names the local checks for a CI that cannot run" bash -c 'grep -q "PR_NUMBER=7 .*ci-checks.sh origin/main" <<<"$1" && grep -q "only the owner merges" <<<"$1"' _ "$out"
 FAKE_BODY='' mp 7 "$pr7"; t "merge-pr refuses a PR with no text" [ $? = 1 ]
