@@ -1373,7 +1373,8 @@ smsg() { CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/critic-limit.sh" 
 smsg critic-sm "Check again."; t "critic hook blocks a SendMessage to a critic-named agent" [ $? = 2 ]
 smsg a1b2c3 "Run 4 narrowed: re-check the criteria in .ai/plans/active/sm.md"
 t "critic hook blocks a SendMessage critic run past the named plan's limit" [ $? = 2 ]
-smsg a1b2c3 "Re-check the changed criteria."; t "critic hook blocks a SendMessage critic run naming no plan when one is at its limit" [ $? = 2 ]
+smsg a1b2c3 "Narrowed run 4 on the changed criteria."; t "critic hook blocks a SendMessage critic run naming no plan when one is at its limit" [ $? = 2 ]
+smsg a1b2c3 "Build to the acceptance criteria; see critic.md."; t "critic hook lets a builder message naming no plan through" [ $? = 0 ]
 smsg a1b2c3 "Narrowed run on .ai/plans/active/e.md"; t "critic hook allows a SendMessage run of a plan under its limit" [ $? = 0 ]
 smsg a1b2c3 "Fix the lint error in app.py."; t "critic hook ignores a SendMessage that is no critic run" [ $? = 0 ]
 cd "$here"

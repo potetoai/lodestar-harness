@@ -63,7 +63,8 @@ block message prints the line to type). Ask for it only after the owner
 asks for a fix to a BLOCKER or MAJOR finding. The brief starts "You are the
 critic" and names the plan by its `.ai/plans/active/` path, so the hook sees
 the run. Each run is a fresh dispatch: never resume a critic with
-SendMessage (the hook blocks it).
+SendMessage (the hook blocks one sent to a critic-named agent, and counts
+one that reads as a run against the limit).
 
 A full run, as if no review existed, is required when:
 

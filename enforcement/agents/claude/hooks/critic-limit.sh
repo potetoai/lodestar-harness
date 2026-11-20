@@ -9,9 +9,9 @@
 # is let through.
 # A SendMessage that resumes a critic is a run too, though it names no
 # subagent type: one sent to an agent whose name has "critic" is always
-# blocked (a run is a fresh dispatch the hook can count), and one whose text
-# reads as a critic run is blocked when the plan it names, or any active
-# plan when it names none, has reached its limit.
+# blocked (a run is a fresh dispatch the hook can count). Sent by agent ID,
+# one whose text reads as a critic run is blocked when the plan it names, or
+# any active plan when it names none, has reached its limit.
 [ "$LODESTAR_SKIP_HOOKS" = "1" ] && exit 0
 cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
 
@@ -30,7 +30,13 @@ the Agent tool; its brief starts "You are the critic" and names the plan by its
 EOF
     exit 2
   fi
-  grep -qE 'critic|criteria|narrowed|full run' <<<"$brief" && resume=1 || exit 0
+  # Naming a plan, any critic word counts; naming none, only words of a run
+  # ("acceptance criteria" or "see critic.md" to a builder is no run).
+  if grep -qE '\.ai/plans/active/' <<<"$brief"; then
+    grep -qE 'critic|criteria|narrowed|full run|run [0-9]+' <<<"$brief" && resume=1 || exit 0
+  else
+    grep -qE 'you are (the |a )?critic|critic run|narrowed|full run|run [0-9]+' <<<"$brief" && resume=1 || exit 0
+  fi
 else
   brief=$(jq -r '.tool_input.prompt // empty' <<<"$input" 2>/dev/null | tr -d '\r' | tr '\\' '/')
   brief=${brief,,}
