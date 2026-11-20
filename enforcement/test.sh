@@ -1139,6 +1139,8 @@ recm 'ok, cảm ơn\nduyệt merge PR 5' def456 >/dev/null; t "an approval line 
 rm "$p/.ai/approvals.log"
 recm 'duyệt\n> duyệt merge PR 9\n```\nduyệt merge PR 8\n```' def456 >/dev/null; t "a quoted or code-block line approves no merge, even after a plain approval" bash -c '! grep -q " merge-pr " "$1"' _ "$p/.ai/approvals.log"
 rm -f "$p/.ai/approvals.log"
+recm '````\n```\n```\n```\nduyệt merge PR 12\n````\n\n- duyệt merge PR 13' def456 >/dev/null; t "a code block closes only on its own mark; a blank first line keeps the bullet strip" bash -c '! grep -q " merge-pr 12 " "$1" && grep -q " merge-pr 13 def456$" "$1"' _ "$p/.ai/approvals.log"
+rm -f "$p/.ai/approvals.log"
 out=$(recm "duyệt merge PR 52" ""); t "a merge approval gh cannot read records nothing and says so" bash -c '[ ! -s "$2" ] && grep -q "could not read PR #52" <<<"$1"' _ "$out" "$p/.ai/approvals.log"
 # The lodestar-harness source repo has no .claude/hooks/ library: merge approvals only.
 q=$tmp/apprsrc; mkdir -p "$q"

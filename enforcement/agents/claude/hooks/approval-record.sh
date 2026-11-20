@@ -21,12 +21,21 @@ low=${prompt,,}
 # owner may answer other questions first, so the approval line may come later.
 # $own keeps the lines the owner typed: a quoted line ("> duyệt merge PR 9")
 # or a line inside a code block (from a pasted prompt) is dropped, leading
-# spaces are cut, and the first line also loses leading punctuation.
-own=$(first=1 fence=0; while IFS= read -r line; do
+# spaces are cut, and the first non-blank line also loses leading punctuation.
+# A code block closes only on a line of its own mark, at least as long.
+own=$(first=1 fence=; while IFS= read -r line; do
   ls=${line#"${line%%[![:space:]]*}"}
-  case $ls in '```'*|'~~~'*) fence=$((1 - fence)); continue ;; '>'*) continue ;; esac
-  [ $fence = 1 ] && continue
-  [ $first = 1 ] && ls=${ls#"${ls%%[![:space:][:punct:]]*}"} && first=0
+  if [ -n "$fence" ]; then
+    c=${fence:0:1}; m=${ls%%[!$c]*}; rest=${ls#"$m"}
+    [ ${#m} -ge ${#fence} ] && [ -z "${rest//[[:space:]]/}" ] && fence=
+    continue
+  fi
+  case $ls in '```'*|'~~~'*) c=${ls:0:1}; fence=${ls%%[!$c]*}; continue ;; '>'*) continue ;; esac
+  if [ $first = 1 ]; then
+    ls=${ls#"${ls%%[![:space:][:punct:]]*}"}
+    [ -z "$ls" ] && continue
+    first=0
+  fi
   printf '%s\n' "$ls"
 done <<<"$low")
 start=$own
