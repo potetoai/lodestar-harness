@@ -293,7 +293,11 @@ pr_text_jobs() {
 if [ $rc != 0 ] && rjobs=$(pr_text_jobs); then
   echo "merge-pr: CI failed only at 'PR checks', likely on PR text fixed after it ran; re-running that job once..."
   for id in $rjobs; do gh run rerun --job "$id" >/dev/null 2>&1 || echo "merge-pr: could not re-run job $id." >&2; done
-  sleep "${LODESTAR_CHECKS_RETRY:-10}"
+  # Wait until GitHub lists the job as pending again (gh pr checks exits 8),
+  # so the watch below does not return the old failure.
+  for try in 1 2 3 4 5 6; do
+    sleep "${LODESTAR_CHECKS_RETRY:-10}"; gh pr checks "$n" >/dev/null 2>&1; [ $? = 8 ] && break
+  done
   out=$(gh pr checks "$n" --watch --interval 15 2>&1); rc=$?
 fi
 # CI-off mark (verify-before-stop.sh): while GitHub refuses to start the jobs
