@@ -2405,5 +2405,11 @@ ng worktree add -q "$tmp/names-wt" -b feat/wt main; echo 'Zorblax' > "$tmp/names
 nc 'git commit -m w' "$tmp/names-wt"; t "name check: a worktree uses the main checkout's list" [ $? = 2 ]
 nc "cd \"$tmp/names-wt\" && git commit -m w" "$tmp"; t "name check: follows a leading cd" [ $? = 2 ]
 
+srs="$here/self-hosted-runner.sh"
+t "runner script: parses" bash -n "$srs"
+! bash "$srs" 2>/dev/null; t "runner script: no repo is a usage error" [ $? = 0 ]
+mkdir -p "$tmp/srbin"; printf '#!/bin/sh\necho "$*" >> "%s/gh.log"\n' "$tmp" > "$tmp/srbin/gh"; chmod +x "$tmp/srbin/gh"
+PATH="$tmp/srbin:$PATH" bash "$srs" --off o/r >/dev/null
+t "runner script: --off deletes the repo variable" grep -q "variable delete LODESTAR_RUNNER -R o/r" "$tmp/gh.log"
 bash "$here/test-parity.sh" || failed=1
 [ $failed = 0 ] && echo "All tests passed." || { echo "Some tests failed."; exit 1; }

@@ -155,6 +155,33 @@ session (model Haiku) showed `guard-install.sh` blocking `--no-verify`. The
 other guards (`protect-tests.sh`, `sensitive-gate.sh`) leave no trace when
 they allow a change; no block by them was exercised.
 
+## Optional: run CI on this machine
+
+When a private repo runs out of GitHub's free monthly Actions minutes, CI
+fails in seconds with jobs "not started ... spending limit" and every merge
+blocks. Run that repo's CI on this machine instead (free; public repos keep
+GitHub's runner and never use this):
+
+1. Windows: install WSL Ubuntu 24.04 (`wsl --install -d Ubuntu-24.04`; a
+   newer Ubuntu may be too new for `setup-python`), open it once, then
+   `sudo apt install -y git make curl jq build-essential gh`.
+2. Inside Linux or WSL (not Git Bash), for each private repo:
+   `bash <lodestar-harness>/enforcement/self-hosted-runner.sh <owner>/<repo>...`
+   (on Windows the path starts `/mnt/<drive>/`). It asks the sudo password
+   once, registers one runner per repo as a service, sets the repo variable
+   `LODESTAR_RUNNER=self-hosted` that `ci.yml` reads, and on WSL keeps WSL
+   running from each Windows logon. The repo needs template 2.9.19 or later.
+3. Keep the machine awake while plugged in (Windows: Settings > System >
+   Power > sleep "Never"). Asleep or off, CI waits in the queue.
+
+When CI on this machine fails with "... not found" or "command not found",
+GitHub's runner had that tool and this machine lacks it: install it in the
+Linux/WSL (`sudo apt install -y <tool>`, for example `jq`,
+`openjdk-17-jdk`), then re-run the job. A long "Queued" means the runner is
+offline: check `systemctl status 'actions.runner*'` and that WSL runs. To go
+back to GitHub's runner (new month, minutes reset):
+`bash self-hosted-runner.sh --off <owner>/<repo>`.
+
 ## Optional: compact long sessions earlier
 
 Claude Code compacts a session on its own only near its 1M-token window. The
