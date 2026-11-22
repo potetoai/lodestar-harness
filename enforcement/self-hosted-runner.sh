@@ -21,8 +21,9 @@ if ! gh auth status >/dev/null 2>&1; then
 fi
 ghq() { "$GH" "$@" | tr -d '\r'; }
 if [ $off = 1 ]; then
-  for r in "$@"; do ghq variable delete LODESTAR_RUNNER -R "$r" && echo "$r: CI back on GitHub's runner."; done
-  exit 0
+  rc=0
+  for r in "$@"; do ghq variable delete LODESTAR_RUNNER -R "$r" && echo "$r: CI back on GitHub's runner." || rc=1; done
+  exit $rc
 fi
 [ "$(uname -s)" = Linux ] || die "run this inside Linux or WSL."
 missing=""
@@ -40,12 +41,13 @@ tgz="$HOME/actions-runner-linux-$arch-$ver.tar.gz"
 sudo -v   # the password once, for the services
 for r in "$@"; do
   name=${r#*/}; d="$HOME/actions-runner/$name"
-  if [ -f "$d/.runner" ]; then echo "== $r: runner already set up"; else
+  if [ -f "$d/.runner" ] && [ -f "$d/.service" ]; then echo "== $r: runner already set up"; else
     echo "== $r: registering"
     mkdir -p "$d" && tar xzf "$tgz" -C "$d"
+    [ -f "$d/.runner" ] || {
     tok=$(ghq api -X POST "repos/$r/actions/runners/registration-token" -q .token)
     (cd "$d" && ./config.sh --unattended --url "https://github.com/$r" --token "$tok" \
-      --name "$(hostname)-$name" --replace)
+      --name "$(hostname)-$name" --replace); }
     (cd "$d" && { sudo ./bin/installdependencies.sh >/dev/null || true; } &&
       sudo ./svc.sh install "$USER" && sudo ./svc.sh start)
   fi
@@ -54,9 +56,11 @@ done
 # WSL stops when no Windows program holds it, and the runners go offline:
 # a hidden "sleep infinity" started at each Windows logon keeps it up.
 if [ -n "${WSL_DISTRO_NAME-}" ] && command -v wslpath >/dev/null; then
-  appdata=$(wslpath "$(cmd.exe /c 'echo %APPDATA%' 2>/dev/null | tr -d '\r')")
+  appdata=$(wslpath "$(cmd.exe /c 'echo %APPDATA%' 2>/dev/null | tr -d '\r')") || appdata=""
+fi
+if [ -n "${appdata-}" ]; then
   vbs="$appdata/Microsoft/Windows/Start Menu/Programs/Startup/lodestar-wsl-$WSL_DISTRO_NAME.vbs"
-  printf '%s\r\n' "CreateObject(\"WScript.Shell\").Run \"wsl.exe -d $WSL_DISTRO_NAME --exec sleep infinity\", 0, False" >"$vbs"
+  printf '%s\r\n' "CreateObject(\"WScript.Shell\").Run \"wsl.exe -d $WSL_DISTRO_NAME --exec sleep infinity\", 0, False" >"$vbs" || true
   pgrep -f "^sleep infinity" >/dev/null || (cd /mnt/c && cmd.exe /c start "" wscript.exe "$(wslpath -w "$vbs")") || true
   echo "WSL is kept running at each Windows logon ($vbs)."
 fi
