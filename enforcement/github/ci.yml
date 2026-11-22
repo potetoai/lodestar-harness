@@ -33,6 +33,13 @@ jobs:
     # would run its code on that machine. Unset, CI uses GitHub's runner.
     runs-on: ${{ (github.event.repository.private || github.event_name == 'schedule') && vars.LODESTAR_RUNNER || 'ubuntu-latest' }}
     steps:
+      # A self-hosted runner has only what its owner installed; without jq,
+      # doctor fails many items at once. Name what is missing instead.
+      - name: Runner tools (self-hosted)
+        if: runner.environment == 'self-hosted'
+        run: |
+          m=""; for t in git make jq curl tar; do command -v $t >/dev/null || m="$m $t"; done
+          [ -z "$m" ] || { echo "::error::This self-hosted runner lacks:$m. On that machine run: sudo apt install -y$m build-essential, then re-run the job."; exit 1; }
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # full history, for the secret scan
