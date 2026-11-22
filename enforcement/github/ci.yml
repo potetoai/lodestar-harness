@@ -27,8 +27,9 @@ permissions:
 jobs:
   verify:
     # A private repo out of free minutes can run CI on the owner's own Linux
-    # machine (or WSL): register a self-hosted runner, then set the repo
-    # variable LODESTAR_RUNNER=self-hosted. A public repo ignores it: a fork PR
+    # machine (or WSL): lodestar-harness enforcement/self-hosted-runner.sh
+    # registers a runner and sets the repo variable
+    # LODESTAR_RUNNER=self-hosted (setup-guide.md). A public repo ignores it: a fork PR
     # would run its code on that machine. Unset, CI uses GitHub's runner.
     runs-on: ${{ (github.event.repository.private || github.event_name == 'schedule') && vars.LODESTAR_RUNNER || 'ubuntu-latest' }}
     steps:
