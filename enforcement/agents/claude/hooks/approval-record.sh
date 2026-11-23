@@ -90,6 +90,19 @@ named_in_prompt() {
   grep -qE "(^|[^[:alnum:]-])($full|$short)([^[:alnum:]-]|\$)" <<<"$own"
 }
 
+# "duyệt #243" or "duyệt PR 243" (no "merge") approves that PR or its
+# result, never a plan's criteria: record nothing and ask for no critic run,
+# unless the line also names an active plan.
+if grep -qE '^(duyệt|duyet|approve|approved)([^[:alpha:]].*)?(^|[^[:alnum:]])(pr[[:space:]]*#?|#)[0-9]+' <<<"$own"; then
+  for p in .ai/plans/active/*.md; do [ -f "$p" ] && named_in_prompt "$p" && named_plan=1; done
+  if [ -z "${named_plan:-}" ]; then
+    echo "Lodestar: the owner's approval names a PR, so no plan's criteria were recorded; no critic run is needed."
+    echo "If that PR needs the owner's merge approval (sensitive code or a safety file), ask for the line"
+    echo "\"duyệt merge PR <n>\" (\"approve merge PR <n>\" when owner_language is not vi)."
+    exit 0
+  fi
+fi
+
 if ! ls .ai/plans/active/*.md >/dev/null 2>&1; then
   echo "Lodestar: the owner approved, but no plan exists in .ai/plans/active/, so nothing was recorded."
   echo "If this approves acceptance criteria: write them under '## Acceptance criteria' in a plan"
