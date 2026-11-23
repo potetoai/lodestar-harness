@@ -92,8 +92,10 @@ named_in_prompt() {
 
 # "duyệt #243" or "duyệt PR 243" (no "merge") approves that PR or its
 # result, never a plan's criteria: record nothing and ask for no critic run,
-# unless the line also names an active plan.
-if grep -qE '^(duyệt|duyet|approve|approved)([^[:alpha:]].*)?(^|[^[:alnum:]])(pr[[:space:]]*#?|#)[0-9]+' <<<"$own"; then
+# unless the line also names an active plan. A bare "#2" counts only right
+# after the word: "duyệt AC #2" or "duyệt, see #12" may approve criteria.
+if grep -qE '^(duyệt|duyet|approve|approved)([^[:alpha:]].*)?(^|[^[:alnum:]])pr[[:space:]]*#?[0-9]+|^(duyệt|duyet|approve|approved)[^[:alnum:]]*#[0-9]+' <<<"$own"; then
+  named_plan=
   for p in .ai/plans/active/*.md; do [ -f "$p" ] && named_in_prompt "$p" && named_plan=1; done
   if [ -z "${named_plan:-}" ]; then
     echo "Lodestar: the owner's approval names a PR, so no plan's criteria were recorded; no critic run is needed."
