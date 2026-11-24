@@ -69,7 +69,7 @@ code, fewer tokens. Every hook, test lock, review and approval stays.
   plus skills for Claude, Codex and Gemini, about 100 UI lint checks, 551
   commits, 36 stars, 55 open issues, one maintainer. License PolyForm Shield
   1.0.0: use and change allowed, a competing product not. No "Code OS".
-- App01 report (session app01-43, 2026-11-03): installed in its
+- A consuming project's report (2026-11-03): installed in its
   `.claude/skills/` (not committed): impeccable, ui-ux-pro-max,
   vercel-react-native-skills, vercel-composition-patterns, pinned by commit
   in `SOURCES.txt`. Used as checklists against `docs/design/`; they found
@@ -131,14 +131,14 @@ Rating: **Do** · **Check** (measure first, act only if the number says so) ·
 | 38 | Lodestar OS idea (Design OS) | Design-system discovery, UI workflow, design checks, visual QA, design-to-code handoff | `agents/frontend.md` states, Playwright capability, template section 8 | **Do**, phase 5c, as a thin bridge to tried skills; no Lodestar design knowledge base |
 | 39 | Lodestar OS idea | Each check is machine-checked, rule-based or expert opinion; an AI opinion is never proof; never claim a design is user-validated without user tests | Not covered | **Do**, phase 5c |
 | 40 | Lodestar OS idea | Project facts marked verified or assumed, with source and date | Not covered | **Do**, phase 5c |
-| 41 | App01 report | Record why a skill or plugin was chosen; read-only trial before adopting; turn off parts that write their own source files, start hooks or dispatch subagents | `skills/capabilities.md`: Router leads, no always-on rules | **Do**, phase 0b |
-| 42 | DESIGN:OS (jangtrinh) | Design CLI and skills, about 100 UI lint checks | Overlaps impeccable (idea 43) | **Check**: only if impeccable fails the App01 trial; take no text (license) |
-| 43 | impeccable, ui-ux-pro-max, vercel-react-native-skills, vercel-composition-patterns | Design critique and audit, palettes and fonts, RN rules, component API | Installed in App01, not committed | **Check**: App01 trial (phase 5b), keep or drop each |
-| 44 | frontend-design (Anthropic) | Web UI taste guide | Not covered | **Optional**: web projects; App01 is mobile |
-| 45 | LSP plugins (pyright, typescript) | Type and compile errors while editing | `lint-file.sh` after each edit | **Drop** (2026-11-03): vn30 pre-check too noisy, 0 real bugs |
+| 41 | A consuming project's report | Record why a skill or plugin was chosen; read-only trial before adopting; turn off parts that write their own source files, start hooks or dispatch subagents | `skills/capabilities.md`: Router leads, no always-on rules | **Do**, phase 0b |
+| 42 | DESIGN:OS (jangtrinh) | Design CLI and skills, about 100 UI lint checks | Overlaps impeccable (idea 43) | **Check**: only if impeccable fails the mobile trial; take no text (license) |
+| 43 | impeccable, ui-ux-pro-max, vercel-react-native-skills, vercel-composition-patterns | Design critique and audit, palettes and fonts, RN rules, component API | Installed in a consuming mobile project, not committed | **Check**: that project's trial (phase 5b), keep or drop each |
+| 44 | frontend-design (Anthropic) | Web UI taste guide | Not covered | **Optional**: web projects; the trial project is mobile |
+| 45 | LSP plugins (pyright, typescript) | Type and compile errors while editing | `lint-file.sh` after each edit | **Drop** (2026-11-03): Python project pre-check too noisy, 0 real bugs |
 | 46 | LibreUIUX, designer-skills, superdesign | Large design bundles; vendor skill | Ideas 42-44 | **Drop**: too many skills, overlap, vendor-written ranking |
 | 47 | spec-kit, Feature Dev (Anthropic) | Spec-driven development; 7-phase feature workflow with parallel agents | Plans, acceptance criteria, Router workflows | **Covered** |
-| 48 | App01 report `lodestar-no-design-review-step` (`plans/completed/ideas/design-review-step.md`) | Review every change people see: UI code, design tokens, design docs, user-facing text | Idea 24 (phase 3b) checks UI files only; App01 added its own rule (its #142) | **Do**, in phase 3b: widen the trigger and add measured checks; no new role or workflow |
+| 48 | A consuming project's report `lodestar-no-design-review-step` (`plans/completed/ideas/design-review-step.md`) | Review every change people see: UI code, design tokens, design docs, user-facing text | Idea 24 (phase 3b) checks UI files only; that project added its own rule (its #142) | **Do**, in phase 3b: widen the trigger and add measured checks; no new role or workflow |
 
 ## 4. Phases
 
@@ -173,7 +173,7 @@ measure. Phase 5c waits for gate DS-1 instead:
 
 | Gate | Measure (source) | Minimum | Check | Stop | Status |
 |---|---|---|---|---|---|
-| DS-1 Design bridge | App01 trial (phase 5b): keep or drop recorded for each design skill | All four of idea 43 decided | App01 components step | 2026-12-31 (then drop phase 5c, note it in the decision log) | waiting (0) |
+| DS-1 Design bridge | Mobile project trial (phase 5b): keep or drop recorded for each design skill | All four of idea 43 decided | Its components step | 2026-12-31 (then drop phase 5c, note it in the decision log) | waiting (0) |
 
 ### Phase 0 — Baseline (read only)
 
@@ -195,16 +195,7 @@ Done when: the numbers are in the progress log.
 
 ### Phase 0b — How a project adopts a skill or plugin (idea 41)
 
-- `skills/capabilities.md`: extend "Other installed plugins" with a section
-  on adopting a third-party skill or plugin: read it first (what it
-  installs, writes, starts, sends out; license; pin the commit); turn off
-  parts that write their own source of truth, start hooks or dispatch
-  subagents; turn on per project; a read-only trial against known bugs
-  before keeping it; record the reason and the trial result.
-- `project/.ai/project.md` section 2: a small "Agent Skills and Plugins"
-  table (name, source and commit, why, trial, status).
-
-Done when: merged.
+Closed 2026-11-03 (#131): moved to `plans/completed/skill-harvest-closed.md`.
 
 ### Phase 1 — Reply style to the owner (ideas 1, 31)
 
@@ -257,7 +248,7 @@ Done when: merged; first 5 subagent runs checked by hand for lost meaning.
 - Two PRs: 3a the reviewer passes (ideas 4, 29); 3c builder, investigate
   and testing lines (ideas 5-7, 28, 30).
 
-Done when: merged; a dry run on one recent App01 or vn30 diff (read only)
+Done when: merged; a dry run on one recent diff from a consuming project (read only)
 shows the pass output.
 
 ### Phase 3b — Product, UI and intake checks (ideas 23, 24, 27)
@@ -287,8 +278,8 @@ shows the pass output.
 - ui-ux-pro-max stays an optional plugin for deep design work; Lodestar text
   carries only the checklist.
 
-Done when: merged; a dry run on one recent App01 `apps/mobile` diff (read
-only) shows the checklist output, and a dry run on App01 #141 (tokens and
+Done when: merged; a dry run on one recent mobile diff from a consuming project (read
+only) shows the checklist output, and a dry run on that project's PR #141 (tokens and
 their usage notes only) shows the trigger fires.
 
 ### Phase 4 — Repo audit in maintenance (idea 8, only if Q3 is yes)
@@ -309,9 +300,9 @@ Done when: `installed_plugins.json` matches Q4.
 
 ### Phase 5b — Trials in projects (ideas 42, 43, 45; no PR here)
 
-- App01 design skills (idea 43), at its components step, on one real
+- Mobile project design skills (idea 43), at its components step, on one real
   component (share-sheet flow or the first shared component):
-  - Before the first skill runs, App01 commits the known issues of that
+  - Before the first skill runs, the project commits the known issues of that
     component (open bugs, the design-system gaps found 2026-11-02) in its
     plan, dated; the skills do not see the list.
   - All runs use the same commit, model and request, each alone, read
@@ -337,43 +328,23 @@ Done when: `installed_plugins.json` matches Q4.
     the cheaper.
   - MODIFY only when the new findings come from a named part (a command or
     reference file) and the unwanted behavior has a named limit (commands
-    banned in App01's `.ai/project.md`, or only those reference files kept).
+    banned in that project's `.ai/project.md`, or only those reference files kept).
   - DROP every other result, including a skill whose value was not shown;
     a skill is never kept by default.
-  - App01 commits a skill only after the owner approves its result.
+  - The project commits a skill only after the owner approves its result.
   - Context cost, read 2026-11-03: skill descriptions load every session
     (about 500 tokens for all four); a body loads when used (impeccable
     12 KB, ui-ux-pro-max 16 KB, react-native 4.5 KB, composition 3 KB,
     about 4 bytes a token); reference files load on demand (impeccable
     `critique.md` alone is about 800 lines).
   - DESIGN:OS is tried only if impeccable is dropped.
-- vn30 LSP (idea 45). vn30 is Python (FastAPI, SQLAlchemy, pandas; ruff,
-  no type checker) with a JavaScript React frontend (no TypeScript), so only
-  pyright-lsp applies; no TypeScript LSP.
-  - Pre-check, read only: run pyright once over `backend/` in basic mode
-    and count errors. About 30% of its functions declare a return type, so
-    many errors may be noise. Go on only if the count is small enough to
-    fix or silence in `pyrightconfig.json` (owner decides); a noisy LSP adds
-    its errors to the agent's context after every edit.
-  - Install inside the project (`requirements-dev.txt` in `backend/.venv`;
-    `guard-install.sh` blocks pip outside a venv and global npm); the plugin finds
-    `pyright-langserver` only if that `.venv` is on PATH when Claude starts:
-    check this on Windows first. The PyPI `pyright` package downloads
-    Node.js on first run: allow once or use the node from the frontend.
-  - Turn it on in vn30's project settings only, for 7 days. Keep it if it
-    reports at least one error before the tests or the lint hook do, and
-    `usage-report.py` shows tokens per task up no more than 10%.
+- Python LSP (idea 45): closed 2026-11-03 (#133), dropped; moved to
+  `plans/completed/skill-harvest-closed.md`.
 - Each project records the result in its `.ai/project.md` table (phase 0b)
   and commits kept skills through its own PR (`.claude/` is a safety path
   there: the owner's "duyệt merge PR <n>"). This repo sends prompts only.
 
-  - Result 2026-11-03: 502 errors, 226 in app code, 0 confirmed bugs, mostly
-    pandas/SQLAlchemy typing noise; about 20 `reportOptional*` errors. LSP
-    dropped. vn30 then reviewed the 20 (12 sites) read-only: 0 real bugs, each
-    already checks for None. A CI step with only `reportOptional*` was dropped
-    too (owner chose (b)). No vn30 code changed.
-
-Done when: both projects report; results in the progress log.
+Done when: the mobile project reports (the Python trial is closed); results in the progress log.
 
 ### Phase 5c — Design bridge (ideas 38-40; after gate DS-1)
 
@@ -385,7 +356,7 @@ Done when: both projects report; results in the progress log.
   verified or assumed marks on project facts (idea 40).
 - No Lodestar design knowledge base: the kept skills carry that.
 
-Done when: merged; a dry run on one App01 screen (read only) shows the
+Done when: merged; a dry run on one mobile project screen (read only) shows the
 handoff and the check classes.
 
 ### Phase 6 — Measure and close
@@ -401,7 +372,7 @@ When gate SH-6 is met, rerun phase 0. Keep a phase if:
   and median reviewer cost per run rises no more than 15%;
 - phase 3b: in the features it ran on, the owner took a smaller or no-build
   option at least once, or found the check useful; over half of the UI
-  checklist findings in App01 are fixed; grilling rounds per task stay at
+  checklist findings in the mobile project are fixed; grilling rounds per task stay at
   3 or fewer (median) and the owner finds them easier than open questions;
   the extra explore-options runs cost under 3% of the projects' total;
 - ideas 28-31: over half of the spec-check findings are fixed, and no
@@ -424,9 +395,9 @@ this plan to `plans/completed/`, once phase 5c is merged or dropped.
   **Answered 2026-10-27: decide after phase 3 numbers.**
 - **Q4 (phase 5):** which plugins stay. Recommended: keep ui-ux-pro-max (off,
   per project); expo only if a project builds an Expo app; remove the other
-  six. **Answered 2026-10-27: as recommended; keep expo (App01
-  `apps/mobile` is Expo), on only for App01 via its gitignored
-  `.claude/settings.local.json` (App01's session sets it).**
+  six. **Answered 2026-10-27: as recommended; keep expo (the mobile project
+  is Expo), on only for that project via its gitignored
+  `.claude/settings.local.json` (its own session sets it).**
 
 ## 6. Not in scope
 
@@ -451,26 +422,24 @@ this plan to `plans/completed/`, once phase 5c is merged or dropped.
 | 2026-10-27 | — | Phase 3 guard: the over-engineering pass never cuts real error handling, tests or security checks |
 | 2026-10-27 | — | Ideas 27-35 added from Matt Pocock's skills (owner asked) |
 | 2026-10-27 | — | Review fixes: real start about 11-06, measure phases 1-2 before 3, cost bars, baseline after the release, phase 3 in two PRs |
-| 2026-11-03 | 0b | Ideas 36-47 rated (Lodestar OS idea, DESIGN:OS, App01 report, 2026 lists); adoption rule and template table, #131 |
-| 2026-11-03 | 5b | Skill trial with baseline, KEEP / MODIFY / DROP bars, vn30 LSP pre-check, #132 |
-| 2026-11-03 | 5b | vn30 LSP pre-check: 226 app errors, idea 45 dropped, #133 |
-| 2026-11-04 | 3b | Idea 48 (App01 design-review report) rated: folded into phase 3b, #140 |
+| 2026-11-03 | 5b | Skill trial with baseline, KEEP / MODIFY / DROP bars, Python project LSP pre-check, #132 |
+| 2026-11-04 | 3b | Idea 48 (a consuming project's design-review report) rated: folded into phase 3b, #140 |
 
 ## 8. Decision log
 
 | Date | Decision | Why |
 |---|---|---|
 | 2026-10-27 | Harvest ideas into Lodestar files instead of turning plugins on | Owner; plugins add base context every session and their always-on rules conflict with the Router |
-| 2026-10-27 | Q1 after 2026-11-02; Q2 (a); Q3 after phase 3; Q4 keep ui-ux-pro-max and expo, remove superpowers, karpathy, caveman, ponytail, taste-skill, firecrawl | Owner; App01 builds an Expo app |
+| 2026-10-27 | Q1 after 2026-11-02; Q2 (a); Q3 after phase 3; Q4 keep ui-ux-pro-max and expo, remove superpowers, karpathy, caveman, ponytail, taste-skill, firecrawl | Owner; a consuming project builds an Expo app |
 | 2026-10-27 | From gstack take only the premise check and the UI checklist; no gstack install | Owner asked; the rest overlaps Lodestar, expands scope, or sends telemetry |
 | 2026-10-27 | From Matt Pocock's skills take grilling rounds, ranked hypotheses, the spec check, the tautological-test ban and the undo line in PRs; no install | Owner asked; the rest is covered, is orchestration, or is rare use |
 | 2026-10-27 | Measure phases 1-2 before phase 3 merges; add reviewer and explore-options cost bars; baseline only after the batch release | Plan review: phases 2 and 3 pull report length opposite ways; owner watches tokens; the release changes agent runs |
 | 2026-10-28 | Start and measures on data gates SH-0, SH-base, SH-12, SH-6 instead of "about 11-06", "a short window" and "about one week" | Owner: plans start on data, not only a date; a baseline or a bar on a few runs cannot tell a change from noise |
 | 2026-11-03 | Build no Core or Engineering OS as software; design work uses third-party skills that pass a project trial, plus a thin Lodestar bridge (phase 5c) | Owner ("làm đi" after the review); most of the idea exists here, the rest is orchestration; a tried skill is cheaper than a Lodestar design knowledge base |
 | 2026-11-03 | DESIGN:OS only as a fallback to impeccable; no text copied from it | They overlap; PolyForm Shield bars a competing product; one maintainer |
-| 2026-11-03 | App01 commits its design skills only after the trial | An untried skill adds reading cost in every session |
+| 2026-11-03 | The mobile project commits its design skills only after the trial | An untried skill adds reading cost in every session |
 | 2026-11-03 | Router eval: all 13 pass fully with Lodestar, 10 of 13 without is evidence for routing only, not for code or design quality | One run per case, 13 cases written with the policy, regex on the route line; limits in `evals/router/scores.md` |
 | 2026-11-04 | Idea 48: a design review is phase 3b's checklist with a wider trigger and measured checks; no designer role, no new workflow, no skill pick before gate DS-1 | Evidence in the idea file; a checklist costs tokens only on PRs people see, a new role costs a run each; skills wait for the phase 5b trial |
-| 2026-11-03 | vn30 LSP starts with a read-only pyright count; no TypeScript LSP | Owner; vn30's frontend is JavaScript; a noisy LSP costs tokens on every edit |
+| 2026-11-03 | The Python project's LSP starts with a read-only pyright count; no TypeScript LSP | Owner; its frontend is JavaScript; a noisy LSP costs tokens on every edit |
 | 2026-11-03 | Skill trials compare with a no-skill baseline run; only new, correct, actionable findings count; unproven value means DROP; 30k tokens per run cap | Owner's review of #132; a finding the plain model also makes is not the skill's value |
 | 2026-11-03 | Drop idea 45 (pyright LSP) and a `reportOptional*`-only CI step | Owner; 226 noisy errors would enter context after each edit; the 20 Optional errors were all safe, so CI would only make agents add asserts |
