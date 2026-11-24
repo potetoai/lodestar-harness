@@ -82,7 +82,7 @@ Done when: the owner has decided.
 
 | Gate | Measure (source) | Minimum | Check | Stop | Status |
 |---|---|---|---|---|---|
-| S7-0 Start phase 3 | `agent-pitfalls.md` gates P5-a..c and `skill-harvest.md` gate SH-0 met or stopped | All recorded | 2026-11-26 | 2026-12-17 | met 2026-11-24 (P5-a stopped, #NNN; SH-0 met) |
+| S7-0 Start phase 3 | `agent-pitfalls.md` gates P5-a..c and `skill-harvest.md` gate SH-0 met or stopped | All recorded | 2026-11-26 | 2026-12-17 | met 2026-11-24 (P5-a stopped, #235; SH-0 met) |
 
 ## 5. Open questions
 

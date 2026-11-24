@@ -183,7 +183,7 @@ Data gates for the parts not yet decided (`rules/documentation.md`, section
 
 | Gate | Measure (source) | Minimum | Check | Stop | Status |
 |---|---|---|---|---|---|
-| P5-a Phase 2 (PROTOTYPE) | Sessions routed PROTOTYPE in all projects (`usage-report.py` route lines, PR route lines) | 3 uses | 2026-11-05 | 2026-11-26 | stopped 2026-11-24, 1 of 3: PROTOTYPE folded into the other routes as a step (#NNN) |
+| P5-a Phase 2 (PROTOTYPE) | Sessions routed PROTOTYPE in all projects (`usage-report.py` route lines, PR route lines) | 3 uses | 2026-11-05 | 2026-11-26 | stopped 2026-11-24, 1 of 3: PROTOTYPE folded into the other routes as a step (#235) |
 | P5-b `--friction` | Maintenance runs that ran `usage-report.py --friction` (grep transcripts for the command), and fixes that came from its output (feedback rows, PRs, read by hand) | 3 runs, from 2 projects | 2026-11-05 | 2026-11-26 | met 2026-11-05: 3 runs (vn30 2, App01 1); 1 fix (#116, follow-up #118) |
 | P5-c Critic limit (#94, #95) | Plans with critic runs since 2026-10-27: runs per plan, findings per narrowed run (`- Run <n>` lines in plan `## Criteria review`; findings counted by hand in critic reports) | 8 plans from 2 projects, 3 of them with `critic-limit.sh` installed (batch release) | 2026-11-05 | 2026-11-26, or release + 21 days if the batch ships after 2026-11-05 | met 2026-11-13: 14 plans from 3 projects, 6 with the hook; decided (owner B) |
 
@@ -253,7 +253,7 @@ or change it.
 | 2026-11-05 | 5 recount fix | P5-c: the row above missed App01 runs after the hook: `week8-map-places` runs 15-31 (17, all narrowed, 11-04..11-05), `share-sheet-android` run 14 (11-02); vn30 none. 2 plans with the hook, minimum 3; PR #160 |
 | 2026-11-13 | 5 recount | P5-c met: 6 plans with the hook ran 43, 17, 8, 7, 5 and 4 times; every run past the limit came from an owner "duyệt critic" or criteria approval (one plan: 9 in 2 hours). Later runs: mostly 1-3 minor findings each, but 4 plans found BLOCKER or MAJOR gaps after run 3 |
 | 2026-11-19 | 5 recount | P5-a 1: one task in a consuming project routed PROTOTYPE (2026-11-13), a spike for a step of a COMPLEX plan, like the 10-27 build; the other projects none. Still below 3; merge at the stop day as decided |
-| 2026-11-24 | 5 | P5-a stopped: PROTOTYPE route dropped, `proto/*` kept as a step of any route (Router section and rule 17, `workflows/prototype.md`), with Router evals (#NNN). Phase 5 done |
+| 2026-11-24 | 5 | P5-a stopped: PROTOTYPE route dropped, `proto/*` kept as a step of any route (Router section and rule 17, `workflows/prototype.md`), with Router evals (#235). Phase 5 done |
 
 ## 8. Decision log
 

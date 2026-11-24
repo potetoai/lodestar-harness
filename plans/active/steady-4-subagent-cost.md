@@ -115,13 +115,13 @@ Done when: gate S4-1 is met or stopped and the owner has seen the count.
 |---|---|---|
 | 2026-11-13 | none | Plan written; section 2 measured |
 | 2026-11-19 | 0 | Measured A, B and a risk split; H not measured; second rating in section 11 (PR #222) |
-| 2026-11-24 | 1 | Idea I: Router says what "data integrity" means, with a new eval case (#NNN) |
+| 2026-11-24 | 1 | Idea I: Router says what "data integrity" means, with a new eval case (#235) |
 
 ## 10. Decision log
 
 | Date | Decision | Reason |
 |---|---|---|
-| 2026-11-24 | Idea I done: Router Risk section, "data integrity" = stored real data lost or corrupted; correct computed output gets normal tests | Owner approved 2026-11-19; it rode the Router eval run of the PROTOTYPE fold (#NNN) |
+| 2026-11-24 | Idea I done: Router Risk section, "data integrity" = stored real data lost or corrupted; correct computed output gets normal tests | Owner approved 2026-11-19; it rode the Router eval run of the PROTOTYPE fold (#235) |
 | 2026-11-19 | Phase 0 started before 2026-11-27, owner agreed | Gate counts were met. P5-c (critic limit) was decided on 2026-11-13, and data from 2026-11-14 is all under the new critic rule. P5-a (PROTOTYPE) has nothing to do with subagents |
 
 ## 11. Phase 0 results (2026-11-14 to 2026-11-19)
