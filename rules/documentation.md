@@ -115,3 +115,19 @@ thin.
 
 A plan that waits for another plan starts when that plan's gates are met or
 stopped, not on a guessed date.
+
+---
+
+# 7. Closed phases leave the active plan
+
+An agent reads the whole active plan before it works on it, so text about
+closed phases costs tokens and can pass for open work. In the PR that closes
+a phase of a plan that runs across several PRs, move that phase's text and
+its progress rows out of the active plan. Leave one line in its place:
+`Phase <n>: closed (PR #<n>), text in <where>`.
+
+- In a project, the text leaves the file and stays in git; `<where>` is the
+  PR. In Lodestar-harness, it moves to `plans/completed/<plan>-closed.md`.
+- Keep the decision log whole, and keep any gate or open question that an
+  open phase still uses.
+- A plan with no open phase closes whole, as its workflow says.
