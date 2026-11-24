@@ -126,7 +126,7 @@ a phase of a plan that runs across several PRs, move that phase's text and
 its progress rows out of the active plan. Leave one line in its place:
 `Phase <n>: closed (PR #<n>), text in <where>`.
 
-- In a project, the text leaves the file and stays in git; `<where>` is the
+- In a consuming project, the text leaves the file and stays in git; `<where>` is the
   PR. In Lodestar-harness, it moves to `plans/completed/<plan>-closed.md`.
 - Keep the decision log whole, and keep any gate or open question that an
   open phase still uses.
