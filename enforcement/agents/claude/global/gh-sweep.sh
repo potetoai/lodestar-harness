@@ -50,7 +50,10 @@ while IFS= read -r p; do
   since=$({ tail -n +2 "$stamp" | tr -d '\r' | awk -v p="$p" 'tolower(substr($0, index($0, " ") + 1)) == tolower(p) { s = $1 } END { print s }'; } 2>/dev/null)
   i=$((i + 1)); echo "$p" > "$tmp/$i.p"
   { sweep "$p" "${since:-$first}" > "$tmp/$i.out" && touch "$tmp/$i.ok"; } &
-done < <({ tr -d '\r' < "$inbox/projects.txt"; } 2>/dev/null | sort -fu)
+done < <({ tr -d '\r' < "$inbox/projects.txt"; } 2>/dev/null | while IFS= read -r p; do
+  # Worktrees of one project share its GitHub repo: sweep its main checkout once.
+  m=$(git -C "$p" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)
+  [ "${m##*/}" = .git ] && echo "${m%/.git}" || echo "$p"; done | sort -fu)
 wait
 all=1; out=""; keep=""
 for f in "$tmp"/*.p; do

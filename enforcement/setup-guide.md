@@ -178,7 +178,12 @@ When CI on this machine fails with "... not found" or "command not found",
 GitHub's runner had that tool and this machine lacks it: install it in the
 Linux/WSL (`sudo apt install -y <tool>`, for example `jq`,
 `openjdk-17-jdk`), then re-run the job. A long "Queued" means the runner is
-offline: check `systemctl status 'actions.runner*'` and that WSL runs. To go
+offline: check `systemctl status 'actions.runner*'` and that WSL runs.
+Unlike GitHub's runner, this machine keeps what earlier jobs left: a local
+database or service still running, files outside the checkout. A test that
+passes on GitHub but fails here on data it did not create assumed a fresh
+machine: the project's test setup must reset that state in CI (for example
+reset the local database before the tests), not reuse it. To go
 back to GitHub's runner (new month, minutes reset):
 `bash self-hosted-runner.sh --off <owner>/<repo>`.
 

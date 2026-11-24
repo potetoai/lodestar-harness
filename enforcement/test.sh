@@ -505,6 +505,14 @@ log=$tmp/py/.ai/feedback-log.md
 tail -n 1 "$LODESTAR_INBOX/projects.txt" >> "$LODESTAR_INBOX/projects.txt"
 out=$(remind "$tmp/self")
 t "global hook lists a report once when its project is listed twice" [ "$(grep -c 'lodestar-wrong-hold' <<<"$out")" = 1 ]
+wm=$tmp/wtmain; mkdir -p "$wm/.ai"; git -C "$wm" init -q
+git -C "$wm" -c user.name=t -c user.email=t@t commit -q --allow-empty -m i
+git -C "$wm" worktree add -q "$tmp/wtside" 2>/dev/null; mkdir -p "$tmp/wtside/.ai"
+for d in "$wm" "$tmp/wtside"; do
+  echo "| 2026-10-17 | lodestar-wt-dup | same row in each worktree | x | reported |" > "$d/.ai/feedback-log.md"
+  (cd "$d" && { pwd -W 2>/dev/null || pwd; }) >> "$LODESTAR_INBOX/projects.txt"; done
+out=$(remind "$tmp/self")
+t "global hook lists a report once across a project's worktrees, keyed by its main checkout" bash -c '[ "$(grep -c "lodestar-wt-dup" <<<"$1")" = 1 ] && grep -q "/wtmain|2026-10-17|lodestar-wt-dup" <<<"$1"' _ "$out"
 t "global hook reads a status in backticks or another case, and a cell with a pipe" bash -c 'grep -q "lodestar-pipe-cell" <<<"$1" && grep -q "a|b. split here" <<<"$1"' _ "$out"
 t "global hook in lodestar-harness lists a reported lodestar- row" bash -c 'grep -q "/py|2026-10-17|lodestar-wrong-hold" <<<"$1" && grep -q "clean tree" <<<"$1"' _ "$out"
 t "global hook skips fixed rows and project tags" bash -c '! grep -qE "orca-old-bug|own-mistake" <<<"$1"' _ "$out"
