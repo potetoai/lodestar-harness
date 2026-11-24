@@ -59,15 +59,22 @@ inbox=${LODESTAR_INBOX:-$HOME/.lodestar}
 if [ -f enforcement/bootstrap.sh ]; then             # lodestar-harness itself
   [ "$mode" = --prompt ] && exit 0
   seen=$({ tr -d '\r' < "$inbox/seen.txt"; } 2>/dev/null)
+  # Each worktree of a project has its own copy of the log: key a report by
+  # the project's main checkout, so one report shows once, not per worktree.
   new=$({ tr -d '\r' < "$inbox/projects.txt"; } 2>/dev/null | sort -fu | while IFS= read -r p; do
     [ -f "$p/.ai/feedback-log.md" ] || continue
-    tr -d '\r' < "$p/.ai/feedback-log.md" | awk -F'|' -v p="$p" '
+    # Only the top of a linked worktree maps to its main checkout; a subfolder
+    # with its own .ai, or a folder git cannot read, keeps its own path.
+    r=$(git -C "$p" rev-parse --path-format=absolute --git-dir --git-common-dir --show-prefix 2>/dev/null)
+    { read -r gd; read -r cd; read -r pre; } <<<"$r"
+    [ -z "$pre" ] && [ "$gd" != "$cd" ] && [ "${cd##*/}" = .git ] && m=${cd%/.git} || m=$p
+    tr -d '\r' < "$p/.ai/feedback-log.md" | awk -F'|' -v p="$m" '
       NF < 5 { next }
       { last = ($NF ~ /^ *$/) ? NF - 1 : NF; st = tolower($last); gsub(/[` ]/, "", st)
         d = $2; tag = $3; gsub(/[` ]/, "", d); gsub(/[` ]/, "", tag)
         what = $4; for (i = 5; i < last - 1; i++) what = what "|" $i }
       tag ~ /^(lodestar|orca)-/ && st ~ /^reported/ { print p "|" d "|" tag "\t" substr(what, 1, 200) }'
-  done | while IFS=$'\t' read -r key what; do
+  done | awk -F'\t' '!s[tolower($1)]++' | while IFS=$'\t' read -r key what; do
     grep -qixF "$key" <<<"$seen" || printf '  %s\n    %s\n' "$key" "$what"
   done)
   if [ -n "$new" ]; then
