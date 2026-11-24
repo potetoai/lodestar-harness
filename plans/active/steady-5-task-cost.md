@@ -93,7 +93,7 @@ Done when: gate S5-1 is met or stopped.
 
 | Gate | Measure (source) | Minimum | Check | Stop | Status |
 |---|---|---|---|---|---|
-| S5-0 Plugin step | Owner's TokenEconomizer check (`/tokeneconomizer:status`) and the before/after split from phase 0 | 14 days of sessions after 2026-11-10, from 2 projects | 2026-11-24 | 2026-12-15 | waiting |
+| S5-0 Plugin step | Owner's TokenEconomizer check (`/tokeneconomizer:status`) and the before/after split from phase 0 | 14 days of sessions after 2026-11-10, from 2 projects | 2026-11-24 | 2026-12-15 | met 2026-11-24 |
 | S5-1 Effect | Cost per SIMPLE task, `Read` share, median first-turn context (`scripts/usage-report.py`), 14 days after the chosen changes | 30 SIMPLE tasks from 2 projects | 14 days after phase 1 | 3 weeks later | waiting (0.41M, 59%, 31.6k on 2026-11-13) |
 
 ## 5. Open questions
@@ -119,6 +119,7 @@ Done when: gate S5-1 is met or stopped.
 | 2026-11-16 | 1 | D deferred: no project is mostly SIMPLE (next PR) |
 | 2026-11-16 | 0 | Item 3: owner's `/context` in all four; artifact tools 7.5k to 8.4k in C and here (this PR) |
 | 2026-11-19 | 0 | `"enableArtifact": false` in C and here (2026-11-17): first turn about 38-39k to 25-27k in both, about 12k less per session start |
+| 2026-11-24 | 1 | Gate S5-0 met, F rated Keep, owner chose keep (table below; this PR) |
 
 ### Phase 0 findings (2026-11-15)
 
@@ -229,10 +230,31 @@ the mean keeps the carried work; rate ideas A, B, E on the median.
 | E | Drop | Whole-file text reads over 10k are 1.6% of reads; `Read` is 23% of tool results, not 59% | none |
 | F | Later | Waits for gate S5-0 (owner's check 2026-11-24) | none |
 
+### Gate S5-0: TokenEconomizer (2026-11-24)
+
+`te status` in this repo, A and B; `usage-report.py` 14 days each side of
+2026-11-10. Active parts: toolprune and loopguard; micro-skills and repo map
+are off.
+
+| Measure | Before (10-27 to 11-10) | After (11-10 to 11-24) |
+|---|---|---|
+| Plugin overhead (`te status`) | none | 0.3% here and in A, 0.4% in B |
+| Tools hidden by toolprune | none | about 80 here, 50 in A, 120 in B |
+| Loopguard redirects | none | 4 in 1,375 turns, 0 still stuck |
+| Weighted units per turn, main session only | 14.8k | 13.9k (-6%) |
+| Median first-turn context | 31.0k | 29.7k |
+| Owner messages per task, SIMPLE / BUILD_REVIEW | 3.5 / 3.9 | 3.2 / 3.4 |
+
+The drop mixes three changes: toolprune, ideas A and B (2026-11-16) and
+`"enableArtifact": false` (2026-11-17); the plugin's own share cannot be
+split. Corrections did not rise, and the overhead is under any of the drops.
+F rated Keep, settings as they are.
+
 ## 8. Decision log
 
 | Date | Decision | Reason |
 |---|---|---|
+| 2026-11-24 | F: keep TokenEconomizer as set (micro-skills and repo map stay off); no saving is credited to it | Owner chose; overhead 0.3%, no rise in owner messages, its share of the drop cannot be split from A, B and the artifact setting |
 | 2026-11-16 | D deferred, not started: SIMPLE share of cost per project over 30 days is 4% to 18% (the most-SIMPLE consuming project has 8.5% SIMPLE, 31% COMPLEX); revisit when a project's work is mostly SIMPLE | A fast tier saves little there and may raise corrections on large tasks; owner chose to defer |
 | 2026-11-16 | Q1 answered: small changes of one sitting may share one PR, one line each in the PR text | Owner chose; fixed steps cost more than the change |
 | 2026-11-16 | D runs as a 7-day trial in one project, back to the strong tier if owner corrections rise | Owner chose the trial over a default change |
