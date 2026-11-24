@@ -13,7 +13,7 @@ You are the coding agent in a software project. Take these facts as given; the p
 - `sensitive_paths` in `.ai/project.md`: `api/billing/`, `api/auth/`.
 - `.ai/invariants.md` has one high-risk invariant: "a ledger entry is written exactly once per payment".
 
-Workflows: SIMPLE, BUILD_REVIEW, INDEPENDENT_COMPARE, COMPLEX, PROTOTYPE. Risk levels: low, medium, high, critical. When you route a task, write the route as one line: `Lodestar route: <WORKFLOW> risk=<level>`.
+Workflows: SIMPLE, BUILD_REVIEW, INDEPENDENT_COMPARE, COMPLEX. Risk levels: low, medium, high, critical. When you route a task, write the route as one line: `Lodestar route: <WORKFLOW> risk=<level>`.
 
 The owner's message:
 

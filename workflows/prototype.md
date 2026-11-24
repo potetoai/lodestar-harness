@@ -1,9 +1,13 @@
-# Prototype Workflow
+# Prototype Step
 
 ## Purpose
 
 Answer "what do I want?" fast, before deciding. A prototype is a sketch: it
 is thrown away, never shipped. What survives is what was learned.
+
+A step, not a route: the task is routed as usual (BUILD_REVIEW or higher,
+`router/ROUTER.md` rule 17) and starts with this step. Its route line names
+that workflow; the prototype has no line of its own.
 
 ## When
 
@@ -54,8 +58,8 @@ One agent. No reviewer, tester or critic: nothing here ships.
 ## Rules
 
 - Prototype code is never merged, pushed, or copied into the real change.
-  The real change is a new task (BUILD_REVIEW or higher) that starts from
-  the findings and is built and tested from scratch.
+  The real change continues the task's own workflow from the findings and
+  is built and tested from scratch.
 - Renaming a `proto/*` branch to ship it is the same as copying it: not allowed.
 - Do not change the owner's main checkout, shared data, or anything outside
   the worktree. A prototype that needs real data only reads it.
@@ -64,10 +68,10 @@ One agent. No reviewer, tester or critic: nothing here ships.
 
 ## Completion Criteria
 
-The task is complete only when:
+The step is complete only when:
 
 - the owner has seen the demo
-- the findings are written down where the real task will read them (its plan,
-  or the reply that starts it)
+- the findings are written down where the rest of the task will read them
+  (its plan, or the reply that starts the build)
 - background processes are stopped
 - the worktree and the `proto/*` branch are deleted

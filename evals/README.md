@@ -7,7 +7,7 @@ owner's machine (it uses the owner's quota), never in CI.
 | Path | What |
 |---|---|
 | `.claude-plugin/`, `skills/lodestar/` | Wrapper plugin: loads Lodestar the way `~/.claude/CLAUDE.md` does. The skill finds the harness from its own folder (`${CLAUDE_SKILL_DIR}`), so it needs no edit on another machine |
-| `router/` | Router suite: 13 cases, each a task in and a route line out |
+| `router/` | Router suite: 14 cases, each a task in and a route line out |
 | `router/scores.md` | Main scores and tokens; a PR compares against them |
 | `tokens.py` | Prints per-case scores and tokens from a run's JSON |
 | `results/` | Run output (gitignored) |

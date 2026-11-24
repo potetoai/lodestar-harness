@@ -172,16 +172,17 @@ Do not spawn unnecessary agents.
 
 ---
 
-# 5. PROTOTYPE
+# Prototype step (not a workflow)
 
 Use when the owner wants to see or try an idea before deciding, or the
-requirements are still unclear after one intake question. A throwaway sketch
-on a local `proto/*` branch: one agent, no review, no tests, a time box. The
-output is a demo and a list of findings, which become the acceptance criteria
-of a normal task (BUILD_REVIEW or higher). The prototype code is deleted, never
-merged or copied. Never for a fix, a data change or anything that must ship.
+requirements are still unclear after one intake question. Route the task as
+usual (BUILD_REVIEW or higher), then start it with a throwaway sketch on a
+local `proto/*` branch: one agent, no review, no tests, a time box. The output
+is a demo and a list of findings, which become the task's acceptance criteria.
+The prototype code is deleted, never merged or copied. Never for a fix, a data
+change or anything that must ship.
 
-Workflow: `workflows/prototype.md`.
+Step: `workflows/prototype.md`.
 
 ---
 
@@ -232,7 +233,10 @@ What happens if the implementation is wrong?
 
 Consider:
 - regression risk
-- data integrity
+- data integrity: stored real data lost or corrupted, wrong values written
+  back to storage included. Whether computed output (a score, a report,
+  research results) is correct is ordinary correctness: normal tests, not a
+  risk raise by itself
 - security
 - production impact
 - user impact
@@ -362,7 +366,7 @@ Do not parallelize tasks with strong dependencies unless the dependency has been
 
 # Verification
 
-Every workflow must end with verification. PROTOTYPE is the one exception: it ends with a demo and findings, and its code never ships.
+Every workflow must end with verification. A prototype step ends with a demo and findings instead; its code never ships, and the task it starts still ends with verification.
 
 Minimum:
 - run relevant tests
@@ -405,10 +409,10 @@ there instead of keeping their own copy.
 12. Human approval is required before executing a high-risk or highly destructive operation.
 13. When the task is security-sensitive (see `rules/security.md`), add `security_review` to the required verification. The task is not complete until that review passes.
 14. Routing approval: for SIMPLE, and for BUILD_REVIEW with low or medium risk, announce the decision in one line and proceed without waiting. For high or critical risk, tests-first mode, INDEPENDENT_COMPARE, and COMPLEX, present the routing decision and wait for the user's approval before dispatching any worker. See the Routing Approval Gate below.
-15. Readiness first (`rules/enforcement.md`). If `.claude/hooks/doctor.sh` is missing or fails, do not accept feature work: route to ONBOARDING (`workflows/onboarding.md`). Exceptions: questions, docs-only changes, and fixes to the onboarding itself. The owner may explicitly skip onboarding; record the skip in `.ai/tech-debt.md` with a due date. If doctor warns that the template is outdated, propose `enforcement/bootstrap.sh --upgrade`.
+15. Readiness first (`rules/enforcement.md`). If `.claude/hooks/doctor.sh` is missing or fails, do not accept feature work: route to ONBOARDING (`workflows/onboarding.md`). Exceptions: questions, docs-only changes, and fixes to the onboarding itself. The owner may explicitly skip onboarding; record the skip in `.ai/tech-debt.md` with a due date. If doctor warns that the template is outdated, propose `enforcement/bootstrap.sh --upgrade` only when that release is urgent or the 14-day maintenance run is due; else go on.
     The Lodestar source repository is exempt; its `AGENTS.md` says how to verify it.
 16. Tests-first for high risk (`rules/testing.md`, "Tests-first mode"). When risk is high or critical, or the task touches `sensitive_paths` or a high-risk invariant: write plain-language acceptance criteria, have a **critic** attack them (`agents/critic.md`), get the owner's approval (they type "duyệt" or "approve", recorded by a hook; an AskUserQuestion pick is not recorded), dispatch a **tester** to write failing tests and lock them (the brief carries the approved criteria and names the plan section; `agents/tester.md`, "Reading the plan"), then a **builder** that may not edit the locked tests, then a **reviewer** that checks tests against criteria. Use at least BUILD_REVIEW. When unsure whether a task is high risk, treat it as high. Enforced by the `sensitive-gate.sh` hook and CI (`rules/enforcement.md`, section 6).
-17. Prototype only to decide. Route PROTOTYPE when the owner asks to try or see an idea first, or the requirements stay unclear after one question; announce it and proceed (no approval wait: nothing ships). Its findings start a new task with its own route line. Never route a fix, a data change or shippable work to PROTOTYPE.
+17. Prototype only to decide. When the owner asks to try or see an idea first, or the requirements stay unclear after one question, route the task as usual (BUILD_REVIEW or higher), and say it starts with a prototype step (`workflows/prototype.md`). The step is a worker: it starts once the route's gate allows (at once for low or medium BUILD_REVIEW, after approval otherwise). Its findings become the acceptance criteria; if they change the route, write a new route line. Never use a prototype for a fix, a data change or shippable work.
 18. Session model (Session Model and Effort). When the task needs a stronger tier or effort than the session runs, say so in one line after the route line, with the `/model` step, and for high risk or tests-first wait for the owner's answer. Suggest a cheaper tier only when a new task starts in a fresh session: switching mid-session loses the prompt cache, which usually costs more than it saves.
 
 ---
@@ -467,7 +471,7 @@ Reason:
 # Routing Approval Gate
 
 After producing the routing decision, before dispatching any worker:
-- **SIMPLE**, **PROTOTYPE**, and **BUILD_REVIEW with low or medium risk** —
+- **SIMPLE** and **BUILD_REVIEW with low or medium risk** —
   announce the decision in one line (the route line below, then the reason) and proceed.
   Do not wait.
   Normal tasks should not incur approval friction. If the user objects, stop
@@ -478,6 +482,10 @@ After producing the routing decision, before dispatching any worker:
   and STOP. Dispatch only after the user approves. If the user chooses a
   different workflow, follow their choice.
 
+- A **prototype step** is a worker of its route: it starts when that route's
+  gate allows. Its findings may change the route; a new route line then
+  passes the gate again.
+
 Every routing decision, at any risk, starts with one fixed-format line, in
 English plain text even when the reply is in another language, so that
 `scripts/usage-report.py` can count cost, escalations and owner follow-ups
@@ -486,7 +494,7 @@ per workflow:
     Lodestar route: <WORKFLOW> risk=<level>
 
 `<WORKFLOW>` is SIMPLE, BUILD_REVIEW, INDEPENDENT_COMPARE, COMPLEX,
-PROTOTYPE, ONBOARDING or MAINTENANCE; `<level>` is low, medium, high or critical. No
+ONBOARDING or MAINTENANCE; `<level>` is low, medium, high or critical. No
 bold or other markup, nothing else on the line, and write it before the work
 starts, even when a prose reply also names the workflow. A re-route during the
 task writes a new line ending in ` escalated-from=<previous WORKFLOW>`.

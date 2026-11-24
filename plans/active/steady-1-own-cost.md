@@ -156,3 +156,4 @@ Findings:
 | 2026-11-15 | Owner: tighten the "new hooks release at once" exception in phase 1; the new wording goes to the owner for approval | Loose as written; it can excuse most releases |
 | 2026-11-15 | Batch threshold 6 days, not 7 | A weekly Saturday release a few hours earlier than the last one would fail at 7 |
 | 2026-11-15 | Router rule 15 makes every session in an outdated project propose an upgrade (doctor A9b); wording proposed in PR #207, Router not edited | The plan forbids Router edits here; a ROUTER.md PR needs the eval suite |
+| 2026-11-24 | Rule 15 wording from PR #207 merged: propose an upgrade only when the release is urgent or the 14-day maintenance run is due | Rode the Router eval run of the PROTOTYPE fold (#NNN), outside this plan's own phases |

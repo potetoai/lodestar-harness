@@ -181,7 +181,7 @@ When each workflow fits and its steps: `router/ROUTER.md`, Workflow Types,
 and `workflows/<name>.md`. Every worker ends with `worker_done` (section 12).
 In Orca:
 
-* SIMPLE and PROTOTYPE: normally one Orca worker.
+* SIMPLE and a prototype step: normally one Orca worker.
 * BUILD_REVIEW: Builder and Reviewer must have clearly defined ownership.
 * INDEPENDENT_COMPARE: one worker per solution; neither sees the other's
   solution before independent work is complete.
