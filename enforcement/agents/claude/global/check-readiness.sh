@@ -63,11 +63,12 @@ if [ -f enforcement/bootstrap.sh ]; then             # lodestar-harness itself
   # the project's main checkout, so one report shows once, not per worktree.
   new=$({ tr -d '\r' < "$inbox/projects.txt"; } 2>/dev/null | sort -fu | while IFS= read -r p; do
     [ -f "$p/.ai/feedback-log.md" ] || continue
-    # Only the top of a linked worktree maps to its main checkout; a subfolder
-    # with its own .ai, or a folder git cannot read, keeps its own path.
-    r=$(git -C "$p" rev-parse --path-format=absolute --git-dir --git-common-dir --show-prefix 2>/dev/null)
-    { read -r gd; read -r cd; read -r pre; } <<<"$r"
-    [ -z "$pre" ] && [ "$gd" != "$cd" ] && [ "${cd##*/}" = .git ] && m=${cd%/.git} || m=$p
+    # A worktree's (or the main checkout's) top folder maps to the main
+    # checkout as git spells it (macOS: /private/var); a subfolder with its
+    # own .ai, or a folder git cannot read, keeps its own path.
+    r=$(git -C "$p" rev-parse --path-format=absolute --git-common-dir --show-prefix 2>/dev/null)
+    { read -r cd; read -r pre; } <<<"$r"
+    [ -z "$pre" ] && [ "${cd##*/}" = .git ] && m=${cd%/.git} || m=$p
     tr -d '\r' < "$p/.ai/feedback-log.md" | awk -F'|' -v p="$m" '
       NF < 5 { next }
       { last = ($NF ~ /^ *$/) ? NF - 1 : NF; st = tolower($last); gsub(/[` ]/, "", st)
