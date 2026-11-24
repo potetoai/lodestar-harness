@@ -107,6 +107,7 @@ Done when: the owner has decided.
 | 2026-11-15 | 2 | Local name check `.claude/hooks/name-check.sh`, test block 26 with fake names (PR #203) |
 | 2026-11-15 | 2 | Untracked files checked only when the command runs `git add` (PR #208) |
 | 2026-11-24 | 3 | Names out of `skill-harvest.md` and `completed/agent-pitfalls.md`; closed parts of skill-harvest in `skill-harvest-closed.md` (PR #237) |
+| 2026-11-24 | 4 | Owner agreed; rule in `rules/documentation.md` section 7 (PR #238) |
 
 ## 8. Decision log
 
@@ -116,4 +117,5 @@ Done when: the owner has decided.
 | 2026-11-13 | Owner: git history is left as it is | A rewrite is a forced push on a public repo and breaks every PR link; the names leave the current files only |
 | 2026-11-15 | Name check: worktrees read the main checkout's list; a PR is also checked against lines the branch adds; removed lines never count | The list is gitignored, so a worktree has none of its own; phase 3 takes names out, which must pass |
 | 2026-11-15 | Owner: scan untracked files only when the command has `git add` | A scratch file that cannot enter the commit should not block it |
+| 2026-11-24 | Owner: closed phases leave the active plan in the PR that closes them; a written rule, no hook or CI check | A machine cannot tell reliably when a phase is closed; add a check only if agents forget |
 | 2026-11-24 | A project's folder name that is a common word (case-insensitive match on "projects") stays out of `.ai/private-names.txt`; phase 3 removed it by hand | The check matches case-insensitively, so it would block every "projects" |

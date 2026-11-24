@@ -76,7 +76,7 @@ the window.
 | 4 | `plans/active/steady-4-subagent-cost.md` | Subagent cost, round 2: run counts and output | yes | phase 0 done 2026-11-19; owner picks idea I |
 | 5 | `plans/active/steady-5-task-cost.md` | Small-task cost, reads, base context, plugins | no | phase 0 now; plugin step after 2026-11-24 |
 | 6 | `plans/active/steady-6-project-fit.md` | Does it pay, per kind of project; run-time checks | no | 2026-12-09 (monthly count) |
-| 7 | `plans/active/steady-7-plan-hygiene.md` | Project names out of tracked files; closed phases out of active plans | yes (local name check, Q3) | now for completed plans; active ones after 2026-11-26 |
+| 7 | `plans/completed/steady-7-plan-hygiene.md` | Project names out of tracked files; closed phases out of active plans | yes (local name check, Q3) | closed 2026-11-24 |
 
 Order and what may run side by side:
 
@@ -158,6 +158,7 @@ report." The agent routes the phase through the Router as usual.
 | 2026-11-16 | 5 | Phase 1: ideas rated; A, B, C, D (trial) chosen (PR #213) |
 | 2026-11-19 | 4 | Phase 0 early: project C's high-risk routes make 65% of runs (PR #222) |
 | 2026-11-24 | 5 | Gate S5-0 met; TokenEconomizer kept (option F) |
+| 2026-11-24 | 7 | Phase 4: closed-phase rule in `rules/documentation.md` (PR #238) |
 
 ## 9. Decision log
 
