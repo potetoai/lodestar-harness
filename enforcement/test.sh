@@ -510,7 +510,9 @@ git -C "$wm" -c user.name=t -c user.email=t@t commit -q --allow-empty -m i
 git -C "$wm" worktree add -q "$tmp/wtside" 2>/dev/null; mkdir -p "$tmp/wtside/.ai"
 for d in "$wm" "$tmp/wtside"; do
   echo "| 2026-10-17 | lodestar-wt-dup | same row in each worktree | x | reported |" > "$d/.ai/feedback-log.md"
-  (cd "$d" && { pwd -W 2>/dev/null || pwd; }) >> "$LODESTAR_INBOX/projects.txt"; done
+done   # list each folder as git spells it (macOS: /private/var), as a real project path is
+git -C "$wm" rev-parse --path-format=absolute --show-toplevel >> "$LODESTAR_INBOX/projects.txt"
+git -C "$tmp/wtside" rev-parse --path-format=absolute --show-toplevel >> "$LODESTAR_INBOX/projects.txt"
 out=$(remind "$tmp/self")
 t "global hook lists a report once across a project's worktrees, keyed by its main checkout" bash -c '[ "$(grep -c "lodestar-wt-dup" <<<"$1")" = 1 ] && grep -q "/wtmain|2026-10-17|lodestar-wt-dup" <<<"$1"' _ "$out"
 t "global hook reads a status in backticks or another case, and a cell with a pipe" bash -c 'grep -q "lodestar-pipe-cell" <<<"$1" && grep -q "a|b. split here" <<<"$1"' _ "$out"

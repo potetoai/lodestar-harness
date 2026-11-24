@@ -53,9 +53,9 @@ while IFS= read -r p; do
 done < <({ tr -d '\r' < "$inbox/projects.txt"; } 2>/dev/null | while IFS= read -r p || [ -n "$p" ]; do
   # Worktrees of one project share its GitHub repo: sweep its main checkout once
   # (only a worktree's top folder maps, as in check-readiness.sh).
-  r=$(git -C "$p" rev-parse --path-format=absolute --git-common-dir --show-prefix 2>/dev/null)
-  { read -r cd; read -r pre; } <<<"$r"
-  [ -z "$pre" ] && [ "${cd##*/}" = .git ] && echo "${cd%/.git}" || echo "$p"; done | sort -fu)
+  r=$(git -C "$p" rev-parse --path-format=absolute --git-dir --git-common-dir --show-prefix 2>/dev/null)
+  { read -r gd; read -r cd; read -r pre; } <<<"$r"
+  [ -z "$pre" ] && [ "$gd" != "$cd" ] && [ "${cd##*/}" = .git ] && echo "${cd%/.git}" || echo "$p"; done | sort -fu)
 wait
 all=1; out=""; keep=""
 for f in "$tmp"/*.p; do
