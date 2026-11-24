@@ -107,7 +107,7 @@ Done when: the owner has decided.
 | 2026-11-15 | 2 | Local name check `.claude/hooks/name-check.sh`, test block 26 with fake names (PR #203) |
 | 2026-11-15 | 2 | Untracked files checked only when the command runs `git add` (PR #208) |
 | 2026-11-24 | 3 | Names out of `skill-harvest.md` and `completed/agent-pitfalls.md`; closed parts of skill-harvest in `skill-harvest-closed.md` (PR #237) |
-| 2026-11-24 | 4 | Owner agreed; rule in `rules/documentation.md` section 7 (PR #PENDING) |
+| 2026-11-24 | 4 | Owner agreed; rule in `rules/documentation.md` section 7 (PR #238) |
 
 ## 8. Decision log
 

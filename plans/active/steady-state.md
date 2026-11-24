@@ -158,7 +158,7 @@ report." The agent routes the phase through the Router as usual.
 | 2026-11-16 | 5 | Phase 1: ideas rated; A, B, C, D (trial) chosen (PR #213) |
 | 2026-11-19 | 4 | Phase 0 early: project C's high-risk routes make 65% of runs (PR #222) |
 | 2026-11-24 | 5 | Gate S5-0 met; TokenEconomizer kept (option F) |
-| 2026-11-24 | 7 | Phase 4: closed-phase rule in `rules/documentation.md` (PR #PENDING) |
+| 2026-11-24 | 7 | Phase 4: closed-phase rule in `rules/documentation.md` (PR #238) |
 
 ## 9. Decision log
 
