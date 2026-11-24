@@ -1,6 +1,6 @@
 # Idea: tester cost
 
-> **Rated 2026-10-19** in `plans/active/agent-pitfalls.md` (phase 4,
+> **Rated 2026-10-19** in `plans/completed/agent-pitfalls.md` (phase 4,
 > decision log): one fix kept (tester plan reads), the rest dropped.
 
 From `plans/completed/subagent-cost.md`, phase 4 (2026-10-19). Not yet rated.

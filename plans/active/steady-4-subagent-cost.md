@@ -38,7 +38,7 @@ What the numbers say:
 - By project: A 235 runs (37.9% of its cost), B 68 (19.0%), C 59 (40.2%),
   this repo 49 (11.9%).
 - Critic runs per plan, counted by hand on 2026-11-13
-  (`plans/active/agent-pitfalls.md`, gate P5-c): 43, 17, 8, 7, 5 and 4; every
+  (`plans/completed/agent-pitfalls.md`, gate P5-c): 43, 17, 8, 7, 5 and 4; every
   run past the limit came from an owner approval. PR #195 changed the rule
   the same day (from run 4 only BLOCKER and MAJOR findings drive a run).
 
