@@ -61,9 +61,23 @@ for p in .ai/plans/active/*.md; do
   [ "$runs" -ge "$limit" ] && out+="  $p: $runs runs, limit $limit; the owner types (\"duyệt critic\" when owner_language is vi): approve critic $short"$'\n'
 done
 [ -n "$out" ] || exit 0
-echo "Blocked: the critic run limit is reached (agents/critic.md, 'Re-run after a criteria change'):" >&2
+if [ -n "$resume" ]; then
+  # A resume: the rule broken is the resume itself; lead with it.
+  echo "Blocked: a critic run is a fresh Agent dispatch, never a SendMessage resume (agents/critic.md," >&2
+  echo "'Re-run after a criteria change'). Dispatch a new critic with the Agent tool; its brief starts" >&2
+  echo "\"You are the critic\" and names the plan by its .ai/plans/active/ path." >&2
+  if [ -z "$first" ]; then
+    # No plan named: the listed plans may not be the one under review.
+    echo "This message names no plan, so it was checked against every active plan; these are at their" >&2
+    echo "limit (the run may be for another plan; the fresh dispatch is checked against the plan it names):" >&2
+    printf '%s' "$out" >&2
+    exit 2
+  fi
+  echo "The plan it names is also at its critic run limit:" >&2
+else
+  echo "Blocked: the critic run limit is reached (agents/critic.md, 'Re-run after a criteria change'):" >&2
+fi
 printf '%s' "$out" >&2
-[ -n "$resume" ] && echo "A critic run is a fresh Agent dispatch, never a SendMessage resume (agents/critic.md)." >&2
 cat >&2 <<'EOF'
 Do not change the criteria again. Write each open finding with "left to the owner (run limit)",
 add the '- Reviewed criteria:' line, and show the owner the open findings with the criteria, in
