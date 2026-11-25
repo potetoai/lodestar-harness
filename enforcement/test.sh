@@ -155,6 +155,8 @@ stop() { CLAUDE_PROJECT_DIR=$p bash "$here/agents/claude/hooks/verify-before-sto
 lint "$p/good.txt"; t "lint hook passes clean file" [ $? = 0 ]
 lint "$p/bad.txt"; t "lint hook blocks bad file (exit 2)" [ $? = 2 ]
 lint "$tmp/outside.txt"; t "lint hook ignores files outside project" [ $? = 0 ]
+mkdir -p "$p/.git"; echo BAD > "$p/.git/pr-body.md"
+lint "$p/.git/pr-body.md"; t "lint hook skips files under .git/" [ $? = 0 ]
 LODESTAR_SKIP_HOOKS=1 lint "$p/bad.txt"; t "LODESTAR_SKIP_HOOKS=1 disables lint hook" [ $? = 0 ]
 # A long lint dump is capped at 30 lines plus a count of the rest.
 p2=$tmp/longlint; mkdir -p "$p2"; echo x > "$p2/a.txt"

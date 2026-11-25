@@ -21,6 +21,8 @@ case "${f,,}" in
   "${p,,}"/*) ;;
   *) exit 0 ;;
 esac
+# Files under .git/ (a PR body written there for --body-file) are not code.
+case "${f,,}" in "${p,,}"/.git/*) exit 0 ;; esac
 
 # A new lint suppression needs a reason on the same line (" -- <reason>").
 # New lines = diff against HEAD, or the whole file if git does not track it.

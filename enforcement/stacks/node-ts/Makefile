@@ -17,7 +17,7 @@ lint:
 # format-check never fails on the agent's code. Prettier skips unknown types;
 # ESLint runs on script files only.
 lint-file:
-	@$(NPX) prettier --write --ignore-unknown --log-level warn "$(FILE)"
+	@$(NPX) prettier --write --ignore-unknown --no-error-on-unmatched-pattern --log-level warn "$(FILE)"
 	@case "$(FILE)" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs|*.mts|*.cts) $(NPX) eslint "$(FILE)" ;; esac
 
 format-check:
