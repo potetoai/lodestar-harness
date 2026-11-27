@@ -74,8 +74,15 @@ Stop early when nothing is worth a PR.
    5 excerpts per run. Add a row for each mistake, in your own words, with a
    tag. Skip what was not a mistake (a hook working as meant, a test run).
    Claude transcripts only; Codex transcripts are not read yet.
-3. **Repeated mistakes (D2).** In `.ai/feedback-log.md`, find tags seen two or
-   more times that are not `enforced`. Turn each into a machine rule
+3. **Repeated mistakes (D2).** First regroup `.ai/feedback-log.md` by kind,
+   not by tag: two rows are the same kind when one fix would have prevented
+   both (the same rule or document skipped, the same wrong guess), even under
+   different tags. Give each group the tag of its oldest row; keep the old
+   tag's words in the Mistake text. D2 counts tags only, so a kind logged
+   under new names never warns. Leave `lodestar-` rows out. An `enforced` or
+   `accepted` row keeps its status; a new row of its kind takes its tag, so
+   D2 warns again. Then find tags seen two or more times that are not
+   `enforced`. Turn each into a machine rule
    (`rules/enforcement.md`, sections 7–8), with a fixture that proves it
    catches the mistake. Set the rows to `enforced`. When no machine rule can
    catch it (a conversation mistake), ask the owner; on yes, set the rows to
