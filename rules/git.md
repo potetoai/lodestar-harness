@@ -265,6 +265,13 @@ After an automatic merge, tell the owner in one line what was merged and which
 gates it passed. The owner stops automatic merges by saying so; record it in
 `.ai/project.md` as a project rule.
 
+When a PR waits for the owner's merge approval, ask in one plain line in the
+owner's language: what it changes and whether it loosens a check (for example
+"PR 243 thêm một kiểm tra, không nới lỏng gì"). Then go on with other work
+the owner asked for instead of waiting. When several PRs wait, give one line
+the owner can type for all of them ("duyệt merge PR 243, PR 244"); the
+approval hook records each number.
+
 Merge only with `bash .claude/hooks/merge-pr.sh <n>` (options `--squash`,
 `--rebase`, `--delete-branch`). It waits for CI and merges only when the wait
 itself exits 0, so give the command a long timeout or run it in the
