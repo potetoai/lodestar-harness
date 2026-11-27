@@ -203,7 +203,8 @@ Every rule:
 
 - When the owner corrects an agent mistake, the agent adds a row to
   `.ai/feedback-log.md` right away: date, a short tag for the kind of mistake
-  (reuse existing tags), what went wrong in its own words, the related rule
+  (read the tags already in the log; reuse one when the same fix would have
+  prevented both), what went wrong in its own words, the related rule
   or invariant. The owner never has to write it.
 - **Hook:** `feedback-check.sh` (Stop) reads the owner's last message. If it
   looks like a correction ("sai", "nhầm", "làm lại", "wrong"…), it holds the
@@ -239,7 +240,9 @@ Every rule:
   mistake becomes a lint rule or a test (section 7), and its rows become
   `enforced`. `doctor.sh` warns (D2) while a repeated tag is not enforced.
   If no machine rule can catch it and the owner agrees, its rows become
-  `accepted`; a new row of that tag warns again.
+  `accepted`; a new row of that tag warns again. The same kind under a new
+  tag counts too: maintenance regroups such rows (`workflows/maintenance.md`,
+  step 3).
 - Maintenance (`workflows/maintenance.md`) runs every 14 days and picks these up;
   `doctor.sh` warns (D1) when it is overdue.
 - Principles every project keeps: `rules/golden-principles.md`.
